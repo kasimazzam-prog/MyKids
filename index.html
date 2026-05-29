@@ -25,7 +25,7 @@ input,select,textarea,button{font-family:inherit;direction:rtl}
 @media(min-width:900px){
   body{background:linear-gradient(135deg,#0f0c29 0%,#302b63 50%,#24243e 100%)}
   .app-wrapper{border-radius:0;box-shadow:none}
-  .sidebar{display:flex;flex-direction:column;width:220px;min-width:220px;background:rgba(15,12,41,.9);backdrop-filter:blur(20px);border-left:1px solid rgba(255,255,255,.1);overflow:hidden;flex-shrink:0}
+  .sidebar{display:flex;flex-direction:column;width:230px;min-width:230px;background:#fff;border-left:2px solid #f0f0f8;overflow:hidden;flex-shrink:0;box-shadow:-4px 0 24px rgba(0,0,0,.08)}
   .main-panel{flex:1;border-radius:0;overflow:hidden}
   .mobile-nav{display:none!important}
   .mobile-header-stats{display:none!important}
@@ -49,7 +49,9 @@ input,select,textarea,button{font-family:inherit;direction:rtl}
 .btn-sub{color:#fff;border:none;border-radius:14px;padding:14px;width:100%;font-size:15px;font-weight:800;cursor:pointer;margin-top:8px}
 .back-btn{background:rgba(255,255,255,.22);border:none;color:#fff;border-radius:12px;padding:7px 14px;font-size:18px;cursor:pointer}
 .pill{padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;display:inline-flex;align-items:center}
-.tab-btn{flex:1;padding:11px 2px;border:none;background:none;font-size:17px;cursor:pointer;min-width:40px;transition:all .2s;border-bottom:3px solid transparent}
+.tab-btn{flex:1;padding:10px 2px;border:none;background:none;font-size:17px;cursor:pointer;min-width:40px;transition:all .2s;border-bottom:3px solid transparent;position:relative}
+.tab-btn:hover{background:rgba(0,0,0,.03)}
+.tab-btn.active-tab{background:rgba(108,99,255,.06)}
 .nav-btn{border:none;border-radius:12px;padding:8px 16px;cursor:pointer;font-weight:700;font-size:12px;white-space:nowrap}
 .edit-btn{background:#f0f0f8;border:none;border-radius:10px;padding:7px 11px;cursor:pointer;font-size:14px;color:#6C63FF}
 .del-btn{background:#FEE2E2;border:none;border-radius:10px;padding:7px 11px;cursor:pointer;font-size:14px;color:#EF4444}
@@ -65,17 +67,19 @@ input,select,textarea,button{font-family:inherit;direction:rtl}
 @keyframes slideD{from{transform:translateX(-50%) translateY(-20px);opacity:0}to{transform:translateX(-50%) translateY(0);opacity:1}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 @media print{
-  .no-print,.sidebar,.desktop-top-bar,.mobile-nav,.mobile-header-stats{display:none!important}
+  @page{margin:1.5cm;size:A4 portrait}
+  body{overflow:visible!important;background:#fff!important;height:auto!important;direction:rtl;font-family:'Segoe UI',Tahoma,Arial,sans-serif!important}
+  .no-print,.sidebar,.desktop-top-bar,.mobile-nav,.mobile-header-stats,.btn-add,.btn-sub,.back-btn,.edit-btn,.del-btn,.tab-btn,.check-btn,.nav-btn,.search-wrap{display:none!important}
   *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
-  body{overflow:auto!important;background:#fff!important;height:auto!important;direction:rtl}
-  .app-wrapper{display:block!important;height:auto!important}
-  .main-panel,.page{height:auto!important;overflow:visible!important;display:block!important}
-  .scroll{overflow:visible!important;padding:10px!important;height:auto!important}
-  .card{page-break-inside:avoid;box-shadow:0 1px 4px rgba(0,0,0,.1)!important;margin-bottom:8px!important}
+  .app-wrapper{display:block!important;height:auto!important;width:100%!important;box-shadow:none!important}
+  .main-panel{display:block!important;height:auto!important;overflow:visible!important;width:100%!important}
+  .page{display:block!important;height:auto!important;overflow:visible!important}
+  .scroll{display:block!important;overflow:visible!important;padding:0!important;height:auto!important}
+  .card{page-break-inside:avoid!important;box-shadow:0 1px 4px rgba(0,0,0,.1)!important;margin-bottom:10px!important;border-radius:12px!important;padding:12px!important}
   .children-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:10px!important}
-  .tab-btn,.check-btn,.edit-btn,.del-btn,.btn-add,.btn-sub,.back-btn{display:none!important}
-  h1,h2,h3{color:#000!important}
-  @page{margin:1.5cm;size:A4}
+  .pbar-wrap{display:block!important}
+  .pill{display:inline-flex!important}
+  .tab-bar-wrapper{display:none!important}
 }
 </style>
 </head>
@@ -821,7 +825,9 @@ function screenHome(){
   const isDesktop2=window.innerWidth>=900;
   if(isDesktop2){
     const greeting=div({style:{background:"linear-gradient(135deg,#6C63FF 0%,#a855f7 50%,#FF6584 100%)",borderRadius:"20px",padding:"22px 26px",marginBottom:"20px",color:"#fff",display:"flex",alignItems:"center",justifyContent:"space-between",boxShadow:"0 8px 32px rgba(108,99,255,0.35)"}});
-    const randomQuote=QUOTES[Math.floor(Math.random()*QUOTES.length)];
+    // Same quote for entire week
+    const weekNum=Math.floor(Date.now()/(7*24*60*60*1000));
+    const randomQuote=QUOTES[weekNum%QUOTES.length];
     const quoteText=randomQuote.includes("—")?randomQuote.split("—")[0].trim():randomQuote;
     const quoteSource=randomQuote.includes("—")?"— "+randomQuote.split("—")[1].trim():"";
     greeting.appendChild(div(null,
@@ -921,55 +927,55 @@ function printPDF(){
 // ── Sidebar (Desktop) ──
 function buildSidebar(data){
   const {children,homework,exams,points,vacationMode,sync,lastPull}=data;
-  const sb=div({style:{display:"flex",flexDirection:"column",height:"100vh",overflow:"hidden",width:"220px",minWidth:"220px"}});
+  const sb=div({style:{display:"flex",flexDirection:"column",height:"100vh",overflow:"hidden",width:"230px",minWidth:"230px",background:"#fff",borderLeft:"2px solid #f0f0f8",boxShadow:"-4px 0 24px rgba(0,0,0,.08)"}});
   
   // Logo area
-  const logo=div({style:{padding:"18px 14px 14px",borderBottom:"1px solid rgba(255,255,255,.08)"}});
+  const logo=div({style:{padding:"18px 14px 14px",borderBottom:"2px solid #f0f0f8",background:"linear-gradient(135deg,#6C63FF,#a855f7)",borderRadius:"0"}});
   logo.appendChild(div({style:{fontSize:"18px",fontWeight:"900",color:"#fff",letterSpacing:"-0.5px"}},"📖 مدرستي"));
-  logo.appendChild(div({style:{color:"rgba(255,255,255,.45)",fontSize:"10px",marginTop:"4px"}},new Date().toLocaleDateString("ar-SA",{weekday:"long",month:"long",day:"numeric"})));
+  logo.appendChild(div({style:{color:"rgba(255,255,255,.8)",fontSize:"10px",marginTop:"4px"}},new Date().toLocaleDateString("ar-SA",{weekday:"long",month:"long",day:"numeric"})));
   logo.appendChild(div({style:{marginTop:"6px"}},syncDot(sync,lastPull)));
   sb.appendChild(logo);
 
   // Nav
-  const nav=div({style:{padding:"10px 10px",borderBottom:"1px solid rgba(255,255,255,.08)"}});
+  const nav=div({style:{padding:"10px 10px",borderBottom:"2px solid #f0f0f8"}});
   const isHome=["home"].includes(S().screen);
   const isChild=["child","fHw","fExam","fGrade","fNote","fStudy","fGoal","fSupply","fAllowance","fAllowanceSettings","fPoints"].includes(S().screen);
   
   [["🏠 الرئيسية","home",isHome],["📄 التقارير","reports",S().screen==="reports"],["⚙️ الإعدادات","settings",S().screen==="settings"]].forEach(([label,sc2,active])=>{
-    nav.appendChild(btn({className:"sb-nav-btn",style:{background:active?"rgba(108,99,255,.5)":"transparent",color:active?"#fff":"rgba(255,255,255,.65)",fontWeight:active?"700":"400"},onclick:()=>setState({screen:sc2})},label));
+    nav.appendChild(btn({className:"sb-nav-btn",style:{background:active?"#6C63FF":"transparent",color:active?"#fff":"#2d3436",fontWeight:active?"700":"500"},onclick:()=>setState({screen:sc2})},label));
   });
-  nav.appendChild(btn({className:"sb-nav-btn",style:{background:vacationMode.active?"rgba(253,203,110,.2)":"transparent",color:vacationMode.active?"#FDCB6E":"rgba(255,255,255,.65)"},onclick:()=>{if(vacationMode.active)upd({vacationMode:{active:false,until:""}});else{const d=window.prompt("تاريخ العودة (YYYY-MM-DD):");if(d)upd({vacationMode:{active:true,until:d}});}}},"🌙 "+(vacationMode.active?"إلغاء الإجازة":"وضع الإجازة")));
-  nav.appendChild(btn({className:"sb-nav-btn",style:{background:"transparent",color:"rgba(255,255,255,.65)"},onclick:printPDF},"🖨️ طباعة"));
+  nav.appendChild(btn({className:"sb-nav-btn",style:{background:vacationMode.active?"#FFF3CD":"transparent",color:vacationMode.active?"#D97706":"#2d3436"},onclick:()=>{if(vacationMode.active)upd({vacationMode:{active:false,until:""}});else{const d=window.prompt("تاريخ العودة (YYYY-MM-DD):");if(d)upd({vacationMode:{active:true,until:d}});}}},"🌙 "+(vacationMode.active?"إلغاء الإجازة":"وضع الإجازة")));
+  nav.appendChild(btn({className:"sb-nav-btn",style:{background:"transparent",color:"#2d3436"},onclick:printPDF},"🖨️ طباعة"));
   sb.appendChild(nav);
 
   // Stats cards
-  const statsWrap=div({style:{padding:"10px 12px",borderBottom:"1px solid rgba(255,255,255,.08)"}});
-  statsWrap.appendChild(div({style:{fontSize:"9px",fontWeight:"800",color:"rgba(255,255,255,.3)",letterSpacing:"1.5px",marginBottom:"8px",textTransform:"uppercase"}},"ملخص سريع"));
+  const statsWrap=div({style:{padding:"10px 12px",borderBottom:"2px solid #f0f0f8"}});
+  statsWrap.appendChild(div({style:{fontSize:"9px",fontWeight:"800",color:"#b2bec3",letterSpacing:"1.5px",marginBottom:"8px",textTransform:"uppercase"}},"ملخص سريع"));
   const hw_p=Object.values(homework).flat().filter(h=>!h.done).length;
   const ex_c=Object.values(exams).flat().length;
   const pts_t=Object.values(points).reduce((a,p)=>a+(p?.total||0),0);
   [[hw_p,"واجب متبقي","📚","#FF6584"],[ex_c,"اختبار قادم","📝","#A29BFE"],[pts_t,"نقطة إجمالي","⭐","#FDCB6E"]].forEach(([v,l,ic,color])=>{
-    statsWrap.appendChild(div({style:{display:"flex",alignItems:"center",gap:"10px",padding:"6px 8px",borderRadius:"10px",marginBottom:"4px",background:"rgba(255,255,255,.04)"}},
+    statsWrap.appendChild(div({style:{display:"flex",alignItems:"center",gap:"10px",padding:"6px 8px",borderRadius:"10px",marginBottom:"4px",background:"#f8f9ff"}},
       span({style:{fontSize:"16px",flexShrink:0}},ic),
-      div({style:{flex:1}},span({style:{color:"#fff",fontSize:"13px",fontWeight:"600"}},String(v)),span({style:{color:"rgba(255,255,255,.4)",fontSize:"11px",marginRight:"4px"}},l))
+      div({style:{flex:1}},span({style:{color:"#2d3436",fontSize:"13px",fontWeight:"600"}},String(v)),span({style:{color:"#b2bec3",fontSize:"11px",marginRight:"4px"}},l))
     ));
   });
   sb.appendChild(statsWrap);
 
   // Children list
   const cList=div({style:{flex:1,overflowY:"auto",padding:"10px 10px"}});
-  cList.appendChild(div({style:{fontSize:"9px",fontWeight:"800",color:"rgba(255,255,255,.3)",letterSpacing:"1.5px",marginBottom:"8px",textTransform:"uppercase"}},"الأطفال"));
+  cList.appendChild(div({style:{fontSize:"9px",fontWeight:"800",color:"#b2bec3",letterSpacing:"1.5px",marginBottom:"8px",textTransform:"uppercase"}},"الأطفال"));
   children.forEach(c=>{
     const active=S().child?.id===c.id&&isChild;
     const pending=(homework[c.id]||[]).filter(h=>!h.done).length;
     const pts2=(points[c.id]?.total)||0;
-    const b=btn({className:"sb-child-btn",style:{background:active?`${c.color}30`:"rgba(255,255,255,.04)",border:active?`1px solid ${c.color}50`:"1px solid transparent"},onclick:()=>goChild(c)});
+    const b=btn({className:"sb-child-btn",style:{background:active?`${c.color}18`:"transparent",border:active?`2px solid ${c.color}50`:"2px solid transparent"},onclick:()=>goChild(c)});
     b.appendChild(div({style:{width:"36px",height:"36px",borderRadius:"10px",background:`linear-gradient(135deg,${c.color},${c.color}88)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"18px",flexShrink:0}},c.emoji));
-    b.appendChild(div({style:{flex:1,textAlign:"right",minWidth:0}},div({style:{color:"#fff",fontWeight:"700",fontSize:"12px",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:"130px"}},c.name),div({style:{color:"rgba(255,255,255,.4)",fontSize:"10px",marginTop:"1px"}},c.grade)));
+    b.appendChild(div({style:{flex:1,textAlign:"right",minWidth:0}},div({style:{color:"#2d3436",fontWeight:"700",fontSize:"12px",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:"130px"}},c.name),div({style:{color:"#b2bec3",fontSize:"10px",marginTop:"1px"}},c.grade)));
     if(pending>0)b.appendChild(div({style:{background:c.color,color:"#fff",borderRadius:"8px",padding:"2px 7px",fontSize:"10px",fontWeight:"700",flexShrink:0}},String(pending)));
     cList.appendChild(b);
   });
-  cList.appendChild(btn({style:{display:"block",width:"100%",textAlign:"center",background:"rgba(255,255,255,.06)",color:"rgba(255,255,255,.5)",border:"1px dashed rgba(255,255,255,.15)",borderRadius:"12px",padding:"9px",cursor:"pointer",fontSize:"12px",marginTop:"8px"},onclick:()=>setState({childF:{name:"",grade:"",color:PALETTE[0],emoji:EMOJIS[0]},screen:"addChild"})},"+ إضافة طفل"));
+  cList.appendChild(btn({style:{display:"block",width:"100%",textAlign:"center",background:"#f0f0f8",color:"#6C63FF",border:"2px dashed #c8c5ff",borderRadius:"12px",padding:"9px",cursor:"pointer",fontSize:"12px",marginTop:"8px",fontWeight:"600"},onclick:()=>setState({childF:{name:"",grade:"",color:PALETTE[0],emoji:EMOJIS[0]},screen:"addChild"})},"+ إضافة طفل"));
   sb.appendChild(cList);
   return sb;
 }
@@ -1009,6 +1015,9 @@ function render(){
   const {data,sync,screen,toast,confirm}=S();
   const app=document.getElementById("app");
   app.innerHTML="";
+
+  // Print header
+  const printHeader=div({style:{display:"none"},className:"print-only"});
 
   // Toast
   if(toast){
