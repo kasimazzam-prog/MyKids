@@ -45,16 +45,16 @@ input,select,textarea,button{font-family:inherit;direction:rtl}
 .scroll{flex:1;overflow-y:auto;padding:14px 14px 80px;-webkit-overflow-scrolling:touch}
 .card{background:#fff;border-radius:18px;padding:14px;margin-bottom:10px;box-shadow:0 2px 16px rgba(0,0,0,.055)}
 .inp{border:2px solid #eef0f5;border-radius:12px;padding:11px 13px;font-size:14px;width:100%;outline:none;background:#fff;margin-bottom:4px}
-.btn-add{color:#fff;border:none;border-radius:14px;padding:13px;width:100%;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:12px}
-.btn-sub{color:#fff;border:none;border-radius:14px;padding:14px;width:100%;font-size:15px;font-weight:800;cursor:pointer;margin-top:8px}
+.btn-add{color:#fff;border:none;border-radius:14px;padding:13px;width:100%;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:12px;box-shadow:0 4px 15px rgba(0,0,0,.2);transform:translateY(0);transition:all .15s}.btn-add:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.25)}.btn-add:active{transform:translateY(1px);box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.btn-sub{color:#fff;border:none;border-radius:14px;padding:14px;width:100%;font-size:15px;font-weight:800;cursor:pointer;margin-top:8px;box-shadow:0 4px 15px rgba(0,0,0,.2);transition:all .15s}.btn-sub:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.25)}
 .back-btn{background:rgba(255,255,255,.22);border:none;color:#fff;border-radius:12px;padding:7px 14px;font-size:18px;cursor:pointer}
 .pill{padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;display:inline-flex;align-items:center}
-.tab-btn{flex:1;padding:10px 2px;border:none;background:none;font-size:17px;cursor:pointer;min-width:40px;transition:all .2s;border-bottom:3px solid transparent;position:relative}
-.tab-btn:hover{background:rgba(0,0,0,.03)}
-.tab-btn.active-tab{background:rgba(108,99,255,.06)}
-.nav-btn{border:none;border-radius:12px;padding:8px 16px;cursor:pointer;font-weight:700;font-size:12px;white-space:nowrap}
-.edit-btn{background:#f0f0f8;border:none;border-radius:10px;padding:7px 11px;cursor:pointer;font-size:14px;color:#6C63FF}
-.del-btn{background:#FEE2E2;border:none;border-radius:10px;padding:7px 11px;cursor:pointer;font-size:14px;color:#EF4444}
+.tab-btn{flex:1;padding:11px 4px 9px;border:none;background:#f5f5f8;font-size:16px;cursor:pointer;min-width:40px;transition:all .2s;border-bottom:3px solid transparent;position:relative;border-radius:0;margin:4px 2px 0;border-radius:10px 10px 0 0;box-shadow:0 -1px 4px rgba(0,0,0,.06)}
+.tab-btn:hover{background:#ebebf5;transform:translateY(-1px)}
+.tab-btn.active-tab{background:#fff;border-bottom:3px solid currentColor;box-shadow:0 -3px 10px rgba(0,0,0,.1);transform:translateY(-2px);z-index:1;font-size:18px}
+.nav-btn{border:none;border-radius:12px;padding:8px 16px;cursor:pointer;font-weight:700;font-size:12px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.12);transition:all .15s}.nav-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.18)}
+.edit-btn{background:#f0f0f8;border:2px solid #e0deff;border-radius:10px;padding:7px 11px;cursor:pointer;font-size:14px;color:#6C63FF;box-shadow:0 2px 6px rgba(108,99,255,.15);transition:all .15s}.edit-btn:hover{background:#e8e6ff;transform:translateY(-1px)}
+.del-btn{background:#FEE2E2;border:2px solid #fecaca;border-radius:10px;padding:7px 11px;cursor:pointer;font-size:14px;color:#EF4444;box-shadow:0 2px 6px rgba(239,68,68,.15);transition:all .15s}.del-btn:hover{background:#fecaca;transform:translateY(-1px)}
 .check-btn{width:28px;height:28px;border-radius:8px;font-weight:900;font-size:15px;cursor:pointer;flex-shrink:0;transition:all .2s}
 .pbar-wrap{background:rgba(0,0,0,.07);border-radius:10px;overflow:hidden}
 .pbar-fill{border-radius:10px;transition:width .7s cubic-bezier(.4,0,.2,1)}
@@ -175,7 +175,13 @@ const DEF={
   allowance:{1:{daily:10,balance:35,history:[]},2:{daily:15,balance:45,history:[]},3:{daily:5,balance:10,history:[]}},
   goals:{1:[{id:1,subject:"رياضيات",targetPct:90,deadline:"2026-06-30",note:"ممتاز"}],2:[],3:[]},
   supplies:{1:[{id:1,name:"دفتر رياضيات",done:false,priority:"high"}],2:[],3:[]},
-  vacationMode:{active:false,until:""}
+  vacationMode:{active:false,until:""},
+  chatMessages:[
+    {id:1,sender:"الأم",avatar:"👩",text:"أحمد أنهى واجب الرياضيات ✅",time:"09:15",date:"2026-05-29",childId:1,type:"text"},
+    {id:2,sender:"الأب",avatar:"👨",text:"ممتاز! هل راجع اختبار العلوم؟",time:"09:20",date:"2026-05-29",childId:null,type:"text"},
+    {id:3,sender:"الأم",avatar:"👩",text:"لم يراجع بعد، سأذكّره الآن 📚",time:"09:22",date:"2026-05-29",childId:null,type:"text"}
+  ],
+  chatUsers:{name1:"الأب",avatar1:"👨",name2:"الأم",avatar2:"👩"}
 };
 
 // ── State ──
@@ -560,9 +566,9 @@ function screenChild(){
   page.appendChild(hdr);
 
   // Tabs
-  const TABS=[["schedule","📅"],["study","📚"],["homework","✅"],["exams","📝"],["grades","📊"],["goals","🎯"],["points","⭐"],["allowance","💰"],["supplies","🛒"],["notes","💬"]];
+  const TABS=[["schedule","📅"],["study","📚"],["homework","✅"],["exams","📝"],["grades","📊"],["goals","🎯"],["points","⭐"],["allowance","💰"],["supplies","🛒"],["notes","💬"],["chat","🗨️"]];
   const isDesktopChild=window.innerWidth>=900;
-  const tabBar=div({className:"no-print",style:{display:"flex",background:"#fff",borderBottom:"2px solid #f0f0f0",overflowX:"auto",flexShrink:0}});
+  const tabBar=div({className:"no-print",style:{display:"flex",background:"#f0f0f8",borderBottom:"3px solid #e0e0f0",overflowX:"auto",flexShrink:0,padding:"0 4px",gap:"2px"}});
   TABS.forEach(([t,ic])=>{
     const b=btn({className:"tab-btn",style:{color:tab===t?child.color:"#ddd",borderBottom:tab===t?`3px solid ${child.color}`:"3px solid transparent"},onclick:()=>setState({tab:t})},ic);
     tabBar.appendChild(b);
@@ -758,6 +764,72 @@ function screenChild(){
         )
       ));
     });
+  }
+
+  // ── CHAT ──
+  if(tab==="chat"){
+    const msgs=data.chatMessages||[];
+    const users=data.chatUsers||{name1:"الأب",avatar1:"👨",name2:"الأم",avatar2:"👩"};
+    let currentUser="1";
+    try{currentUser=localStorage.getItem("chatUser")||"1";}catch(e){}
+    const isUser1=currentUser==="1";
+
+    const chatWrap=div({style:{display:"flex",flexDirection:"column",height:"calc(100vh - 280px)"}});
+    const msgsList=div({style:{flex:1,overflowY:"auto",padding:"8px 4px",display:"flex",flexDirection:"column",gap:"8px"}});
+
+    if(!msgs.length){
+      msgsList.appendChild(div({style:{textAlign:"center",padding:"40px",color:"#dfe6e9",fontSize:"14px",lineHeight:"2.2"}},"🗨️
+لا توجد رسائل بعد
+ابدأ المحادثة مع شريكك"));
+    }
+
+    msgs.forEach(m=>{
+      const isMine=m.sender===(isUser1?users.name1:users.name2);
+      const msgWrap=div({style:{display:"flex",flexDirection:isMine?"row-reverse":"row",gap:"8px",alignItems:"flex-end"}});
+      msgWrap.appendChild(div({style:{width:"32px",height:"32px",borderRadius:"50%",background:isMine?child.color+"20":"#f0f0f8",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"16px",flexShrink:0}},m.avatar));
+      const bubble=div({style:{maxWidth:"72%",background:isMine?`linear-gradient(135deg,${child.color},${child.color}cc)`:"#fff",color:isMine?"#fff":"#2d3436",borderRadius:isMine?"18px 18px 4px 18px":"18px 18px 18px 4px",padding:"10px 14px",boxShadow:"0 2px 10px rgba(0,0,0,.1)",fontSize:"14px",lineHeight:"1.5"}});
+      if(m.childId){const cRef=data.children.find(c2=>c2.id===m.childId);if(cRef)bubble.appendChild(div({style:{fontSize:"10px",opacity:"0.75",marginBottom:"4px",fontWeight:"700"}},cRef.emoji+" "+cRef.name));}
+      bubble.appendChild(div(null,m.text));
+      bubble.appendChild(div({style:{fontSize:"10px",opacity:"0.65",marginTop:"4px",textAlign:isMine?"left":"right"}},m.time+" · "+m.sender));
+      msgWrap.appendChild(bubble);
+      msgsList.appendChild(msgWrap);
+    });
+
+    const inputWrap=div({className:"no-print",style:{borderTop:"2px solid #f0f0f8",paddingTop:"8px",flexShrink:0}});
+
+    // Sender toggle
+    const senderRow=div({style:{display:"flex",gap:"6px",marginBottom:"8px",background:"#f0f0f8",borderRadius:"14px",padding:"4px"}});
+    const mkUserBtn=(num,name,avatar)=>btn({style:{flex:1,padding:"7px",borderRadius:"10px",border:"none",background:currentUser===num?child.color:"transparent",color:currentUser===num?"#fff":"#636e72",cursor:"pointer",fontWeight:"700",fontSize:"13px",transition:"all .2s"},onclick:()=>{try{localStorage.setItem("chatUser",num);}catch(e){}setState({tab:"chat"});}},avatar+" "+name);
+    senderRow.append(mkUserBtn("1",users.name1,users.avatar1),mkUserBtn("2",users.name2,users.avatar2));
+    inputWrap.appendChild(senderRow);
+
+    // Quick actions
+    const quickRow=div({style:{display:"flex",gap:"5px",overflowX:"auto",marginBottom:"8px",paddingBottom:"2px"}});
+    [{label:"✅ أنهى الواجب"},{label:"📚 جاهز للمذاكرة"},{label:"⚠️ لم يذاكر"},{label:"🏆 أداء ممتاز"},{label:"📝 اختبار قريب"},{label:"❤️ أنا أفتقده"}].forEach(qa=>{
+      quickRow.appendChild(btn({style:{background:child.color+"15",border:"2px solid "+child.color+"30",borderRadius:"20px",padding:"5px 11px",cursor:"pointer",fontSize:"11px",fontWeight:"600",whiteSpace:"nowrap",color:child.color,flexShrink:0},onclick:()=>{
+        const now=new Date();
+        upd({chatMessages:[...(data.chatMessages||[]),{id:Date.now(),sender:isUser1?users.name1:users.name2,avatar:isUser1?users.avatar1:users.avatar2,text:qa.label+" "+child.emoji,time:String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0"),date:todayStr,childId:child.id,type:"quick"}]});
+      }},qa.label));
+    });
+    inputWrap.appendChild(quickRow);
+
+    // Text input
+    const inputRow=div({style:{display:"flex",gap:"8px",alignItems:"flex-end"}});
+    const textInp=el("textarea",{style:{flex:1,border:"2px solid #e0deff",borderRadius:"18px",padding:"10px 16px",fontSize:"14px",outline:"none",resize:"none",maxHeight:"80px",fontFamily:"inherit",direction:"rtl",lineHeight:"1.5",background:"#fff"},placeholder:"اكتب رسالة...",rows:1});
+    textInp.oninput=function(){this.style.height="auto";this.style.height=Math.min(this.scrollHeight,80)+"px";};
+    const sendB=btn({style:{width:"42px",height:"42px",borderRadius:"50%",background:`linear-gradient(135deg,${child.color},${child.color}cc)`,border:"none",color:"#fff",fontSize:"19px",cursor:"pointer",flexShrink:0,boxShadow:child.color+"50 0 4px 12px"},onclick:()=>{
+      const t=textInp.value.trim();if(!t)return;
+      const now=new Date();
+      upd({chatMessages:[...(data.chatMessages||[]),{id:Date.now(),sender:isUser1?users.name1:users.name2,avatar:isUser1?users.avatar1:users.avatar2,text:t,time:String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0"),date:todayStr,childId:null,type:"text"}]});
+      textInp.value="";
+    }},"↑");
+    inputRow.append(textInp,sendB);
+    inputWrap.appendChild(inputRow);
+
+    chatWrap.append(msgsList,inputWrap);
+    body.appendChild(chatWrap);
+    // Scroll to bottom
+    setTimeout(()=>{msgsList.scrollTop=msgsList.scrollHeight;},50);
   }
 
   page.appendChild(body);
