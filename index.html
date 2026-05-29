@@ -848,8 +848,8 @@ function App() {
             <button onClick={()=>upd({vacationMode:{active:false,until:""}})} style={{background:"rgba(255,255,255,0.15)",border:"none",color:"#fff",borderRadius:8,padding:"3px 10px",cursor:"pointer",fontSize:12,marginRight:"auto"}}>إلغاء</button>
           </div>}
           <div style={{display:"flex",gap:6,marginTop:12,flexWrap:"wrap"}}>
-            {[["📚",Object.values(homework).flat().filter(h=>!h.done).length,"واجب متبقي"],["📝",Object.values(exams).flat().length,"اختبار"],["📅",upcoming.length,"حدث قادم"]].map(([ic,v,l])=>(
-              <div key={l} style={{background:"rgba(255,255,255,0.12)",backdropFilter:"blur(10px)",padding:"6px 14px",borderRadius:20,fontSize:12,fontWeight:"700",color:"#fff",border:"1px solid rgba(255,255,255,0.1)"}}>{ic} {v} {l}</div>
+            {[["📚",Object.values(homework).flat().filter(h=>!h.done).length,"واجب متبقي"],["📝",Object.values(exams).flat().length,"اختبار"],["📅",upcoming.length,"حدث قادم"]].map((item,i)=>(
+              <div key={i} style={{background:"rgba(255,255,255,0.12)",backdropFilter:"blur(10px)",padding:"6px 14px",borderRadius:20,fontSize:12,fontWeight:"700",color:"#fff",border:"1px solid rgba(255,255,255,0.1)"}}>{item[0]} {item[1]} {item[2]}</div>
             ))}
           </div>
         </div>
