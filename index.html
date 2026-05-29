@@ -6,10 +6,23 @@
 <title>📖 مدرستي</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;direction:rtl;background:#6C63FF;overflow:hidden;height:100vh}
+body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;direction:rtl;background:#1a1a2e;overflow:hidden;height:100vh}
 input,select,textarea,button{font-family:inherit;direction:rtl}
 ::-webkit-scrollbar{width:0;height:0}
-.page{display:flex;flex-direction:column;height:100vh;max-width:430px;margin:0 auto;background:#F8F9FF;box-shadow:0 0 60px rgba(0,0,0,0.3)}
+.page{display:flex;flex-direction:column;height:100vh;width:100%;max-width:100%;background:#F8F9FF}
+@media(min-width:768px){
+  body{background:linear-gradient(135deg,#1a1a2e 0%,#2d1b69 100%);display:flex;align-items:stretch}
+  .page{flex-direction:row;max-width:100%;height:100vh;overflow:hidden}
+  .sidebar{width:280px;background:linear-gradient(180deg,#1a1a2e 0%,#2d1b69 100%);flex-shrink:0;display:flex;flex-direction:column;padding:0;overflow:hidden}
+  .main-area{flex:1;display:flex;flex-direction:column;overflow:hidden}
+  .hdr{border-radius:0}
+  .scroll{padding:20px 24px 40px}
+  .card{border-radius:20px;margin-bottom:12px}
+}
+@media(max-width:767px){
+  .sidebar{display:none}
+  .desktop-only{display:none}
+}
 .hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;flex-shrink:0}
 .scroll{flex:1;overflow-y:auto;padding:14px 14px 80px;-webkit-overflow-scrolling:touch}
 .card{background:#fff;border-radius:18px;padding:14px;margin-bottom:10px;box-shadow:0 2px 16px rgba(0,0,0,.055)}
@@ -793,6 +806,68 @@ function screenHome(){
   return page;
 }
 
+
+// ── Sidebar (Desktop) ──
+function buildSidebar(data){
+  const {children,homework,exams,points,grades,allowance,supplies,vacationMode,sync,lastPull}=data;
+  const sb=div({style:{width:"280px",background:"linear-gradient(180deg,#1a1a2e 0%,#2d1b69 100%)",flexShrink:0,display:"flex",flexDirection:"column",overflow:"hidden"}});
+  
+  // Logo
+  const logo=div({style:{padding:"24px 20px 16px",borderBottom:"1px solid rgba(255,255,255,.1)"}});
+  logo.appendChild(div({style:{fontSize:"28px",fontWeight:"900",color:"#fff",letterSpacing:"-1px"}},"📖 مدرستي"));
+  logo.appendChild(div({style:{color:"rgba(255,255,255,.55)",fontSize:"11px",marginTop:"4px"}},new Date().toLocaleDateString("ar-SA",{weekday:"long",year:"numeric",month:"long",day:"numeric"})));
+  logo.appendChild(div({style:{marginTop:"8px"}},syncDot(sync,lastPull)));
+  sb.appendChild(logo);
+
+  // Nav buttons
+  const nav=div({style:{padding:"12px 12px",borderBottom:"1px solid rgba(255,255,255,.1)"}});
+  const navItems=[["home","🏠 الرئيسية"],["reports","📄 التقارير"],["settings","⚙️ الإعدادات"]];
+  navItems.forEach(([sc2,label])=>{
+    const active=S().screen===sc2||(sc2==="home"&&["home","child","fHw","fExam","fGrade","fNote","fStudy","fGoal","fSupply","fAllowance","fAllowanceSettings","fPoints","fEvent"].includes(S().screen));
+    nav.appendChild(btn({style:{display:"block",width:"100%",textAlign:"right",background:active?"rgba(108,99,255,.4)":"transparent",color:"#fff",border:"none",borderRadius:"12px",padding:"10px 14px",cursor:"pointer",fontWeight:active?"700":"500",fontSize:"14px",marginBottom:"4px"},onclick:()=>setState({screen:sc2})},label));
+  });
+  // Vacation toggle
+  nav.appendChild(btn({style:{display:"block",width:"100%",textAlign:"right",background:vacationMode.active?"rgba(253,203,110,.3)":"transparent",color:vacationMode.active?"#FDCB6E":"rgba(255,255,255,.7)",border:"none",borderRadius:"12px",padding:"10px 14px",cursor:"pointer",fontWeight:"500",fontSize:"14px",marginBottom:"4px"},onclick:()=>{if(vacationMode.active)upd({vacationMode:{active:false,until:""}});else{const d=window.prompt("تاريخ العودة (YYYY-MM-DD):");if(d)upd({vacationMode:{active:true,until:d}});}}},"🌙 "+(vacationMode.active?"إلغاء الإجازة":"وضع الإجازة")));
+  nav.appendChild(btn({style:{display:"block",width:"100%",textAlign:"right",background:"transparent",color:"rgba(255,255,255,.7)",border:"none",borderRadius:"12px",padding:"10px 14px",cursor:"pointer",fontWeight:"500",fontSize:"14px"},onclick:()=>window.print()},"🖨️ طباعة"));
+  sb.appendChild(nav);
+
+  // Stats
+  const stats=div({style:{padding:"12px 16px",borderBottom:"1px solid rgba(255,255,255,.1)"}});
+  stats.appendChild(div({style:{fontSize:"10px",fontWeight:"800",color:"rgba(255,255,255,.4)",letterSpacing:"1.5px",marginBottom:"8px"}},"الإحصائيات"));
+  const hw_pending=Object.values(homework).flat().filter(h=>!h.done).length;
+  const ex_count=Object.values(exams).flat().length;
+  const pts_total=Object.values(points).reduce((a,p)=>a+(p?.total||0),0);
+  [[hw_pending+" واجب متبقي","📚","#FF6584"],[ex_count+" اختبار قادم","📝","#A29BFE"],[pts_total+" نقطة إجمالي","⭐","#FDCB6E"]].forEach(([label,ic,color])=>{
+    stats.appendChild(div({style:{display:"flex",alignItems:"center",gap:"10px",padding:"7px 0"}},
+      span({style:{fontSize:"18px"}},ic),
+      span({style:{color:"#fff",fontSize:"13px",fontWeight:"600"}},label)
+    ));
+  });
+  sb.appendChild(stats);
+
+  // Children list
+  const cList=div({style:{flex:1,overflowY:"auto",padding:"12px"}});
+  cList.appendChild(div({style:{fontSize:"10px",fontWeight:"800",color:"rgba(255,255,255,.4)",letterSpacing:"1.5px",marginBottom:"8px"}},"أطفالي"));
+  children.forEach(c=>{
+    const active=S().child?.id===c.id&&["child","fHw","fExam","fGrade","fNote","fStudy","fGoal","fSupply","fAllowance","fAllowanceSettings","fPoints"].includes(S().screen);
+    const pending=(homework[c.id]||[]).filter(h=>!h.done).length;
+    const pts=(points[c.id]?.total)||0;
+    const btn2=btn({style:{display:"flex",alignItems:"center",gap:"10px",width:"100%",background:active?`${c.color}40`:"rgba(255,255,255,.05)",border:active?`1px solid ${c.color}60`:"1px solid transparent",borderRadius:"14px",padding:"10px 12px",cursor:"pointer",marginBottom:"6px",transition:"all .2s"},onclick:()=>goChild(c)});
+    btn2.appendChild(div({style:{width:"38px",height:"38px",borderRadius:"12px",background:`linear-gradient(135deg,${c.color},${c.color}88)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"20px",flexShrink:0}},c.emoji));
+    const info=div({style:{flex:1,textAlign:"right"}},div({style:{color:"#fff",fontWeight:"700",fontSize:"14px"}},c.name),div({style:{color:"rgba(255,255,255,.5)",fontSize:"11px",marginTop:"2px"}},c.grade));
+    btn2.appendChild(info);
+    if(pending>0)btn2.appendChild(div({style:{background:c.color,color:"#fff",borderRadius:"10px",padding:"2px 8px",fontSize:"11px",fontWeight:"700",flexShrink:0}},String(pending)));
+    cList.appendChild(btn2);
+  });
+  sb.appendChild(cList);
+
+  // Add child btn
+  const addChild=div({style:{padding:"12px"}});
+  addChild.appendChild(btn({style:{display:"block",width:"100%",background:"rgba(108,99,255,.3)",color:"#fff",border:"1px dashed rgba(108,99,255,.6)",borderRadius:"12px",padding:"10px",cursor:"pointer",fontSize:"13px",fontWeight:"600"},onclick:()=>setState({childF:{name:"",grade:"",color:PALETTE[0],emoji:EMOJIS[0]},screen:"addChild"})},"+ إضافة طفل"));
+  sb.appendChild(addChild);
+  return sb;
+}
+
 // ── Render ──
 function render(){
   const {data,sync,screen,toast,confirm}=S();
@@ -824,8 +899,26 @@ function render(){
     fPoints:screenFPoints,fEvent:screenFEvent,addChild:screenChildForm,editChild:screenChildForm
   };
   const fn=screens[screen]||screenHome;
-  app.appendChild(fn());
+  const screenEl=fn();
+  
+  // Desktop: wrap with sidebar
+  const isDesktop=window.innerWidth>=768;
+  const isFormScreen=["fHw","fExam","fGrade","fNote","fStudy","fGoal","fSupply","fAllowance","fAllowanceSettings","fPoints","fEvent","addChild","editChild"].includes(screen);
+  
+  if(isDesktop&&data){
+    const wrapper=div({style:{display:"flex",height:"100vh",width:"100%",overflow:"hidden"}});
+    wrapper.appendChild(buildSidebar(data));
+    // Main area - remove mobile-only elements from child screen
+    const mainArea=div({style:{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:"#F8F9FF"}});
+    mainArea.appendChild(screenEl);
+    wrapper.appendChild(mainArea);
+    app.appendChild(wrapper);
+  } else {
+    app.appendChild(screenEl);
+  }
 }
+
+window.addEventListener("resize",render);
 
 // ── Init ──
 loadData();
