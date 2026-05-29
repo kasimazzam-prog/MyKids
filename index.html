@@ -826,9 +826,7 @@ function screenChild(){
     const msgsList=div({style:{flex:1,overflowY:"auto",padding:"8px 4px",display:"flex",flexDirection:"column",gap:"8px"}});
 
     if(!msgs.length){
-      msgsList.appendChild(div({style:{textAlign:"center",padding:"40px",color:"#dfe6e9",fontSize:"14px",lineHeight:"2.2"}},"🗨️
-لا توجد رسائل بعد
-ابدأ المحادثة مع شريكك"));
+      msgsList.appendChild(div({style:{textAlign:"center",padding:"40px",color:"#dfe6e9",fontSize:"14px",lineHeight:"2.2"}},"🗨️ لا توجد رسائل بعد، ابدأ المحادثة مع شريكك"));
     }
 
     msgs.forEach(m=>{
@@ -1239,9 +1237,7 @@ function screenGeneralChat(){
 
   // Messages
   const msgsList=div({style:{flex:1,overflowY:"auto",padding:"12px 14px",display:"flex",flexDirection:"column",gap:"10px"}});
-  if(!msgs.length)msgsList.appendChild(div({style:{textAlign:"center",padding:"40px",color:"#dfe6e9",fontSize:"14px",lineHeight:"2"}},"💬
-شات الأسرة
-تواصل مع شريكك حول أطفالك"));
+  if(!msgs.length)msgsList.appendChild(div({style:{textAlign:"center",padding:"40px",color:"#dfe6e9",fontSize:"14px",lineHeight:"2"}},"💬 شات الأسرة — تواصل مع شريكك حول أطفالك"));
   msgs.forEach(m=>{
     const isMine=m.sender===(isUser1?ps.father:ps.mother);
     const msgWrap=div({style:{display:"flex",flexDirection:isMine?"row-reverse":"row",gap:"8px",alignItems:"flex-end"}});
