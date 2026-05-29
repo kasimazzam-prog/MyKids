@@ -401,7 +401,7 @@ function screenFStudy(){
     lbl("وقت البدء"),inp({className:"inp",type:"time",value:F.start||"16:00",onchange:e=>sf("start",e.target.value)}),
     lbl("المدة (دقيقة)"),
     div({style:{display:"flex",gap:"8px",flexWrap:"wrap",marginBottom:"8px"}},
-      ...[20,30,45,60,90].map(n=>btn({className:"chip-btn",style:{background:Number(F.duration)===n?c:"#f0f0f8",color:Number(F.duration)===n?"#fff":"#555"},onclick:()=>sf("duration",n)},n+"د"))
+      ...[20,30,45,60,90].map(n=>btn({className:"chip-btn",style:{background:Number(F.duration)===n?c:"#f0f0f8",color:Number(F.duration)===n?"#fff":"#555"},onclick:()=>sfr("duration",n)},n+"د"))
     )
   ]);
 }
@@ -411,7 +411,7 @@ function screenFGoal(){
     lbl("المادة"),sel({className:"inp",value:F.subject||SUBJECTS[0],onchange:e=>sf("subject",e.target.value)},...SUBJECTS),
     lbl("الهدف (%)"),
     div({style:{display:"flex",gap:"8px",flexWrap:"wrap",marginBottom:"8px"}},
-      ...[70,75,80,85,90,95,100].map(n=>btn({className:"chip-btn",style:{background:Number(F.targetPct)===n?c:"#f0f0f8",color:Number(F.targetPct)===n?"#fff":"#555"},onclick:()=>sf("targetPct",n)},n+"%"))
+      ...[70,75,80,85,90,95,100].map(n=>btn({className:"chip-btn",style:{background:Number(F.targetPct)===n?c:"#f0f0f8",color:Number(F.targetPct)===n?"#fff":"#555"},onclick:()=>sfr("targetPct",n)},n+"%"))
     ),
     lbl("الموعد النهائي"),inp({className:"inp",type:"date",value:F.deadline||"",onchange:e=>sf("deadline",e.target.value)}),
     lbl("ملاحظة"),inp({className:"inp",type:"text",placeholder:"وصف الهدف...",value:F.note||"",oninput:e=>sf("note",e.target.value)})
@@ -423,7 +423,7 @@ function screenFSupply(){
     lbl("اسم المستلزم"),inp({className:"inp",type:"text",placeholder:"مثال: دفتر رياضيات...",value:F.name||"",oninput:e=>sf("name",e.target.value)}),
     lbl("الأولوية"),
     div({style:{display:"flex",gap:"8px",marginBottom:"8px"}},
-      ...Object.entries(PRIOR).map(([k,v])=>btn({className:"chip-btn",style:{flex:1,background:F.priority===k?v.color:"#f0f0f8",color:F.priority===k?"#fff":"#555"},onclick:()=>sf("priority",k)},v.label))
+      ...Object.entries(PRIOR).map(([k,v])=>btn({className:"chip-btn",style:{flex:1,background:F.priority===k?v.color:"#f0f0f8",color:F.priority===k?"#fff":"#555"},onclick:()=>sfr("priority",k)},v.label))
     )
   ]);
 }
@@ -432,8 +432,8 @@ function screenFAllowance(){
   return buildForm("إدارة المصروف 💰",c,back,submitAllowance,[
     lbl("النوع"),
     div({style:{display:"flex",gap:"10px",marginBottom:"8px"}},
-      btn({className:"chip-btn",style:{flex:1,background:F.type==="منح"?"#00B894":"#f0f0f8",color:F.type==="منح"?"#fff":"#555",padding:"12px"},onclick:()=>sf("type","منح")},"➕ منح"),
-      btn({className:"chip-btn",style:{flex:1,background:F.type==="صرف"?"#FF6584":"#f0f0f8",color:F.type==="صرف"?"#fff":"#555",padding:"12px"},onclick:()=>sf("type","صرف")},"➖ صرف")
+      btn({className:"chip-btn",style:{flex:1,background:F.type==="منح"?"#00B894":"#f0f0f8",color:F.type==="منح"?"#fff":"#555",padding:"12px"},onclick:()=>sfr("type","منح")},"➕ منح"),
+      btn({className:"chip-btn",style:{flex:1,background:F.type==="صرف"?"#FF6584":"#f0f0f8",color:F.type==="صرف"?"#fff":"#555",padding:"12px"},onclick:()=>sfr("type","صرف")},"➖ صرف")
     ),
     lbl("المبلغ (ريال)"),inp({className:"inp",type:"number",placeholder:"0",value:F.amount||"",oninput:e=>sf("amount",e.target.value)}),
     lbl("ملاحظة"),inp({className:"inp",type:"text",placeholder:"سبب المنح أو الصرف...",value:F.note||"",oninput:e=>sf("note",e.target.value)})
@@ -453,7 +453,7 @@ function screenFPoints(){
     lbl("السبب"),inp({className:"inp",type:"text",placeholder:"مثال: درجة ممتازة...",value:F.reason||"",oninput:e=>sf("reason",e.target.value)}),
     lbl("عدد النقاط"),
     div({style:{display:"flex",gap:"8px",flexWrap:"wrap",marginBottom:"8px"}},
-      ...[5,10,20,30,50].map(n=>btn({className:"chip-btn",style:{background:Number(F.amount)===n?c:"#f0f0f8",color:Number(F.amount)===n?"#fff":"#555",fontSize:"16px",fontWeight:"900"},onclick:()=>sf("amount",n)},n+"⭐"))
+      ...[5,10,20,30,50].map(n=>btn({className:"chip-btn",style:{background:Number(F.amount)===n?c:"#f0f0f8",color:Number(F.amount)===n?"#fff":"#555",fontSize:"16px",fontWeight:"900"},onclick:()=>sfr("amount",n)},n+"⭐"))
     )
   ]);
 }
@@ -463,14 +463,14 @@ function screenFEvent(){
     lbl("العنوان"),inp({className:"inp",type:"text",placeholder:"مثال: رحلة علمية...",value:F.title||"",oninput:e=>sf("title",e.target.value)}),
     lbl("النوع"),
     div({style:{display:"flex",gap:"8px",flexWrap:"wrap",marginBottom:"8px"}},
-      ...Object.entries(EVENT_T).map(([k,v])=>btn({className:"chip-btn",style:{background:F.type===k?v.color:"#f0f0f8",color:F.type===k?"#fff":"#555"},onclick:()=>sf("type",k)},v.icon+" "+v.label))
+      ...Object.entries(EVENT_T).map(([k,v])=>btn({className:"chip-btn",style:{background:F.type===k?v.color:"#f0f0f8",color:F.type===k?"#fff":"#555"},onclick:()=>sfr("type",k)},v.icon+" "+v.label))
     ),
     lbl("التاريخ"),inp({className:"inp",type:"date",value:F.date||"",onchange:e=>sf("date",e.target.value)}),
     lbl("خاص بطفل (اختياري)"),
     div({style:{display:"flex",gap:"8px",flexWrap:"wrap",marginBottom:"8px"}},
       ...data.children.map(c=>{
         const sel2=(F.childIds||[]).includes(c.id);
-        return btn({className:"chip-btn",style:{background:sel2?c.color:"#f0f0f8",color:sel2?"#fff":"#555"},onclick:()=>sf("childIds",sel2?(F.childIds||[]).filter(x=>x!==c.id):[...(F.childIds||[]),c.id])},c.emoji+" "+c.name);
+        return btn({className:"chip-btn",style:{background:sel2?c.color:"#f0f0f8",color:sel2?"#fff":"#555"},onclick:()=>sfr("childIds",sel2?(F.childIds||[]).filter(x=>x!==c.id):[...(F.childIds||[]),c.id])},c.emoji+" "+c.name);
       })
     )
   ]);
@@ -933,7 +933,7 @@ function screenHome(){
 
   // Search
   const searchWrap=div({className:"no-print",style:{padding:"10px 16px",background:"#fff",borderBottom:"1px solid #f0f0f0",flexShrink:0}});
-  const searchInp=inp({className:"inp",style:{marginBottom:0,background:"#f5f6ff",paddingRight:"42px",fontSize:"13px",border:"2px solid #eef0ff"},placeholder:"🔍 ابحث في الواجبات والدرجات..."});
+  const searchInp=inp({className:"inp",style:{marginBottom:0,background:"#f5f6ff",paddingRight:"42px",fontSize:"13px",border:"2px solid #eef0ff"},"data-fid":"search",placeholder:"🔍 ابحث في الواجبات والدرجات..."});
   searchInp.value=search;
   let searchTimeout;
   searchInp.oninput=e=>{
@@ -1404,10 +1404,15 @@ function makeEmojiPicker(onSelect){
   const toggleBtn=btn({style:{background:"#f0f0f8",border:"2px solid #e0deff",borderRadius:"10px",padding:"8px 10px",cursor:"pointer",fontSize:"18px",lineHeight:"1",flexShrink:0},onclick:(e)=>{
     e.stopPropagation();
     visible=!visible;
+    if(visible){
+      const rect=toggleBtn.getBoundingClientRect();
+      picker.style.left=Math.max(4,rect.left-100)+"px";
+      picker.style.bottom=(window.innerHeight-rect.top+8)+"px";
+    }
     picker.style.display=visible?"flex":"none";
   }},"😊");
   
-  const picker=div({style:{display:"none",position:"absolute",bottom:"110%",left:"-8px",background:"#fff",borderRadius:"16px",padding:"10px",boxShadow:"0 8px 32px rgba(0,0,0,.2)",zIndex:999,flexWrap:"wrap",gap:"4px",width:"220px",maxHeight:"160px",overflowY:"auto",border:"2px solid #f0f0f8"}});
+  const picker=div({style:{display:"none",position:"fixed",bottom:"80px",left:"50px",background:"#fff",borderRadius:"16px",padding:"10px",boxShadow:"0 8px 32px rgba(0,0,0,.2)",zIndex:999,flexWrap:"wrap",gap:"4px",width:"220px",maxHeight:"160px",overflowY:"auto",border:"2px solid #f0f0f8"}});
   chars.forEach(em=>{
     picker.appendChild(btn({style:{background:"none",border:"none",fontSize:"20px",cursor:"pointer",padding:"4px",borderRadius:"8px",lineHeight:"1"},onclick:(e)=>{
       e.stopPropagation();
@@ -1490,6 +1495,25 @@ function render(){
 }
 
 window.addEventListener("resize",()=>{render();});
+
+// ── Focus preservation - prevents keyboard disappearing ──
+const _origRender=render;
+render=function(){
+  const ae=document.activeElement;
+  const fid=ae&&ae.getAttribute?ae.getAttribute("data-fid"):null;
+  const fval=ae?ae.value:"";
+  const fss=ae&&ae.selectionStart!=null?ae.selectionStart:0;
+  const fse=ae&&ae.selectionEnd!=null?ae.selectionEnd:0;
+  _origRender();
+  if(fid){
+    const el2=document.querySelector('[data-fid="'+fid+'"]');
+    if(el2){
+      el2.focus();
+      if(typeof fval==="string")el2.value=fval;
+      try{el2.setSelectionRange(fss,fse);}catch(e){}
+    }
+  }
+};
 
 
 // ── Init ──
