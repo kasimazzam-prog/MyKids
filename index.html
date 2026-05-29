@@ -778,9 +778,9 @@ function screenChild(){
     const msgsList=div({style:{flex:1,overflowY:"auto",padding:"8px 4px",display:"flex",flexDirection:"column",gap:"8px"}});
 
     if(!msgs.length){
-      msgsList.appendChild(div({style:{textAlign:"center",padding:"40px",color:"#dfe6e9",fontSize:"14px",lineHeight:"2.2"}},"🗨️
+      msgsList.appendChild(div({style:{textAlign:"center",padding:"40px",color:"#dfe6e9",fontSize:"14px",lineHeight:"2.2"}},`🗨️
 لا توجد رسائل بعد
-ابدأ المحادثة مع شريكك"));
+ابدأ المحادثة مع شريكك`));
     }
 
     msgs.forEach(m=>{
