@@ -909,7 +909,7 @@ function App() {
             if(label.includes("حدث")){openAdd("fEvent",{title:"",date:"",type:"holiday",childIds:[]});}
             else if(label.includes("إجازة")){
               if(vacationMode.active){upd({vacationMode:{active:false,until:""}});setToast({msg:"تم إلغاء وضع الإجازة",type:"warn"});}
-              else{const d=prompt("أدخل تاريخ العودة للمدرسة:\n(الصيغة: YYYY-MM-DD)");if(d){upd({vacationMode:{active:true,until:d}});setToast({msg:"تم تفعيل وضع الإجازة 🌙",type:"ok"}});}}
+              else{const d=prompt("Enter return date (YYYY-MM-DD):");if(d){upd({vacationMode:{active:true,until:d}});setToast({msg:"تم تفعيل وضع الإجازة 🌙",type:"ok"}});}
             }
             else setScreen(sc);
           }} style={{background:vacationMode.active&&label.includes("إجازة")?"#FDCB6E":bg,color:vacationMode.active&&label.includes("إجازة")?"#fff":clr,border:"none",borderRadius:12,padding:"8px 16px",cursor:"pointer",fontWeight:"700",fontSize:12,whiteSpace:"nowrap",flexShrink:0,transition:"all 0.2s"}}>{label}</button>
@@ -984,10 +984,10 @@ function App() {
         {children.map(c=>{
           const u=(homework[c.id]||[]).filter(h=>!h.done&&h.due<=todayStr);
           if(!u.length)return null;
-          return<div key={c.id} style={{background:"#fff",borderRadius:18,padding:"14px 16px",marginBottom:10,borderRight:`4px solid ${c.color}`,boxShadow:"0 2px 16px rgba(0,0,0,0.06)"}}>
+          return(<div key={c.id} style={{background:"#fff",borderRadius:18,padding:"14px 16px",marginBottom:10,borderRight:`4px solid ${c.color}`,boxShadow:"0 2px 16px rgba(0,0,0,0.06)"}}>
             <div style={{fontWeight:"800",color:c.color,marginBottom:8,fontSize:15}}>{c.emoji} {c.name}</div>
             {u.map(h=><div key={h.id} style={{fontSize:13,color:"#636e72",padding:"3px 0",display:"flex",gap:6,alignItems:"center"}}><span style={{color:c.color,fontWeight:"900"}}>•</span><strong>{h.subject}:</strong> {h.task}</div>)}
-          </div>;
+          </div>);
         })}
         {children.every(c=>(homework[c.id]||[]).filter(h=>!h.done&&h.due<=todayStr).length===0)&&<div style={S.empty}>✨ ممتاز! لا توجد واجبات عاجلة اليوم</div>}
       </div>
