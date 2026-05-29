@@ -904,16 +904,12 @@ function App() {
 
       {/* QUICK NAV */}
       <div className="no-print" style={{display:"flex",gap:8,padding:"10px 14px",background:"#fff",borderBottom:"1px solid #f0f0f0",overflowX:"auto",flexShrink:0}}>
-        {[["📄 التقارير","reports","#EEF2FF","#6C63FF"],["📊 مقارنة","compare","#F0FDF4","#00B894"],["⚙️ الإعدادات","settings","#FFF7ED","#FA8231"],["📅 حدث",null,"#FAF5FF","#A29BFE"],["🌙 إجازة",null,"#FFFBEB","#D97706"]].map(([label,sc,bg,clr],i)=>(
-          <button key={i} onClick={()=>{
-            if(label.includes("حدث")){openAdd("fEvent",{title:"",date:"",type:"holiday",childIds:[]});}
-            else if(label.includes("إجازة")){
-              if(vacationMode.active){upd({vacationMode:{active:false,until:""}});setToast({msg:"تم إلغاء وضع الإجازة",type:"warn"});}
-              else{const d=prompt("Enter return date (YYYY-MM-DD):");if(d){upd({vacationMode:{active:true,until:d}});setToast({msg:"تم تفعيل وضع الإجازة 🌙",type:"ok"}});}
-            }
-            else setScreen(sc);
-          }} style={{background:vacationMode.active&&label.includes("إجازة")?"#FDCB6E":bg,color:vacationMode.active&&label.includes("إجازة")?"#fff":clr,border:"none",borderRadius:12,padding:"8px 16px",cursor:"pointer",fontWeight:"700",fontSize:12,whiteSpace:"nowrap",flexShrink:0,transition:"all 0.2s"}}>{label}</button>
-        ))}
+        <button onClick={()=>setScreen("reports")} style={{background:"#EEF2FF",color:"#6C63FF",border:"none",borderRadius:12,padding:"8px 16px",cursor:"pointer",fontWeight:"700",fontSize:12,whiteSpace:"nowrap"}}>📄 التقارير</button>
+        <button onClick={()=>setScreen("compare")} style={{background:"#F0FDF4",color:"#00B894",border:"none",borderRadius:12,padding:"8px 16px",cursor:"pointer",fontWeight:"700",fontSize:12,whiteSpace:"nowrap"}}>📊 مقارنة</button>
+        <button onClick={()=>setScreen("settings")} style={{background:"#FFF7ED",color:"#FA8231",border:"none",borderRadius:12,padding:"8px 16px",cursor:"pointer",fontWeight:"700",fontSize:12,whiteSpace:"nowrap"}}>⚙️ الإعدادات</button>
+        <button onClick={()=>openAdd("fEvent",{title:"",date:"",type:"holiday",childIds:[]})} style={{background:"#FAF5FF",color:"#A29BFE",border:"none",borderRadius:12,padding:"8px 16px",cursor:"pointer",fontWeight:"700",fontSize:12,whiteSpace:"nowrap"}}>📅 حدث</button>
+        <button onClick={()=>{if(vacationMode.active){upd({vacationMode:{active:false,until:""}});}else{const d=window.prompt("تاريخ العودة (YYYY-MM-DD):");if(d)upd({vacationMode:{active:true,until:d}});}}} style={{background:vacationMode.active?"#FDCB6E":"#FFFBEB",color:vacationMode.active?"#fff":"#D97706",border:"none",borderRadius:12,padding:"8px 16px",cursor:"pointer",fontWeight:"700",fontSize:12,whiteSpace:"nowrap"}}>🌙 إجازة</button>
+      </div>
       </div>
 
       {/* CONTENT */}
