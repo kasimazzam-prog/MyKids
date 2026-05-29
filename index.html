@@ -25,14 +25,15 @@ input,select,textarea,button{font-family:inherit;direction:rtl}
 @media(min-width:900px){
   body{background:linear-gradient(135deg,#0f0c29 0%,#302b63 50%,#24243e 100%)}
   .app-wrapper{border-radius:0;box-shadow:none}
-  .sidebar{display:flex;flex-direction:column;width:260px;min-width:260px;background:rgba(255,255,255,.06);backdrop-filter:blur(20px);border-left:1px solid rgba(255,255,255,.08);overflow:hidden;flex-shrink:0}
+  .sidebar{display:flex;flex-direction:column;width:240px;min-width:240px;background:rgba(15,12,41,.85);backdrop-filter:blur(20px);border-left:1px solid rgba(255,255,255,.1);overflow:hidden;flex-shrink:0}
   .main-panel{flex:1;border-radius:0;overflow:hidden}
   .mobile-nav{display:none!important}
   .mobile-header-stats{display:none!important}
-  .children-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+  .children-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+  .mobile-header-stats{display:none!important}
   .desktop-content{padding:24px!important}
   .card{border-radius:20px!important;margin-bottom:0!important}
-  .scroll{padding:24px 28px 40px!important}
+  .scroll{padding:20px 24px 40px!important}
   .desktop-top-bar{display:flex!important}
 }
 @media(max-width:899px){
@@ -58,9 +59,9 @@ input,select,textarea,button{font-family:inherit;direction:rtl}
 .toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);color:#fff;padding:11px 22px;border-radius:22px;font-size:14px;font-weight:700;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.25);white-space:nowrap;animation:slideD .3s ease}
 .confirm-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:9998;padding:20px}
 .confirm-box{background:#fff;border-radius:24px;padding:28px;max-width:300px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3)}
-.sb-nav-btn{display:block;width:100%;text-align:right;border:none;border-radius:12px;padding:11px 14px;cursor:pointer;font-size:14px;margin-bottom:4px;transition:all .2s}
-.sb-child-btn{display:flex;align-items:center;gap:10px;width:100%;border-radius:14px;padding:10px 12px;cursor:pointer;margin-bottom:6px;transition:all .2s;border:1px solid transparent}
-.desktop-top-bar{display:none;background:#fff;border-bottom:2px solid #f0f0f0;padding:0 24px;align-items:center;justify-content:space-between;min-height:56px;flex-shrink:0}
+.sb-nav-btn{display:block;width:100%;text-align:right;border:none;border-radius:12px;padding:10px 14px;cursor:pointer;font-size:13px;margin-bottom:3px;transition:all .2s;white-space:nowrap;overflow:hidden}
+.sb-child-btn{display:flex;align-items:center;gap:8px;width:100%;border-radius:12px;padding:9px 10px;cursor:pointer;margin-bottom:5px;transition:all .2s;border:1px solid transparent}
+.desktop-top-bar{display:none;background:#fff;border-bottom:1px solid #eef0f5;padding:0 20px;align-items:center;justify-content:space-between;min-height:52px;flex-shrink:0;box-shadow:0 1px 8px rgba(0,0,0,.04)}
 @keyframes slideD{from{transform:translateX(-50%) translateY(-20px);opacity:0}to{transform:translateX(-50%) translateY(0);opacity:1}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 @media print{
@@ -415,7 +416,7 @@ function screenChildForm(){
 function screenSettings(){
   const {data}=S();
   const page=div({className:"page"});
-  const hdr=makeHdr("#1e3a5f",btn({className:"back-btn",onclick:()=>setState({screen:"home"})},"→"),span({style:{color:"#fff",fontSize:"16px",fontWeight:"800"}},"⚙️ الإعدادات"),printBtn());
+  const hdr=makeHdr("#1e3a5f",(window.innerWidth>=900?div({style:{width:"40px"}}):btn({className:"back-btn no-print",onclick:()=>setState({screen:"home"})},"→")),span({style:{color:"#fff",fontSize:"16px",fontWeight:"800"}},"⚙️ الإعدادات"),printBtn());
   const body=div({className:"scroll"});
   body.appendChild(div({style:{fontSize:"11px",fontWeight:"800",color:"#b2bec3",marginBottom:"10px",letterSpacing:"1.5px"}},"إدارة الأطفال"));
   data.children.forEach(c=>{
@@ -497,6 +498,7 @@ function screenChild(){
 
   // Tabs
   const TABS=[["schedule","📅"],["study","📚"],["homework","✅"],["exams","📝"],["grades","📊"],["goals","🎯"],["points","⭐"],["allowance","💰"],["supplies","🛒"],["notes","💬"]];
+  const isDesktopChild=window.innerWidth>=900;
   const tabBar=div({className:"no-print",style:{display:"flex",background:"#fff",borderBottom:"2px solid #f0f0f0",overflowX:"auto",flexShrink:0}});
   TABS.forEach(([t,ic])=>{
     const b=btn({className:"tab-btn",style:{color:tab===t?child.color:"#ddd",borderBottom:tab===t?`3px solid ${child.color}`:"3px solid transparent"},onclick:()=>setState({tab:t})},ic);
@@ -695,7 +697,7 @@ function screenChild(){
     });
   }
 
-  page.append(tabBar.cloneNode&&page.contains(tabBar)?null:null,body);
+  page.appendChild(body);
   return page;
 }
 
@@ -708,7 +710,7 @@ function screenHome(){
   const page=div({className:"page"});
 
   // Header
-  const hdr=div({style:{background:"linear-gradient(135deg,#1a1a2e 0%,#6C63FF 100%)",padding:"22px 16px 18px",flexShrink:0}});
+  const hdr=div({className:"mobile-header-stats",style:{background:"linear-gradient(135deg,#1a1a2e 0%,#6C63FF 100%)",padding:"22px 16px 18px",flexShrink:0}});
   const hdrTop=div({style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}});
   const hdrLeft=div(null,div({style:{fontSize:"24px",fontWeight:"900",color:"#fff",letterSpacing:"-1px"}},"📖 مدرستي"),div({style:{color:"rgba(255,255,255,.6)",fontSize:"11px",marginTop:"3px"}},todayDate),div({style:{marginTop:"5px"}},syncDot(sync,lastPull)));
   hdrTop.append(hdrLeft,printBtn());
@@ -724,7 +726,7 @@ function screenHome(){
   page.appendChild(hdr);
 
   // Search
-  const searchWrap=div({className:"no-print",style:{padding:"10px 14px",background:"#fff",borderBottom:"1px solid #f0f0f0",flexShrink:0}});
+  const searchWrap=div({className:"no-print",style:{padding:"10px 16px",background:"#fff",borderBottom:"1px solid #f0f0f0",flexShrink:0}});
   const searchInp=inp({className:"inp",style:{marginBottom:0,background:"#f5f6ff",paddingRight:"42px",fontSize:"13px",border:"2px solid #eef0ff"},placeholder:"🔍 ابحث في الواجبات والدرجات..."});
   searchInp.value=search;
   searchInp.oninput=e=>setState({search:e.target.value});
@@ -756,8 +758,23 @@ function screenHome(){
   // Content
   const body=div({className:"scroll"});
 
-  // Children
+  // Desktop greeting bar (replaces mobile header)
   const isDesktop2=window.innerWidth>=900;
+  if(isDesktop2){
+    const greeting=div({style:{background:"linear-gradient(135deg,#6C63FF,#FF6584)",borderRadius:"20px",padding:"20px 24px",marginBottom:"20px",color:"#fff",display:"flex",alignItems:"center",justifyContent:"space-between"}});
+    greeting.appendChild(div(null,
+      div({style:{fontSize:"20px",fontWeight:"900",letterSpacing:"-0.5px"}},"👋 أهلاً! كل شيء تحت السيطرة"),
+      div({style:{fontSize:"13px",opacity:"0.8",marginTop:"4px"}},new Date().toLocaleDateString("ar-SA",{weekday:"long",year:"numeric",month:"long",day:"numeric"}))
+    ));
+    const statsRow2=div({style:{display:"flex",gap:"12px"}});
+    const hw_p2=Object.values(homework).flat().filter(h=>!h.done).length;
+    [[hw_p2+" واجب","📚","rgba(255,255,255,.2)"],[Object.values(exams).flat().length+" اختبار","📝","rgba(255,255,255,.2)"],[upcoming.length+" حدث","📅","rgba(255,255,255,.2)"]].forEach(([v,ic,bg])=>{
+      statsRow2.appendChild(div({style:{background:bg,borderRadius:"12px",padding:"8px 14px",fontSize:"13px",fontWeight:"700",display:"flex",alignItems:"center",gap:"6px"}},ic,v));
+    });
+    greeting.appendChild(statsRow2);
+    body.appendChild(greeting);
+  }
+  // Children
   body.appendChild(div({style:{fontSize:"11px",fontWeight:"800",color:"#b2bec3",marginBottom:"10px",letterSpacing:"1.5px"}},"أطفالي"));
   const childrenGrid=div({className:"children-grid"});
   children.forEach(c=>{
@@ -807,7 +824,7 @@ function screenHome(){
     const et=EVENT_T[ev.type]||EVENT_T.activity;
     body.appendChild(div({className:"card",style:{display:"flex",gap:"12px",alignItems:"center",borderRight:`4px solid ${et.color}`}},
       div({style:{width:"44px",height:"44px",borderRadius:"14px",background:`${et.color}15`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"20px",flexShrink:0}},et.icon),
-      div({style:{flex:1,minWidth:0}},div({style:{fontWeight:"700",fontSize:"14px"}},ev.title),div({style:{fontSize:"12px",color:"#b2bec3",marginTop:"2px"}},"📅 "+fmt(ev.date)+" — "+span({style:{color:et.color,fontWeight:"700"}},getDU(ev.date)).textContent)),
+      div({style:{flex:1,minWidth:0}},div({style:{fontWeight:"700",fontSize:"14px"}},ev.title),div({style:{fontSize:"12px",color:"#b2bec3",marginTop:"2px"}},"📅 "+fmt(ev.date)+" — "+getDU(ev.date))),
       div({style:{display:"flex",gap:"6px",flexShrink:0}},
         btn({className:"edit-btn",onclick:()=>openEdit("fEvent",ev,{title:ev.title,date:ev.date,type:ev.type,childIds:ev.childIds||[]})},"✏️"),
         btn({className:"del-btn",onclick:()=>askDel(`حذف "${ev.title}"؟`,()=>upd({calendarEvents:data.calendarEvents.filter(x=>x.id!==ev.id)}))},"🗑")
@@ -841,11 +858,11 @@ function printPDF(){
 // ── Sidebar (Desktop) ──
 function buildSidebar(data){
   const {children,homework,exams,points,vacationMode,sync,lastPull}=data;
-  const sb=div({style:{display:"flex",flexDirection:"column",height:"100vh",overflow:"hidden"}});
+  const sb=div({style:{display:"flex",flexDirection:"column",height:"100vh",overflow:"hidden",width:"240px",minWidth:"240px"}});
   
   // Logo area
-  const logo=div({style:{padding:"20px 16px 16px",borderBottom:"1px solid rgba(255,255,255,.08)"}});
-  logo.appendChild(div({style:{fontSize:"22px",fontWeight:"900",color:"#fff",letterSpacing:"-0.5px"}},"📖 مدرستي"));
+  const logo=div({style:{padding:"18px 14px 14px",borderBottom:"1px solid rgba(255,255,255,.08)"}});
+  logo.appendChild(div({style:{fontSize:"18px",fontWeight:"900",color:"#fff",letterSpacing:"-0.5px"}},"📖 مدرستي"));
   logo.appendChild(div({style:{color:"rgba(255,255,255,.45)",fontSize:"10px",marginTop:"4px"}},new Date().toLocaleDateString("ar-SA",{weekday:"long",month:"long",day:"numeric"})));
   logo.appendChild(div({style:{marginTop:"6px"}},syncDot(sync,lastPull)));
   sb.appendChild(logo);
