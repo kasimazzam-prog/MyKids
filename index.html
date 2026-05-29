@@ -825,7 +825,7 @@ function screenHome(){
     const quoteText=randomQuote.includes("—")?randomQuote.split("—")[0].trim():randomQuote;
     const quoteSource=randomQuote.includes("—")?"— "+randomQuote.split("—")[1].trim():"";
     greeting.appendChild(div(null,
-      div({style:{fontSize:"16px",fontWeight:"700",lineHeight:"1.6",maxWidth:"600px"}}),"“"+quoteText+"”"),
+      div({style:{fontSize:"16px",fontWeight:"700",lineHeight:"1.6",maxWidth:"600px"}},"\u201c"+quoteText+"\u201d"),
       quoteSource?div({style:{fontSize:"12px",opacity:"0.75",marginTop:"5px",fontStyle:"italic"}},quoteSource):null,
       div({style:{fontSize:"11px",opacity:"0.6",marginTop:"6px"}},new Date().toLocaleDateString("ar-SA",{weekday:"long",year:"numeric",month:"long",day:"numeric"}))
     ));
