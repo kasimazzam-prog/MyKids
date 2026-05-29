@@ -25,7 +25,7 @@ input,select,textarea,button{font-family:inherit;direction:rtl}
 @media(min-width:900px){
   body{background:linear-gradient(135deg,#0f0c29 0%,#302b63 50%,#24243e 100%)}
   .app-wrapper{border-radius:0;box-shadow:none}
-  .sidebar{display:flex;flex-direction:column;width:240px;min-width:240px;background:rgba(15,12,41,.85);backdrop-filter:blur(20px);border-left:1px solid rgba(255,255,255,.1);overflow:hidden;flex-shrink:0}
+  .sidebar{display:flex;flex-direction:column;width:220px;min-width:220px;background:rgba(15,12,41,.9);backdrop-filter:blur(20px);border-left:1px solid rgba(255,255,255,.1);overflow:hidden;flex-shrink:0}
   .main-panel{flex:1;border-radius:0;overflow:hidden}
   .mobile-nav{display:none!important}
   .mobile-header-stats{display:none!important}
@@ -59,18 +59,23 @@ input,select,textarea,button{font-family:inherit;direction:rtl}
 .toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);color:#fff;padding:11px 22px;border-radius:22px;font-size:14px;font-weight:700;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.25);white-space:nowrap;animation:slideD .3s ease}
 .confirm-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:9998;padding:20px}
 .confirm-box{background:#fff;border-radius:24px;padding:28px;max-width:300px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3)}
-.sb-nav-btn{display:block;width:100%;text-align:right;border:none;border-radius:12px;padding:10px 14px;cursor:pointer;font-size:13px;margin-bottom:3px;transition:all .2s;white-space:nowrap;overflow:hidden}
+.sb-nav-btn{display:flex;align-items:center;width:100%;text-align:right;border:none;border-radius:12px;padding:10px 12px;cursor:pointer;font-size:13px;margin-bottom:3px;transition:all .2s;white-space:nowrap;overflow:hidden;gap:6px}
 .sb-child-btn{display:flex;align-items:center;gap:8px;width:100%;border-radius:12px;padding:9px 10px;cursor:pointer;margin-bottom:5px;transition:all .2s;border:1px solid transparent}
 .desktop-top-bar{display:none;background:#fff;border-bottom:1px solid #eef0f5;padding:0 20px;align-items:center;justify-content:space-between;min-height:52px;flex-shrink:0;box-shadow:0 1px 8px rgba(0,0,0,.04)}
 @keyframes slideD{from{transform:translateX(-50%) translateY(-20px);opacity:0}to{transform:translateX(-50%) translateY(0);opacity:1}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 @media print{
-  .no-print{display:none!important}
+  .no-print,.sidebar,.desktop-top-bar,.mobile-nav,.mobile-header-stats{display:none!important}
   *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
-  body{overflow:auto!important;background:#fff!important;height:auto!important}
-  .app-wrapper,.main-panel,.page{height:auto!important;overflow:visible!important}
-  .sidebar{display:none!important}
-  .scroll{overflow:visible!important;padding:0!important}
+  body{overflow:auto!important;background:#fff!important;height:auto!important;direction:rtl}
+  .app-wrapper{display:block!important;height:auto!important}
+  .main-panel,.page{height:auto!important;overflow:visible!important;display:block!important}
+  .scroll{overflow:visible!important;padding:10px!important;height:auto!important}
+  .card{page-break-inside:avoid;box-shadow:0 1px 4px rgba(0,0,0,.1)!important;margin-bottom:8px!important}
+  .children-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:10px!important}
+  .tab-btn,.check-btn,.edit-btn,.del-btn,.btn-add,.btn-sub,.back-btn{display:none!important}
+  h1,h2,h3{color:#000!important}
+  @page{margin:1.5cm;size:A4}
 }
 </style>
 </head>
@@ -98,6 +103,60 @@ const fmt=ds=>{try{return new Date(ds).toLocaleDateString("ar",{month:"short",da
 const getDU=ds=>{const d=Math.ceil((new Date(ds)-new Date())/86400000);return d<0?"انتهى":d===0?"اليوم!":d===1?"غداً":`${d} أيام`};
 const sc=p=>p>=90?"#00B894":p>=75?"#0984E3":p>=60?"#FDCB6E":"#FF6584";
 const hex=(c,a)=>c+(Math.round(a*255).toString(16).padStart(2,"0"));
+
+
+const QUOTES = [
+  "العلم في الصغر كالنقش على الحجر — مثل عربي",
+  "من علّم أولاده أدّب نفسه — مثل عربي",
+  "التعليم هو أقوى سلاح يمكنك استخدامه لتغيير العالم — نيلسون مانديلا",
+  "الطفل يتعلم ما يعيشه — دوروثي لو نولت",
+  "أعطِ الطفل حرية التعبير تحصد منه إبداعاً لا حدود له",
+  "التربية الحسنة أغلى من الثروة — حكمة",
+  "من زرع في أبنائه القراءة حصد منهم النجاح",
+  "أنجح الأباء من يجعل أبناءه لا يحتاجونه",
+  "الطفل يحتاج نموذجاً لا ناقداً",
+  "علّم ابنك كيف يفكر لا ماذا يفكر — مارغريت ميد",
+  "النجاح ليس مفتاح السعادة، السعادة هي مفتاح النجاح — ألبرت شفايتزر",
+  "الجهل عدو النجاح، والعلم بوابته",
+  "قوة الطفل في ثقته بنفسه، وثقته تبنى في البيت",
+  "المعلم الجيد يلهم الأمل ويشعل الخيال ويغرس حب التعلم — براد هنري",
+  "التعليم ليس ملء دلو، بل إشعال نار — وليام باتلر ييتس",
+  "من لم يتعلم في صغره لم ينجح في كبره",
+  "الاستثمار في المعرفة يعطي أفضل العوائد — بنجامين فرانكلين",
+  "ليس المهم أين بدأت، المهم أين ستصل",
+  "كل طفل عبقري، لكن إن حكمت على سمكة بقدرتها على تسلق شجرة — أينشتاين",
+  "التقدم يبدأ بخطوة واحدة نحو الأمام",
+  "النجاح هو مجموع جهود صغيرة تتكرر يوماً بعد يوم — روبرت كوليير",
+  "أحب أن تعلّم ابنك أن يحلم، ثم أن يعمل لتحقيق حلمه",
+  "الطفل الذي يقرأ سيكون الشاب الذي يفكر والرجل الذي يقود",
+  "التشجيع هو أكسجين الروح — جورج آدامز",
+  "النجاح لا يأتي لمن ينتظره، بل لمن يعمل من أجله",
+  "كن التغيير الذي تريد رؤيته في العالم — غاندي",
+  "الصبر مفتاح الفرج — مثل عربي",
+  "أكرم ولدك وأحسن أدبه — مثل عربي",
+  "من تعلّم في صغره استفاد في كبره",
+  "الطفل أمانة في عنق والديه",
+  "التعلم كالسباحة، من توقف غرق — حكمة",
+  "كلما كانت جذور التعليم مرّة، كانت ثماره أحلى",
+  "المعرفة نور والجهل ظلام",
+  "سعادة الوالدين في نجاح أبنائهم",
+  "الولد سر أبيه — مثل عربي",
+  "الشجرة تُقوَّم وهي صغيرة — مثل عربي",
+  "اقرأ باسم ربك — أول ما نزل من القرآن الكريم",
+  "طلب العلم فريضة على كل مسلم ومسلمة",
+  "خير ما أعطيت ابنك حسن الأدب — حكمة",
+  "الأمة التي تقرأ هي أمة تتقدم",
+  "أنت لا تهزم الشخص الذي لا يستسلم أبداً",
+  "الفشل ليس النهاية، إنه فرصة لبداية أفضل",
+  "النجاح يتطلب منك أن تكون أفضل اليوم مما كنت عليه أمس",
+  "علّم طفلك الشكر وعلّمه الصبر تضمن له مستقبلاً سعيداً",
+  "الطفل يتعلم أكثر مما تقوله بما تفعله",
+  "خير الآباء من جعل أبناءه أحسن منه",
+  "المثابرة هي الفرق بين النجاح والفشل",
+  "الثقة بالنفس أساس كل نجاح",
+  "في الصعوبات تظهر العقول الحقيقية",
+  "اليوم الذي تتعلم فيه شيئاً جديداً هو يوم لم يضع"
+];
 
 const DEF={
   children:[{id:1,name:"أحمد",grade:"الصف الرابع",color:"#6C63FF",emoji:"👦"},{id:2,name:"سارة",grade:"الصف السادس",color:"#FF6584",emoji:"👧"},{id:3,name:"محمد",grade:"الصف الأول",color:"#43E97B",emoji:"👦"}],
@@ -761,10 +820,14 @@ function screenHome(){
   // Desktop greeting bar (replaces mobile header)
   const isDesktop2=window.innerWidth>=900;
   if(isDesktop2){
-    const greeting=div({style:{background:"linear-gradient(135deg,#6C63FF,#FF6584)",borderRadius:"20px",padding:"20px 24px",marginBottom:"20px",color:"#fff",display:"flex",alignItems:"center",justifyContent:"space-between"}});
+    const greeting=div({style:{background:"linear-gradient(135deg,#6C63FF 0%,#a855f7 50%,#FF6584 100%)",borderRadius:"20px",padding:"22px 26px",marginBottom:"20px",color:"#fff",display:"flex",alignItems:"center",justifyContent:"space-between",boxShadow:"0 8px 32px rgba(108,99,255,0.35)"}});
+    const randomQuote=QUOTES[Math.floor(Math.random()*QUOTES.length)];
+    const quoteText=randomQuote.includes("—")?randomQuote.split("—")[0].trim():randomQuote;
+    const quoteSource=randomQuote.includes("—")?"— "+randomQuote.split("—")[1].trim():"";
     greeting.appendChild(div(null,
-      div({style:{fontSize:"20px",fontWeight:"900",letterSpacing:"-0.5px"}},"👋 أهلاً! كل شيء تحت السيطرة"),
-      div({style:{fontSize:"13px",opacity:"0.8",marginTop:"4px"}},new Date().toLocaleDateString("ar-SA",{weekday:"long",year:"numeric",month:"long",day:"numeric"}))
+      div({style:{fontSize:"16px",fontWeight:"700",lineHeight:"1.6",maxWidth:"600px"}}),"“"+quoteText+"”"),
+      quoteSource?div({style:{fontSize:"12px",opacity:"0.75",marginTop:"5px",fontStyle:"italic"}},quoteSource):null,
+      div({style:{fontSize:"11px",opacity:"0.6",marginTop:"6px"}},new Date().toLocaleDateString("ar-SA",{weekday:"long",year:"numeric",month:"long",day:"numeric"}))
     ));
     const statsRow2=div({style:{display:"flex",gap:"12px"}});
     const hw_p2=Object.values(homework).flat().filter(h=>!h.done).length;
@@ -775,7 +838,7 @@ function screenHome(){
     body.appendChild(greeting);
   }
   // Children
-  body.appendChild(div({style:{fontSize:"11px",fontWeight:"800",color:"#b2bec3",marginBottom:"10px",letterSpacing:"1.5px"}},"أطفالي"));
+  body.appendChild(div({style:{fontSize:"13px",fontWeight:"800",color:"#b2bec3",marginBottom:"14px",letterSpacing:"1px",textTransform:"uppercase"}},"👨‍👧‍👦 أطفالي"));
   const childrenGrid=div({className:"children-grid"});
   children.forEach(c=>{
     const pending=(homework[c.id]||[]).filter(h=>!h.done).length;
@@ -858,7 +921,7 @@ function printPDF(){
 // ── Sidebar (Desktop) ──
 function buildSidebar(data){
   const {children,homework,exams,points,vacationMode,sync,lastPull}=data;
-  const sb=div({style:{display:"flex",flexDirection:"column",height:"100vh",overflow:"hidden",width:"240px",minWidth:"240px"}});
+  const sb=div({style:{display:"flex",flexDirection:"column",height:"100vh",overflow:"hidden",width:"220px",minWidth:"220px"}});
   
   // Logo area
   const logo=div({style:{padding:"18px 14px 14px",borderBottom:"1px solid rgba(255,255,255,.08)"}});
@@ -872,11 +935,11 @@ function buildSidebar(data){
   const isHome=["home"].includes(S().screen);
   const isChild=["child","fHw","fExam","fGrade","fNote","fStudy","fGoal","fSupply","fAllowance","fAllowanceSettings","fPoints"].includes(S().screen);
   
-  [["🏠  الرئيسية","home",isHome],["📄  التقارير","reports",S().screen==="reports"],["⚙️  الإعدادات","settings",S().screen==="settings"]].forEach(([label,sc2,active])=>{
+  [["🏠 الرئيسية","home",isHome],["📄 التقارير","reports",S().screen==="reports"],["⚙️ الإعدادات","settings",S().screen==="settings"]].forEach(([label,sc2,active])=>{
     nav.appendChild(btn({className:"sb-nav-btn",style:{background:active?"rgba(108,99,255,.5)":"transparent",color:active?"#fff":"rgba(255,255,255,.65)",fontWeight:active?"700":"400"},onclick:()=>setState({screen:sc2})},label));
   });
-  nav.appendChild(btn({className:"sb-nav-btn",style:{background:vacationMode.active?"rgba(253,203,110,.2)":"transparent",color:vacationMode.active?"#FDCB6E":"rgba(255,255,255,.65)"},onclick:()=>{if(vacationMode.active)upd({vacationMode:{active:false,until:""}});else{const d=window.prompt("تاريخ العودة (YYYY-MM-DD):");if(d)upd({vacationMode:{active:true,until:d}});}}},"🌙  "+(vacationMode.active?"إلغاء الإجازة":"وضع الإجازة")));
-  nav.appendChild(btn({className:"sb-nav-btn",style:{background:"transparent",color:"rgba(255,255,255,.65)"},onclick:printPDF},"🖨️  طباعة / PDF"));
+  nav.appendChild(btn({className:"sb-nav-btn",style:{background:vacationMode.active?"rgba(253,203,110,.2)":"transparent",color:vacationMode.active?"#FDCB6E":"rgba(255,255,255,.65)"},onclick:()=>{if(vacationMode.active)upd({vacationMode:{active:false,until:""}});else{const d=window.prompt("تاريخ العودة (YYYY-MM-DD):");if(d)upd({vacationMode:{active:true,until:d}});}}},"🌙 "+(vacationMode.active?"إلغاء الإجازة":"وضع الإجازة")));
+  nav.appendChild(btn({className:"sb-nav-btn",style:{background:"transparent",color:"rgba(255,255,255,.65)"},onclick:printPDF},"🖨️ طباعة"));
   sb.appendChild(nav);
 
   // Stats cards
@@ -902,7 +965,7 @@ function buildSidebar(data){
     const pts2=(points[c.id]?.total)||0;
     const b=btn({className:"sb-child-btn",style:{background:active?`${c.color}30`:"rgba(255,255,255,.04)",border:active?`1px solid ${c.color}50`:"1px solid transparent"},onclick:()=>goChild(c)});
     b.appendChild(div({style:{width:"36px",height:"36px",borderRadius:"10px",background:`linear-gradient(135deg,${c.color},${c.color}88)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"18px",flexShrink:0}},c.emoji));
-    b.appendChild(div({style:{flex:1,textAlign:"right",minWidth:0}},div({style:{color:"#fff",fontWeight:"700",fontSize:"13px",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}},c.name),div({style:{color:"rgba(255,255,255,.4)",fontSize:"10px",marginTop:"1px"}},c.grade)));
+    b.appendChild(div({style:{flex:1,textAlign:"right",minWidth:0}},div({style:{color:"#fff",fontWeight:"700",fontSize:"12px",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:"130px"}},c.name),div({style:{color:"rgba(255,255,255,.4)",fontSize:"10px",marginTop:"1px"}},c.grade)));
     if(pending>0)b.appendChild(div({style:{background:c.color,color:"#fff",borderRadius:"8px",padding:"2px 7px",fontSize:"10px",fontWeight:"700",flexShrink:0}},String(pending)));
     cList.appendChild(b);
   });
@@ -933,7 +996,7 @@ function buildTopBar(data){
   
   // Actions
   const actions=div({className:"no-print",style:{display:"flex",gap:"8px",alignItems:"center"}});
-  actions.appendChild(btn({style:{background:"#f0f0f8",color:"#6C63FF",border:"none",borderRadius:"10px",padding:"8px 16px",cursor:"pointer",fontWeight:"700",fontSize:"13px"},onclick:printPDF},"🖨️ طباعة PDF"));
+  actions.appendChild(btn({style:{background:"#f0f0f8",color:"#6C63FF",border:"none",borderRadius:"10px",padding:"8px 16px",cursor:"pointer",fontWeight:"700",fontSize:"13px"},onclick:printPDF},"🖨️ طباعة"));
   if(["child","fHw","fExam","fGrade","fNote","fStudy","fGoal","fSupply","fAllowance","fAllowanceSettings","fPoints"].includes(screen)){
     actions.appendChild(btn({style:{background:"#fff",color:"#636e72",border:"2px solid #eee",borderRadius:"10px",padding:"8px 16px",cursor:"pointer",fontWeight:"700",fontSize:"13px"},onclick:()=>setState({screen:"home"})},"← الرئيسية"));
   }
