@@ -189,6 +189,10 @@ const DEF={
     {id:3,sender:"الأم",avatar:"👩",text:"لم يراجع بعد، سأذكّره الآن 📚",time:"09:22",date:"2026-05-29",childId:null,type:"text"}
   ],
   chatUsers:{name1:"الأب",avatar1:"👨",name2:"الأم",avatar2:"👩"},
+  notifications:[
+    {id:1,type:"add",title:"تم إضافة واجب",body:"أحمد — رياضيات: حل تمارين ص 45",time:"09:00",date:"2026-05-29",childId:1,screen:"child",tab:"homework",read:false},
+    {id:2,type:"edit",title:"تم تعديل اختبار",body:"سارة — علوم: الوحدة الخامسة",time:"09:05",date:"2026-05-29",childId:2,screen:"child",tab:"exams",read:false}
+  ],
   generalChat:[
     {id:1,sender:"الأم",avatar:"👩",text:"لا تنسى اليوم مراجعة أحمد للرياضيات 📚",time:"08:30",date:"2026-05-29",type:"text"},
     {id:2,sender:"الأب",avatar:"👨",text:"حسناً سأراجع معه بعد العشاء ✅",time:"08:35",date:"2026-05-29",type:"text"}
@@ -231,7 +235,14 @@ async function saveData(newData){
   catch{setState({sync:"error"});showToast("تعذرت المزامنة","error");}
 }
 
-function upd(patch){saveData({...S().data,...patch});}
+function upd(patch,notifInfo){
+  const newData={...S().data,...patch};
+  if(notifInfo){
+    const notif={id:Date.now(),...notifInfo,time:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"}),date:todayStr,read:false};
+    newData.notifications=[notif,...(newData.notifications||[])].slice(0,50);
+  }
+  saveData(newData);
+}
 
 // ── Helpers ──
 function showToast(msg,type="ok"){setState({toast:{msg,type}});setTimeout(()=>setState({toast:null}),2500);}
@@ -298,16 +309,16 @@ function remSubj(cid,day,i){const d=S().data;const cs=d.schedule[cid]||{};upd({s
 function toggleSupply(cid,id){const d=S().data;saveData({...d,supplies:{...d.supplies,[cid]:(d.supplies[cid]||[]).map(s=>s.id===id?{...s,done:!s.done}:s)}});}
 
 // ── Submit handlers ──
-function submitHw(){const {F,child,data}=S();if(!F.task||!F.due)return;const l=data.homework[child.id]||[];const u=S().editItem?l.map(h=>h.id===S().editItem.id?{...h,...F}:h):[...l,{id:Date.now(),...F,done:false}];upd({homework:{...data.homework,[child.id]:u}});setState({screen:"child"});}
-function submitExam(){const {F,child,data}=S();if(!F.date)return;const l=data.exams[child.id]||[];const u=S().editItem?l.map(e=>e.id===S().editItem.id?{...e,...F}:e):[...l,{id:Date.now(),...F}];upd({exams:{...data.exams,[child.id]:u}});setState({screen:"child"});}
-function submitGrade(){const {F,child,data}=S();if(!F.score||!F.date)return;const it={...F,score:Number(F.score),max:Number(F.max||100)};const l=data.grades[child.id]||[];const u=S().editItem?l.map(g=>g.id===S().editItem.id?{...g,...it}:g):[...l,{id:Date.now(),...it}];upd({grades:{...data.grades,[child.id]:u}});setState({screen:"child"});}
+function submitHw(){const {F,child,data}=S();if(!F.task||!F.due)return;const isEdit=!!S().editItem;const l=data.homework[child.id]||[];const u=isEdit?l.map(h=>h.id===S().editItem.id?{...h,...F}:h):[...l,{id:Date.now(),...F,done:false}];upd({homework:{...data.homework,[child.id]:u}},{type:isEdit?"edit":"add",title:isEdit?"تم تعديل واجب":"تم إضافة واجب",body:`${child.emoji} ${child.name} — ${F.subject}: ${F.task}`,childId:child.id,screen:"child",tab:"homework"});setState({screen:"child"});}
+function submitExam(){const {F,child,data}=S();if(!F.date)return;const isEdit=!!S().editItem;const l=data.exams[child.id]||[];const u=isEdit?l.map(e=>e.id===S().editItem.id?{...e,...F}:e):[...l,{id:Date.now(),...F}];upd({exams:{...data.exams,[child.id]:u}},{type:isEdit?"edit":"add",title:isEdit?"تم تعديل اختبار":"تم إضافة اختبار",body:`${child.emoji} ${child.name} — ${F.subject} بتاريخ ${F.date}`,childId:child.id,screen:"child",tab:"exams"});setState({screen:"child"});}
+function submitGrade(){const {F,child,data}=S();if(!F.score||!F.date)return;const it={...F,score:Number(F.score),max:Number(F.max||100)};const l=data.grades[child.id]||[];const u=S().editItem?l.map(g=>g.id===S().editItem.id?{...g,...it}:g):[...l,{id:Date.now(),...it}];upd({grades:{...data.grades,[child.id]:u}},{type:S().editItem?"edit":"add",title:S().editItem?"تم تعديل درجة":"تم إضافة درجة",body:`${child.emoji} ${child.name} — ${it.subject}: ${it.score}/${it.max}`,childId:child.id,screen:"child",tab:"grades"});setState({screen:"child"});}
 function submitNote(){const {F,child,data}=S();if(!F.note||!F.date)return;const l=data.teacherNotes[child.id]||[];const u=S().editItem?l.map(n=>n.id===S().editItem.id?{...n,...F}:n):[...l,{id:Date.now(),...F}];upd({teacherNotes:{...data.teacherNotes,[child.id]:u}});setState({screen:"child"});}
 function submitStudy(){const {F,child,data}=S();if(!F.subject||!F.day)return;const ss=data.studySchedule[child.id]||{};const l=ss[F.day]||[];const it={...F,duration:Number(F.duration||45)};const u=S().editItem?l.map(s=>s.id===S().editItem.id?{...s,...it}:s):[...l,{id:Date.now(),...it}];upd({studySchedule:{...data.studySchedule,[child.id]:{...ss,[F.day]:u}}});setState({screen:"child"});}
 function submitGoal(){const {F,child,data}=S();if(!F.deadline)return;const l=data.goals[child.id]||[];const it={...F,targetPct:Number(F.targetPct||90)};const u=S().editItem?l.map(g=>g.id===S().editItem.id?{...g,...it}:g):[...l,{id:Date.now(),...it}];upd({goals:{...data.goals,[child.id]:u}});setState({screen:"child"});}
 function submitSupply2(){const {F,child,data}=S();if(!F.name)return;const l=data.supplies[child.id]||[];const u=S().editItem?l.map(s=>s.id===S().editItem.id?{...s,...F}:s):[...l,{id:Date.now(),...F,done:false}];upd({supplies:{...data.supplies,[child.id]:u}});setState({screen:"child"});}
 function submitAllowance(){const {F,child,data}=S();if(!F.amount)return;const amt=Number(F.amount)*(F.type==="صرف"?-1:1);const al=data.allowance[child.id]||{daily:0,balance:0,history:[]};upd({allowance:{...data.allowance,[child.id]:{...al,balance:al.balance+amt,history:[{id:Date.now(),date:todayStr,amount:amt,type:F.type,note:F.note||""},...al.history]}}});setState({screen:"child"});}
 function submitAllowanceSettings(){const {F,child,data}=S();const al=data.allowance[child.id]||{daily:0,balance:0,history:[]};upd({allowance:{...data.allowance,[child.id]:{...al,daily:Number(F.daily||0),balance:Number(F.balance||0)}}});setState({screen:"child"});}
-function submitPoints(){const {F,child,data}=S();if(!F.reason||!F.amount)return;const p=data.points[child.id]||{total:0,history:[]};upd({points:{...data.points,[child.id]:{total:p.total+Number(F.amount),history:[{id:Date.now(),date:todayStr,reason:F.reason,amount:Number(F.amount)},...p.history]}}});setState({screen:"child"});}
+function submitPoints(){const {F,child,data}=S();if(!F.reason||!F.amount)return;const p=data.points[child.id]||{total:0,history:[]};upd({points:{...data.points,[child.id]:{total:p.total+Number(F.amount),history:[{id:Date.now(),date:todayStr,reason:F.reason,amount:Number(F.amount)},...p.history]}}},{type:"add",title:"تم منح نقاط",body:`${child.emoji} ${child.name} — +${F.amount}⭐ ${F.reason}`,childId:child.id,screen:"child",tab:"points"});setState({screen:"child"});}
 function submitEvent(){const {F,data}=S();if(!F.title||!F.date)return;const u=S().editItem?data.calendarEvents.map(e=>e.id===S().editItem.id?{...e,...F}:e):[...data.calendarEvents,{id:Date.now(),...F,childIds:F.childIds||[]}];upd({calendarEvents:u});setState({screen:"home"});}
 function submitAddChild(){const {childF,data}=S();if(!childF.name||!childF.grade)return;const id=Date.now();const cl=o=>({...o,[id]:[]});upd({children:[...data.children,{id,...childF}],homework:cl(data.homework),exams:cl(data.exams),grades:cl(data.grades),teacherNotes:cl(data.teacherNotes),supplies:cl(data.supplies),goals:cl(data.goals),points:{...data.points,[id]:{total:0,history:[]}},schedule:{...data.schedule,[id]:{}},studySchedule:{...data.studySchedule,[id]:{}},allowance:{...data.allowance,[id]:{daily:0,balance:0,history:[]}}});setState({childF:{name:"",grade:"",color:PALETTE[0],emoji:EMOJIS[0]},screen:"settings"});}
 function submitEditChild(){const {childF,editingChild,data}=S();if(!childF.name||!childF.grade)return;upd({children:data.children.map(c=>c.id===editingChild.id?{...c,...childF}:c)});setState({screen:"settings"});}
@@ -886,9 +897,18 @@ function screenHome(){
 
   // Header
   const hdr=div({className:"mobile-header-stats",style:{background:"linear-gradient(135deg,#1a1a2e 0%,#6C63FF 100%)",padding:"22px 16px 18px",flexShrink:0}});
+  const {notifications:notifs2=[]}=data;
+  const unreadCount=notifs2.filter(n=>!n.read).length;
   const hdrTop=div({style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}});
   const hdrLeft=div(null,div({style:{fontSize:"24px",fontWeight:"900",color:"#fff",letterSpacing:"-1px"}},"📖 مدرستي"),div({style:{color:"rgba(255,255,255,.6)",fontSize:"11px",marginTop:"3px"}},todayDate),div({style:{marginTop:"5px"}},syncDot(sync,lastPull)));
-  hdrTop.append(hdrLeft,printBtn());
+  const hdrRight=div({style:{display:"flex",gap:"8px",alignItems:"center"}});
+  // Notification bell
+  const bellWrap=div({style:{position:"relative",cursor:"pointer"},onclick:()=>setState({screen:"notifications"})});
+  bellWrap.appendChild(btn({className:"no-print",style:{background:"rgba(255,255,255,.18)",border:"none",color:"#fff",borderRadius:"12px",padding:"7px 12px",cursor:"pointer",fontSize:"18px",lineHeight:"1"}},"🔔"));
+  if(unreadCount>0)bellWrap.appendChild(div({style:{position:"absolute",top:"-3px",right:"-3px",background:"#FF6584",color:"#fff",borderRadius:"50%",width:"18px",height:"18px",fontSize:"10px",fontWeight:"900",display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid white",pointerEvents:"none"}},String(unreadCount)));
+  hdrRight.appendChild(bellWrap);
+  hdrRight.appendChild(printBtn());
+  hdrTop.append(hdrLeft,hdrRight);
   hdr.appendChild(hdrTop);
   if(vacationMode.active){
     const vBanner=div({style:{background:"rgba(253,203,110,.18)",border:"1px solid rgba(253,203,110,.4)",borderRadius:"14px",padding:"10px 14px",marginTop:"12px",fontSize:"13px",color:"#FDCB6E",fontWeight:"700",display:"flex",alignItems:"center",gap:"8px"}},"🌙 وضع الإجازة نشط — العودة "+fmt(vacationMode.until));
@@ -906,7 +926,7 @@ function screenHome(){
   hdr.appendChild(statRow);
   // Mobile quote
   const mQuoteWrap=div({className:"mobile-header-stats",style:{background:"rgba(255,255,255,.12)",borderRadius:"14px",padding:"10px 14px",marginTop:"10px"}});
-  mQuoteWrap.appendChild(div({style:{fontSize:"12px",color:"rgba(255,255,255,.9)",fontStyle:"italic",lineHeight:"1.5"}},`"${mobileQuoteText}"`));
+  mQuoteWrap.appendChild(div({style:{fontSize:"12px",color:"rgba(255,255,255,.9)",fontStyle:"italic",lineHeight:"1.5"}},'"'+mobileQuoteText+'"'));
   if(mobileQuoteSource)mQuoteWrap.appendChild(div({style:{fontSize:"10px",color:"rgba(255,255,255,.6)",marginTop:"4px"}},mobileQuoteSource));
   hdr.appendChild(mQuoteWrap);
   page.appendChild(hdr);
@@ -1067,7 +1087,16 @@ function buildSidebar(data){
   const logo=div({style:{padding:"18px 14px 14px",borderBottom:"2px solid #f0f0f8",background:"linear-gradient(135deg,#6C63FF,#a855f7)",borderRadius:"0"}});
   logo.appendChild(div({style:{fontSize:"18px",fontWeight:"900",color:"#fff",letterSpacing:"-0.5px"}},"📖 مدرستي"));
   logo.appendChild(div({style:{color:"rgba(255,255,255,.8)",fontSize:"10px",marginTop:"4px"}},new Date().toLocaleDateString("ar-SA",{weekday:"long",month:"long",day:"numeric"})));
-  logo.appendChild(div({style:{marginTop:"6px"}},syncDot(sync,lastPull)));
+  logo.appendChild(div({style:{marginTop:"6px",display:"flex",alignItems:"center",justifyContent:"space-between"}},
+    syncDot(sync,lastPull),
+    (() => {
+      const d3=S().data;const uc=(d3?.notifications||[]).filter(n=>!n.read).length;
+      const bw=div({style:{position:"relative",cursor:"pointer"},onclick:()=>setState({screen:"notifications"})});
+      bw.appendChild(span({style:{fontSize:"16px"}},"🔔"));
+      if(uc>0)bw.appendChild(div({style:{position:"absolute",top:"-4px",right:"-4px",background:"#FF6584",color:"#fff",borderRadius:"50%",width:"16px",height:"16px",fontSize:"9px",fontWeight:"900",display:"flex",alignItems:"center",justifyContent:"center"}},String(uc)));
+      return bw;
+    })()
+  ));
   sb.appendChild(logo);
 
   // Nav
@@ -1265,6 +1294,83 @@ function screenGeneralChat(){
 }
 
 
+
+// ── Notification helpers ──
+function addNotification(type,title,body,childId,tab){
+  const d=S().data;
+  const now=new Date();
+  const notif={
+    id:Date.now(),type,title,body,
+    time:String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0"),
+    date:todayStr,childId,screen:"child",tab,read:false
+  };
+  saveData({...d,notifications:[notif,...(d.notifications||[])]});
+}
+
+function markAllNotifRead(){
+  const d=S().data;
+  saveData({...d,notifications:(d.notifications||[]).map(n=>({...n,read:true}))});
+}
+
+// ── Notifications Screen ──
+function screenNotifications(){
+  const {data}=S();
+  const notifs=data.notifications||[];
+  const unread=notifs.filter(n=>!n.read).length;
+  const page=div({className:"page"});
+  page.appendChild(makeHdr("#2d3436",
+    btn({className:"back-btn",onclick:()=>setState({screen:"home"})},"→"),
+    span({style:{color:"#fff",fontSize:"16px",fontWeight:"800"}},"🔔 الإشعارات"+(unread>0?` (${unread})`:"")),
+    btn({style:{background:"rgba(255,255,255,.2)",border:"none",color:"#fff",borderRadius:"10px",padding:"6px 12px",cursor:"pointer",fontSize:"12px",fontWeight:"700"},onclick:()=>{markAllNotifRead();}},"قراءة الكل")
+  ));
+  const body=div({className:"scroll"});
+
+  if(!notifs.length){
+    body.appendChild(div({style:{textAlign:"center",padding:"60px 20px",color:"#dfe6e9"}},
+      div({style:{fontSize:"48px",marginBottom:"12px"}},"🔔"),
+      div({style:{fontSize:"16px",fontWeight:"700"}},"لا توجد إشعارات")
+    ));
+  }
+
+  const typeColors={add:"#00B894",edit:"#0984E3",del:"#FF6584",chat:"#A29BFE"};
+  const typeIcons={add:"➕",edit:"✏️",del:"🗑️",chat:"💬"};
+
+  notifs.forEach(n=>{
+    const c=data.children.find(ch=>ch.id===n.childId);
+    const card=div({style:{
+      background:n.read?"#fff":"#f0f0ff",
+      borderRadius:"16px",padding:"14px",marginBottom:"10px",
+      boxShadow:n.read?"0 1px 6px rgba(0,0,0,.05)":"0 3px 16px rgba(108,99,255,.15)",
+      borderRight:`4px solid ${typeColors[n.type]||"#6C63FF"}`,
+      cursor:"pointer",transition:"all .2s"
+    },onclick:()=>{
+      // Mark read and navigate
+      const d2=S().data;
+      saveData({...d2,notifications:(d2.notifications||[]).map(m=>m.id===n.id?{...m,read:true}:m)});
+      if(n.childId&&n.tab){
+        const ch=d2.children.find(c2=>c2.id===n.childId);
+        if(ch)setState({child:ch,tab:n.tab,screen:"child"});
+      }
+    }});
+    const top=div({style:{display:"flex",alignItems:"center",gap:"10px"}});
+    top.appendChild(div({style:{width:"36px",height:"36px",borderRadius:"12px",background:(typeColors[n.type]||"#6C63FF")+"20",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"18px",flexShrink:0}},typeIcons[n.type]||"📌"));
+    const info=div({style:{flex:1}});
+    info.appendChild(div({style:{fontWeight:"700",fontSize:"14px",color:"#2d3436"}},n.title));
+    info.appendChild(div({style:{fontSize:"12px",color:"#636e72",marginTop:"2px"}},n.body));
+    if(c)info.appendChild(div({style:{fontSize:"11px",color:c.color,marginTop:"3px",fontWeight:"600"}},c.emoji+" "+c.name));
+    top.appendChild(info);
+    top.appendChild(div({style:{textAlign:"left",flexShrink:0}},
+      div({style:{fontSize:"11px",color:"#b2bec3"}},(n.time||"")),
+      !n.read?div({style:{width:"8px",height:"8px",borderRadius:"50%",background:"#6C63FF",margin:"4px 0 0 auto"}}):null
+    ));
+    card.appendChild(top);
+    body.appendChild(card);
+  });
+  page.appendChild(body);
+  return page;
+}
+
+
 // ── Render ──
 function render(){
   const {data,sync,screen,toast,confirm}=S();
@@ -1300,7 +1406,7 @@ function render(){
 
   // Build screen content
   const screens={
-    home:screenHome,settings:screenSettings,reports:screenReports,child:screenChild,parentSetup:screenParentSetup,generalChat:screenGeneralChat,
+    home:screenHome,settings:screenSettings,reports:screenReports,child:screenChild,parentSetup:screenParentSetup,generalChat:screenGeneralChat,notifications:screenNotifications,
     fHw:screenFHw,fExam:screenFExam,fGrade:screenFGrade,fNote:screenFNote,
     fStudy:screenFStudy,fGoal:screenFGoal,fSupply:screenFSupply,
     fAllowance:screenFAllowance,fAllowanceSettings:screenFAllowanceSettings,
