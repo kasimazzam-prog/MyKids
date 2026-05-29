@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
-<title>📖 مدرستي</title>
+<title>🏠 بيتنا</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;direction:rtl;overflow:hidden;height:100vh}
@@ -173,8 +173,8 @@ const DEF={
   children:[{id:1,name:"أحمد",grade:"الصف الرابع",color:"#6C63FF",emoji:"👦"},{id:2,name:"سارة",grade:"الصف السادس",color:"#FF6584",emoji:"👧"},{id:3,name:"محمد",grade:"الصف الأول",color:"#43E97B",emoji:"👦"}],
   schedule:{1:{السبت:["رياضيات","عربي"],الأحد:["إنجليزي","علوم"],الاثنين:["رياضيات"],الثلاثاء:["عربي"],الأربعاء:["إنجليزي"],الخميس:[]},2:{السبت:["عربي","إنجليزي"],الأحد:["رياضيات"],الاثنين:["اجتماعيات"],الثلاثاء:["رياضيات"],الأربعاء:["عربي"],الخميس:[]},3:{السبت:["عربي"],الأحد:["رياضيات"],الاثنين:[],الثلاثاء:[],الأربعاء:[],الخميس:[]}},
   studySchedule:{1:{السبت:[{id:1,subject:"رياضيات",start:"16:00",duration:45},{id:2,subject:"عربي",start:"17:00",duration:30}],الأحد:[],الاثنين:[],الثلاثاء:[],الأربعاء:[],الخميس:[]},2:{},3:{}},
-  homework:{1:[{id:1,subject:"رياضيات",task:"حل تمارين ص 45",due:"2026-05-30",done:false}],2:[{id:1,subject:"علوم",task:"بحث عن المجموعة الشمسية",due:"2026-05-31",done:false}],3:[{id:1,subject:"عربي",task:"كتابة الحروف",due:"2026-05-29",done:true}]},
-  exams:{1:[{id:1,subject:"رياضيات",date:"2026-06-05",notes:"الفصل الثالث"}],2:[{id:1,subject:"علوم",date:"2026-06-08",notes:"الوحدة الخامسة"}],3:[]},
+  homework:{1:[{id:1,subject:"رياضيات",task:"Solve exercises p.45",due:"2026-05-30",done:false}],2:[{id:1,subject:"علوم",task:"Solar System research",due:"2026-05-31",done:false}],3:[{id:1,subject:"عربي",task:"كتابة الحروف",due:"2026-05-29",done:true}]},
+  exams:{1:[{id:1,subject:"رياضيات",date:"2026-06-05",notes:"Chapter 3"}],2:[{id:1,subject:"علوم",date:"2026-06-08",notes:"Unit 5"}],3:[]},
   grades:{1:[{id:1,subject:"رياضيات",score:88,max:100,date:"2026-05-10",type:"اختبار"},{id:2,subject:"عربي",score:92,max:100,date:"2026-05-12",type:"اختبار"}],2:[{id:1,subject:"رياضيات",score:78,max:100,date:"2026-05-10",type:"اختبار"}],3:[{id:1,subject:"عربي",score:80,max:100,date:"2026-05-11",type:"اختبار"}]},
   points:{1:{total:120,history:[{id:1,date:"2026-05-20",reason:"إنجاز الواجبات",amount:20}]},2:{total:85,history:[]},3:{total:40,history:[]}},
   teacherNotes:{1:[{id:1,teacher:"أ. خالد",subject:"رياضيات",note:"أداء ممتاز",type:"positive",date:"2026-05-20"}],2:[],3:[]},
@@ -184,20 +184,28 @@ const DEF={
   supplies:{1:[{id:1,name:"دفتر رياضيات",done:false,priority:"high"}],2:[],3:[]},
   vacationMode:{active:false,until:""},
   chatMessages:[
-    {id:1,sender:"الأم",avatar:"👩",text:"أحمد أنهى واجب الرياضيات ✅",time:"09:15",date:"2026-05-29",childId:1,type:"text"},
-    {id:2,sender:"الأب",avatar:"👨",text:"ممتاز! هل راجع اختبار العلوم؟",time:"09:20",date:"2026-05-29",childId:null,type:"text"},
-    {id:3,sender:"الأم",avatar:"👩",text:"لم يراجع بعد، سأذكّره الآن 📚",time:"09:22",date:"2026-05-29",childId:null,type:"text"}
+    {id:1,sender:"Asmaa",avatar:"👩",text:"Adam finished his Maths homework ✅",time:"09:15",date:"2026-05-29",childId:1,type:"text"},
+    {id:2,sender:"Kasim",avatar:"👨",text:"Great! Did he revise for the exam? 📚",time:"09:20",date:"2026-05-29",childId:null,type:"text"},
+    {id:3,sender:"Asmaa",avatar:"👩",text:"Not yet, I will remind him now",time:"09:22",date:"2026-05-29",childId:null,type:"text"}
   ],
-  chatUsers:{name1:"الأب",avatar1:"👨",name2:"الأم",avatar2:"👩"},
+  chatUsers:{name1:"Kasim",avatar1:"👨",name2:"Asmaa",avatar2:"👩"},
   notifications:[
-    {id:1,type:"add",title:"تم إضافة واجب",body:"أحمد — رياضيات: حل تمارين ص 45",time:"09:00",date:"2026-05-29",childId:1,screen:"child",tab:"homework",read:false},
-    {id:2,type:"edit",title:"تم تعديل اختبار",body:"سارة — علوم: الوحدة الخامسة",time:"09:05",date:"2026-05-29",childId:2,screen:"child",tab:"exams",read:false}
+    {id:1,type:"add",title:"تم إضافة واجب",body:"Adam — Maths: Solve exercises p.45",time:"09:00",date:"2026-05-29",childId:1,screen:"child",tab:"homework",read:false},
+    {id:2,type:"add",title:"طلب منزلي جديد",body:"شراء مكيف جديد — Asmaa",time:"09:05",date:"2026-05-29",childId:null,screen:"homeManage",tab:"requests",read:false}
   ],
   generalChat:[
-    {id:1,sender:"الأم",avatar:"👩",text:"لا تنسى اليوم مراجعة أحمد للرياضيات 📚",time:"08:30",date:"2026-05-29",type:"text"},
-    {id:2,sender:"الأب",avatar:"👨",text:"حسناً سأراجع معه بعد العشاء ✅",time:"08:35",date:"2026-05-29",type:"text"}
+    {id:1,sender:"Asmaa",avatar:"👩",text:"Don't forget Adam's Maths revision today 📚",time:"08:30",date:"2026-05-29",type:"text"},
+    {id:2,sender:"Kasim",avatar:"👨",text:"Sure, I will review with him after dinner ✅",time:"08:35",date:"2026-05-29",type:"text"}
   ],
-  parentSettings:{father:"الأب",fatherAvatar:"👨",mother:"الأم",motherAvatar:"👩",setupDone:false},
+  parentSettings:{father:"Kasim",fatherAvatar:"👨",mother:"Asmaa",motherAvatar:"👩",setupDone:true},
+  homeRequests:[
+    {id:1,title:"شراء مكيف جديد",desc:"المكيف القديم تعطل",category:"🛒 مشتريات",priority:"high",status:"pending",by:"Asmaa",date:"2026-05-29"},
+    {id:2,title:"إصلاح الصنبور",desc:"يوجد تسريب في المطبخ",category:"🔧 صيانة",priority:"high",status:"done",by:"Kasim",date:"2026-05-28",doneDate:"2026-05-29"}
+  ],
+  homePlans:[
+    {id:1,title:"رحلة صيفية للأسرة",desc:"نخطط لرحلة في يوليو",category:"🏖️ رحلات",month:"2026-07",budget:"20000",status:"planned",by:"Kasim",date:"2026-05-29"},
+    {id:2,title:"مستلزمات العام الدراسي",desc:"شراء الكتب والحقائب",category:"🏫 دراسة",month:"2026-08",budget:"15000",status:"inprogress",by:"Asmaa",date:"2026-05-29"}
+  ],
   customSubjects:["رياضيات","عربي","إنجليزي","علوم","اجتماعيات","تربية إسلامية","حاسب","تربية فنية"]
 };
 
@@ -346,7 +354,7 @@ function chipRow(key,opts,getColor){
 function screenLoading(){
   return div({style:{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",flexDirection:"column",gap:"16px",background:"linear-gradient(135deg,#1a1a2e,#6C63FF)"}},
     span({style:{fontSize:"64px"}},"📖"),
-    span({style:{fontSize:"26px",fontWeight:"900",color:"#fff"}},"مدرستي"),
+    span({style:{fontSize:"26px",fontWeight:"900",color:"#fff"}},"بيتنا"),
     span({style:{color:"rgba(255,255,255,.65)",fontSize:"15px"}},"جاري تحميل البيانات..."),
     div({style:{display:"flex",gap:"6px",marginTop:"8px"}},
       ...[0,1,2].map(i=>span({style:{width:"10px",height:"10px",borderRadius:"50%",background:"rgba(255,255,255,.4)",display:"inline-block"}}))
@@ -609,7 +617,7 @@ function screenChild(){
   hdr.appendChild(div({style:{color:"#fff",fontSize:"16px",fontWeight:"900"}},child.name));
   hdr.appendChild(div({style:{color:"rgba(255,255,255,.75)",fontSize:"11px"}},child.grade));
   hdr.appendChild(div({style:{display:"flex",gap:"6px",marginTop:"4px",justifyContent:"center",flexWrap:"wrap"}},
-    pill(`${cHw.filter(h=>!h.done).length} واجب 📚`,"#fff"),pill(`${cPt.total} نقطة ⭐`,"#fff"),pill(`${cAl.balance} ر.س 💰`,"#fff")
+    pill(`${cHw.filter(h=>!h.done).length} واجب 📚`,"#fff"),pill(`${cPt.total} نقطة ⭐`,"#fff"),pill(`${cAl.balance} ج.م 💰`,"#fff")
   ));
   page.appendChild(hdr);
 
@@ -765,8 +773,8 @@ function screenChild(){
   // ── ALLOWANCE ──
   if(tab==="allowance"){
     body.appendChild(div({style:{display:"flex",gap:"10px",marginBottom:"14px"}},
-      div({style:{flex:1,background:"#fff",borderRadius:"18px",padding:"16px",textAlign:"center",boxShadow:"0 4px 20px rgba(0,0,0,.07)",borderTop:"4px solid #00B894"}},div({style:{fontSize:"11px",color:"#b2bec3"}},"الرصيد"),div({style:{fontSize:"26px",fontWeight:"900",color:"#00B894",marginTop:"4px"}},cAl.balance+" ر.س")),
-      div({style:{flex:1,background:"#fff",borderRadius:"18px",padding:"16px",textAlign:"center",boxShadow:"0 4px 20px rgba(0,0,0,.07)",borderTop:`4px solid ${child.color}`}},div({style:{fontSize:"11px",color:"#b2bec3"}},"اليومي"),div({style:{fontSize:"26px",fontWeight:"900",color:child.color,marginTop:"4px"}},cAl.daily+" ر.س"))
+      div({style:{flex:1,background:"#fff",borderRadius:"18px",padding:"16px",textAlign:"center",boxShadow:"0 4px 20px rgba(0,0,0,.07)",borderTop:"4px solid #00B894"}},div({style:{fontSize:"11px",color:"#b2bec3"}},"الرصيد"),div({style:{fontSize:"26px",fontWeight:"900",color:"#00B894",marginTop:"4px"}},cAl.balance+" ج.م")),
+      div({style:{flex:1,background:"#fff",borderRadius:"18px",padding:"16px",textAlign:"center",boxShadow:"0 4px 20px rgba(0,0,0,.07)",borderTop:`4px solid ${child.color}`}},div({style:{fontSize:"11px",color:"#b2bec3"}},"اليومي"),div({style:{fontSize:"26px",fontWeight:"900",color:child.color,marginTop:"4px"}},cAl.daily+" ج.م"))
     ));
     const btnRow=div({style:{display:"flex",gap:"8px",marginBottom:"12px"}});
     btnRow.appendChild(btn({className:"btn-add",style:{background:"#00B894",boxShadow:"0 6px 22px #00B89440",flex:1,marginBottom:0},onclick:()=>openAdd("fAllowance",{type:"منح",amount:"",note:""})},"➕ منح"));
@@ -900,7 +908,7 @@ function screenHome(){
   const {notifications:notifs2=[]}=data;
   const unreadCount=notifs2.filter(n=>!n.read).length;
   const hdrTop=div({style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}});
-  const hdrLeft=div(null,div({style:{fontSize:"24px",fontWeight:"900",color:"#fff",letterSpacing:"-1px"}},"📖 مدرستي"),div({style:{color:"rgba(255,255,255,.6)",fontSize:"11px",marginTop:"3px"}},todayDate),div({style:{marginTop:"5px"}},syncDot(sync,lastPull)));
+  const hdrLeft=div(null,div({style:{fontSize:"24px",fontWeight:"900",color:"#fff",letterSpacing:"-1px"}},"🏠 بيتنا"),div({style:{color:"rgba(255,255,255,.6)",fontSize:"11px",marginTop:"3px"}},todayDate),div({style:{marginTop:"5px"}},syncDot(sync,lastPull)));
   const hdrRight=div({style:{display:"flex",gap:"8px",alignItems:"center"}});
   // Notification bell
   const bellWrap=div({style:{position:"relative",cursor:"pointer"},onclick:()=>setState({screen:"notifications"})});
@@ -922,11 +930,12 @@ function screenHome(){
   const mobileQuoteSource=mobileQuote.includes("—")?"— "+mobileQuote.split("—").slice(1).join("—").trim():"";
 
   const statRow=div({className:"mobile-header-stats",style:{display:"flex",gap:"6px",marginTop:"10px",flexWrap:"wrap"}});
-  [[Object.values(homework).flat().filter(h=>!h.done).length,"واجب","📚"],[Object.values(exams).flat().length,"اختبار","📝"],[upcoming.length,"حدث","📅"]].forEach(([v,l,ic])=>statRow.appendChild(div({style:{background:"rgba(255,255,255,.12)",backdropFilter:"blur(10px)",padding:"6px 14px",borderRadius:"20px",fontSize:"12px",fontWeight:"700",color:"#fff",border:"1px solid rgba(255,255,255,.1)"}},ic+" "+v+" "+l)));
+  const pendingReqs=(data.homeRequests||[]).filter(r=>r.status!=="done").length;
+  [[Object.values(homework).flat().filter(h=>!h.done).length,"واجب","📚"],[Object.values(exams).flat().length,"اختبار","📝"],[upcoming.length,"حدث","📅"],[pendingReqs,"طلب منزلي","🏡"]].forEach(([v,l,ic])=>statRow.appendChild(div({style:{background:"rgba(255,255,255,.12)",backdropFilter:"blur(10px)",padding:"6px 14px",borderRadius:"20px",fontSize:"12px",fontWeight:"700",color:"#fff",border:"1px solid rgba(255,255,255,.1)"}},ic+" "+v+" "+l)));
   hdr.appendChild(statRow);
   // Mobile quote
   const mQuoteWrap=div({className:"mobile-header-stats",style:{background:"rgba(255,255,255,.12)",borderRadius:"14px",padding:"10px 14px",marginTop:"10px"}});
-  mQuoteWrap.appendChild(div({style:{fontSize:"12px",color:"rgba(255,255,255,.9)",fontStyle:"italic",lineHeight:"1.5"}},'"'+mobileQuoteText+'"'));
+  mQuoteWrap.appendChild(div({style:{fontSize:"14px",color:"rgba(255,255,255,.95)",fontStyle:"italic",lineHeight:"1.6",fontWeight:"500"}}),'"'+mobileQuoteText+'"'));
   if(mobileQuoteSource)mQuoteWrap.appendChild(div({style:{fontSize:"10px",color:"rgba(255,255,255,.6)",marginTop:"4px"}},mobileQuoteSource));
   hdr.appendChild(mQuoteWrap);
   page.appendChild(hdr);
@@ -964,6 +973,7 @@ function screenHome(){
   nav.appendChild(btn({className:"nav-btn",style:{background:"#FFF7ED",color:"#FA8231"},onclick:()=>setState({screen:"settings"})},"⚙️ الإعدادات"));
   nav.appendChild(btn({className:"nav-btn",style:{background:"#FAF5FF",color:"#A29BFE"},onclick:()=>openAdd("fEvent",{title:"",date:"",type:"holiday",childIds:[]})},"📅 حدث جديد"));
   nav.appendChild(btn({className:"nav-btn",style:{background:"#E8F5E9",color:"#2E7D32",fontWeight:"800"},onclick:()=>setState({screen:"generalChat"})},"💬 شات الأسرة"));
+  nav.appendChild(btn({className:"nav-btn",style:{background:"#FFF3E0",color:"#E65100",fontWeight:"800"},onclick:()=>setState({screen:"homeManage",homeTab:"requests"})},"🏡 بيتنا"));
   nav.appendChild(btn({className:"nav-btn",style:{background:vacationMode.active?"#FDCB6E":"#FFFBEB",color:vacationMode.active?"#fff":"#D97706"},onclick:()=>{if(vacationMode.active)upd({vacationMode:{active:false,until:""}});else{const d=window.prompt("تاريخ العودة للمدرسة (YYYY-MM-DD):");if(d)upd({vacationMode:{active:true,until:d}});}}},"🌙 إجازة"));
   page.appendChild(nav);
 
@@ -1032,7 +1042,7 @@ function screenHome(){
     const pillRow=div({style:{display:"flex",gap:"6px",marginTop:"9px",flexWrap:"wrap"}});
     if(avg)pillRow.appendChild(pill(avg+"% 📊",sc(avg)));
     pillRow.appendChild(pill(pts+" ⭐",c.color));
-    pillRow.appendChild(pill(bal+" ر.س 💰","#00B894"));
+    pillRow.appendChild(pill(bal+" ج.م 💰","#00B894"));
     pbWrap.appendChild(pillRow);
     inner.appendChild(pbWrap);
     card.appendChild(inner);
@@ -1054,6 +1064,23 @@ function screenHome(){
       )
     ));
   });
+
+  // Home quick view
+  const hReqs=(data.homeRequests||[]).filter(r=>r.status!=="done");
+  if(hReqs.length>0){
+    body.appendChild(div({style:{fontSize:"11px",fontWeight:"800",color:"#b2bec3",marginBottom:"10px",marginTop:"6px",letterSpacing:"1.5px"}},"🏡 طلبات المنزل المعلقة"));
+    const hCard=div({className:"card",style:{cursor:"pointer",borderRight:"4px solid #FA8231"},onclick:()=>setState({screen:"homeManage",homeTab:"requests"})});
+    hReqs.slice(0,3).forEach(r=>{
+      const prCol={high:"#FF6584",medium:"#FA8231",low:"#00B894"};
+      hCard.appendChild(div({style:{display:"flex",alignItems:"center",gap:"8px",padding:"4px 0",borderBottom:"1px solid #f5f5f5"}},
+        span({style:{fontSize:"16px"}},r.category.split(" ")[0]),
+        div({style:{flex:1,fontSize:"13px",fontWeight:"600",color:"#2d3436"}},r.title),
+        span({style:{background:prCol[r.priority]+"20",color:prCol[r.priority],padding:"2px 6px",borderRadius:"8px",fontSize:"10px",fontWeight:"700"}},{high:"عاجل",medium:"متوسط",low:"عادي"}[r.priority])
+      ));
+    });
+    if(hReqs.length>3)hCard.appendChild(div({style:{textAlign:"center",fontSize:"12px",color:"#6C63FF",marginTop:"6px",fontWeight:"700"}},`+ ${hReqs.length-3} طلبات أخرى →`));
+    body.appendChild(hCard);
+  }
 
   // Urgent
   body.appendChild(div({style:{fontSize:"11px",fontWeight:"800",color:"#b2bec3",marginBottom:"10px",marginTop:"6px",letterSpacing:"1.5px"}},"⚠️ واجبات عاجلة اليوم"));
@@ -1085,7 +1112,7 @@ function buildSidebar(data){
   
   // Logo area
   const logo=div({style:{padding:"18px 14px 14px",borderBottom:"2px solid #f0f0f8",background:"linear-gradient(135deg,#6C63FF,#a855f7)",borderRadius:"0"}});
-  logo.appendChild(div({style:{fontSize:"18px",fontWeight:"900",color:"#fff",letterSpacing:"-0.5px"}},"📖 مدرستي"));
+  logo.appendChild(div({style:{fontSize:"18px",fontWeight:"900",color:"#fff",letterSpacing:"-0.5px"}},"🏠 بيتنا"));
   logo.appendChild(div({style:{color:"rgba(255,255,255,.8)",fontSize:"10px",marginTop:"4px"}},new Date().toLocaleDateString("ar-SA",{weekday:"long",month:"long",day:"numeric"})));
   logo.appendChild(div({style:{marginTop:"6px",display:"flex",alignItems:"center",justifyContent:"space-between"}},
     syncDot(sync,lastPull),
@@ -1104,7 +1131,7 @@ function buildSidebar(data){
   const isHome=["home"].includes(S().screen);
   const isChild=["child","fHw","fExam","fGrade","fNote","fStudy","fGoal","fSupply","fAllowance","fAllowanceSettings","fPoints"].includes(S().screen);
   
-  [["🏠 الرئيسية","home",isHome],["💬 شات الأسرة","generalChat",S().screen==="generalChat"],["📄 التقارير","reports",S().screen==="reports"],["⚙️ الإعدادات","settings",S().screen==="settings"]].forEach(([label,sc2,active])=>{
+  [["🏠 الرئيسية","home",isHome],["🏡 بيتنا","homeManage",S().screen==="homeManage"],["💬 شات الأسرة","generalChat",S().screen==="generalChat"],["📄 التقارير","reports",S().screen==="reports"],["⚙️ الإعدادات","settings",S().screen==="settings"],["👨‍👩‍👧 الوالدان","parentSetup",S().screen==="parentSetup"]].forEach(([label,sc2,active])=>{
     nav.appendChild(btn({className:"sb-nav-btn",style:{background:active?"#6C63FF":"transparent",color:active?"#fff":"#2d3436",fontWeight:active?"700":"500"},onclick:()=>setState({screen:sc2})},label));
   });
   nav.appendChild(btn({className:"sb-nav-btn",style:{background:vacationMode.active?"#FFF3CD":"transparent",color:vacationMode.active?"#D97706":"#2d3436"},onclick:()=>{if(vacationMode.active)upd({vacationMode:{active:false,until:""}});else{const d=window.prompt("تاريخ العودة (YYYY-MM-DD):");if(d)upd({vacationMode:{active:true,until:d}});}}},"🌙 "+(vacationMode.active?"إلغاء الإجازة":"وضع الإجازة")));
@@ -1427,6 +1454,274 @@ function makeEmojiPicker(onSelect){
   return wrap;
 }
 
+
+// ── Home Management Screen ──
+function screenHomeManage(){
+  const {data}=S();
+  const {homeRequests=[],homePlans=[],parentSettings={}}=data;
+  const ps=parentSettings;
+  let activeTab2=S().homeTab||"requests";
+  let showArchive=S().showArchive||false;
+
+  const REQ_CATS=["🛒 مشتريات","🔧 صيانة","💊 طبي","📦 متنوع","👗 ملابس","🍽️ أجهزة منزلية"];
+  const PLAN_CATS=["🏖️ رحلات","🎂 مناسبات","🏫 دراسة","💰 مالي","🏥 طبي","🏗️ تجديد"];
+  const MONTHS=["2026-06","2026-07","2026-08","2026-09","2026-10","2026-11","2026-12","2027-01","2027-02","2027-03"];
+  const MONTH_NAMES={"2026-06":"يونيو 26","2026-07":"يوليو 26","2026-08":"أغسطس 26","2026-09":"سبتمبر 26","2026-10":"أكتوبر 26","2026-11":"نوفمبر 26","2026-12":"ديسمبر 26","2027-01":"يناير 27","2027-02":"فبراير 27","2027-03":"مارس 27"};
+  const STATUS_REQ={pending:{label:"⏳ قيد المراجعة",color:"#FDCB6E",next:"inprogress"},inprogress:{label:"🔄 جارية",color:"#0984E3",next:"done"},done:{label:"✅ منجزة",color:"#00B894",next:"pending"}};
+  const STATUS_PLAN={planned:{label:"🗓️ مخططة",color:"#A29BFE",next:"inprogress"},inprogress:{label:"🔄 جارية",color:"#0984E3",next:"done"},done:{label:"✅ منجزة",color:"#00B894",next:"planned"}};
+
+  const page=div({className:"page"});
+
+  // Header
+  page.appendChild(makeHdr("#2d3436",
+    btn({className:"back-btn",onclick:()=>setState({screen:"home"})},"→"),
+    span({style:{color:"#fff",fontSize:"16px",fontWeight:"800"}},"🏠 بيتنا"),
+    printBtn()
+  ));
+
+  // Tab switcher
+  const tabRow=div({className:"no-print",style:{display:"flex",background:"#f0f0f8",padding:"6px",gap:"6px",flexShrink:0}});
+  ["requests","plans"].forEach((t,i)=>{
+    const labels=["📋 الطلبات","📅 الخطط"];
+    const isAct=activeTab2===t;
+    const pendingCount=t==="requests"?homeRequests.filter(r=>r.status!=="done").length:homePlans.filter(p=>p.status!=="done").length;
+    const tb=btn({style:{flex:1,padding:"10px",borderRadius:"12px",border:"none",background:isAct?"#fff":"transparent",color:isAct?"#2d3436":"#888",fontWeight:isAct?"800":"500",fontSize:"14px",cursor:"pointer",boxShadow:isAct?"0 2px 10px rgba(0,0,0,.1)":"none",display:"flex",alignItems:"center",justifyContent:"center",gap:"6px"},onclick:()=>{STATE={...STATE,homeTab:t,showArchive:false};render();}},
+      labels[i],
+      pendingCount>0?div({style:{background:"#FF6584",color:"#fff",borderRadius:"50%",width:"20px",height:"20px",fontSize:"11px",fontWeight:"900",display:"flex",alignItems:"center",justifyContent:"center"}},String(pendingCount)):null
+    );
+    tabRow.appendChild(tb);
+  });
+  page.appendChild(tabRow);
+
+  const body=div({className:"scroll"});
+
+  // ── REQUESTS TAB ──
+  if(activeTab2==="requests"){
+    // Stats bar
+    const total=homeRequests.length;
+    const done=homeRequests.filter(r=>r.status==="done").length;
+    const pending=homeRequests.filter(r=>r.status==="pending").length;
+    const inprog=homeRequests.filter(r=>r.status==="inprogress").length;
+
+    const statsRow=div({style:{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"8px",marginBottom:"14px"}});
+    [{v:pending,l:"قيد المراجعة",c:"#FDCB6E",i:"⏳"},{v:inprog,l:"جارية",c:"#0984E3",i:"🔄"},{v:done,l:"منجزة",c:"#00B894",i:"✅"}].forEach(s=>{
+      statsRow.appendChild(div({style:{background:"#fff",borderRadius:"14px",padding:"12px 8px",textAlign:"center",boxShadow:"0 2px 10px rgba(0,0,0,.06)",borderTop:`3px solid ${s.c}`}},
+        div({style:{fontSize:"20px"}},(s.i)),
+        div({style:{fontSize:"18px",fontWeight:"900",color:s.c}},String(s.v)),
+        div({style:{fontSize:"10px",color:"#b2bec3",marginTop:"2px"}},s.l)
+      ));
+    });
+    body.appendChild(statsRow);
+
+    // Add button
+    body.appendChild(btn({className:"btn-add",style:{background:"linear-gradient(135deg,#6C63FF,#a855f7)",boxShadow:"0 6px 20px rgba(108,99,255,.35)"},onclick:()=>setState({screen:"fHomeRequest",editItem:null,F:{title:"",desc:"",category:REQ_CATS[0],priority:"medium",by:ps.father||"الأب"}})},"+ إضافة طلب جديد"));
+
+    // Active requests
+    const activeReqs=homeRequests.filter(r=>r.status!=="done");
+    if(!activeReqs.length)body.appendChild(div({style:{textAlign:"center",padding:"30px",color:"#dfe6e9",fontSize:"14px"}},"📋 لا توجد طلبات نشطة"));
+
+    activeReqs.sort((a,b)=>{const po={high:0,medium:1,low:2};return (po[a.priority]||1)-(po[b.priority]||1);}).forEach(req=>{
+      const st=STATUS_REQ[req.status]||STATUS_REQ.pending;
+      const prCol={high:"#FF6584",medium:"#FA8231",low:"#00B894"};
+      const prLbl={high:"عاجل",medium:"متوسط",low:"عادي"};
+      const card=div({className:"card",style:{borderRight:`4px solid ${prCol[req.priority]||"#ddd"}`}});
+
+      // Top row
+      const top=div({style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"8px"}});
+      const info=div({style:{flex:1}});
+      info.appendChild(div({style:{fontWeight:"800",fontSize:"15px",color:"#2d3436",marginBottom:"4px"}},req.title));
+      if(req.desc)info.appendChild(div({style:{fontSize:"13px",color:"#636e72",lineHeight:"1.5",marginBottom:"6px"}},req.desc));
+      info.appendChild(div({style:{display:"flex",gap:"6px",flexWrap:"wrap",alignItems:"center"}},
+        span({style:{background:prCol[req.priority]+"20",color:prCol[req.priority],padding:"2px 8px",borderRadius:"10px",fontSize:"11px",fontWeight:"700"}},prLbl[req.priority]),
+        span({style:{background:"#f0f0f8",color:"#636e72",padding:"2px 8px",borderRadius:"10px",fontSize:"11px"}},req.category),
+        span({style:{color:"#b2bec3",fontSize:"11px"}},"بواسطة: "+req.by)
+      ));
+      top.appendChild(info);
+
+      // Actions
+      const acts=div({style:{display:"flex",flexDirection:"column",gap:"6px",alignItems:"flex-end",flexShrink:0}});
+      // Status toggle
+      acts.appendChild(btn({style:{background:st.color+"18",color:st.color,border:`2px solid ${st.color}40`,borderRadius:"10px",padding:"5px 10px",cursor:"pointer",fontSize:"11px",fontWeight:"700",whiteSpace:"nowrap"},onclick:()=>{
+        const next=st.next;
+        const notifTitle=next==="done"?"✅ تم إنجاز طلب":"🔄 تحديث طلب";
+        upd({homeRequests:homeRequests.map(r=>r.id===req.id?{...r,status:next,doneDate:next==="done"?todayStr:undefined}:r)},{type:next==="done"?"add":"edit",title:notifTitle,body:req.title,childId:null,screen:"homeManage",tab:"requests"});
+      }},st.label));
+      acts.appendChild(div({style:{display:"flex",gap:"4px"}},
+        btn({className:"edit-btn",style:{padding:"5px 8px"},onclick:()=>setState({screen:"fHomeRequest",editItem:req,F:{title:req.title,desc:req.desc||"",category:req.category,priority:req.priority,by:req.by}})},"✏️"),
+        btn({className:"del-btn",style:{padding:"5px 8px"},onclick:()=>askDel(`حذف "${req.title}"؟`,()=>upd({homeRequests:homeRequests.filter(r=>r.id!==req.id)}))},"🗑")
+      ));
+      top.appendChild(acts);
+      card.appendChild(top);
+      body.appendChild(card);
+    });
+
+    // Archive button
+    const doneReqs=homeRequests.filter(r=>r.status==="done");
+    if(doneReqs.length>0){
+      body.appendChild(btn({style:{width:"100%",background:"transparent",border:"2px dashed #ddd",borderRadius:"14px",padding:"12px",cursor:"pointer",fontSize:"13px",fontWeight:"700",color:"#b2bec3",marginTop:"8px"},onclick:()=>{STATE={...STATE,showArchive:!S().showArchive};render();}},(showArchive?"🗂️ إخفاء الأرشيف":"🗂️ عرض الأرشيف")+" ("+doneReqs.length+")"));
+      if(showArchive){
+        body.appendChild(div({style:{background:"#f8f9ff",borderRadius:"14px",padding:"12px",marginTop:"8px"}},
+          div({style:{fontSize:"11px",fontWeight:"800",color:"#b2bec3",marginBottom:"10px",letterSpacing:"1px"}},"📦 الأرشيف — الطلبات المنجزة"),
+          ...doneReqs.map(req=>div({style:{background:"#fff",borderRadius:"12px",padding:"12px",marginBottom:"8px",opacity:"0.7",display:"flex",justifyContent:"space-between",alignItems:"center"}},
+            div({style:{flex:1}},
+              div({style:{fontSize:"14px",fontWeight:"600",color:"#636e72",textDecoration:"line-through"}},req.title),
+              div({style:{fontSize:"11px",color:"#b2bec3",marginTop:"2px"}},"✅ منجز بتاريخ: "+(req.doneDate||"—")+" • "+req.by)
+            ),
+            btn({className:"del-btn",style:{padding:"4px 8px",fontSize:"12px"},onclick:()=>askDel(`حذف "${req.title}" من الأرشيف؟`,()=>upd({homeRequests:homeRequests.filter(r=>r.id!==req.id)}))},"🗑")
+          ))
+        ));
+      }
+    }
+  }
+
+  // ── PLANS TAB ──
+  if(activeTab2==="plans"){
+    const totalP=homePlans.length;
+    const doneP=homePlans.filter(p=>p.status==="done").length;
+
+    const statsRow2=div({style:{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"8px",marginBottom:"14px"}});
+    const plannedP=homePlans.filter(p=>p.status==="planned").length;
+    const inprogP=homePlans.filter(p=>p.status==="inprogress").length;
+    [{v:plannedP,l:"مخططة",c:"#A29BFE",i:"🗓️"},{v:inprogP,l:"جارية",c:"#0984E3",i:"🔄"},{v:doneP,l:"منجزة",c:"#00B894",i:"✅"}].forEach(s=>{
+      statsRow2.appendChild(div({style:{background:"#fff",borderRadius:"14px",padding:"12px 8px",textAlign:"center",boxShadow:"0 2px 10px rgba(0,0,0,.06)",borderTop:`3px solid ${s.c}`}},
+        div({style:{fontSize:"20px"}},s.i),
+        div({style:{fontSize:"18px",fontWeight:"900",color:s.c}},String(s.v)),
+        div({style:{fontSize:"10px",color:"#b2bec3",marginTop:"2px"}},s.l)
+      ));
+    });
+    body.appendChild(statsRow2);
+
+    body.appendChild(btn({className:"btn-add",style:{background:"linear-gradient(135deg,#FA8231,#e17055)",boxShadow:"0 6px 20px rgba(250,130,49,.35)"},onclick:()=>setState({screen:"fHomePlan",editItem:null,F:{title:"",desc:"",category:PLAN_CATS[0],month:MONTHS[0],budget:"",by:ps.father||"الأب"}})},"+ إضافة خطة جديدة"));
+
+    // Group by month
+    const activePlans=homePlans.filter(p=>p.status!=="done");
+    const byMonth={};
+    activePlans.forEach(p=>{
+      const m=p.month||"بدون تاريخ";
+      if(!byMonth[m])byMonth[m]=[];
+      byMonth[m].push(p);
+    });
+
+    if(!activePlans.length)body.appendChild(div({style:{textAlign:"center",padding:"30px",color:"#dfe6e9",fontSize:"14px"}},"📅 لا توجد خطط نشطة"));
+
+    Object.keys(byMonth).sort().forEach(month=>{
+      const mName=MONTH_NAMES[month]||month;
+      body.appendChild(div({style:{fontSize:"12px",fontWeight:"800",color:"#FA8231",marginTop:"14px",marginBottom:"8px",display:"flex",alignItems:"center",gap:"6px"}},
+        div({style:{background:"#FA823120",padding:"4px 12px",borderRadius:"20px"}},"📅 "+mName)
+      ));
+      byMonth[month].forEach(plan=>{
+        const st=STATUS_PLAN[plan.status]||STATUS_PLAN.planned;
+        const card=div({className:"card",style:{borderRight:`4px solid ${st.color}`}});
+        const top=div({style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}});
+        const info=div({style:{flex:1}});
+        info.appendChild(div({style:{fontWeight:"800",fontSize:"15px",color:"#2d3436",marginBottom:"4px"}},plan.title));
+        if(plan.desc)info.appendChild(div({style:{fontSize:"13px",color:"#636e72",lineHeight:"1.5",marginBottom:"6px"}},plan.desc));
+        const pills=div({style:{display:"flex",gap:"6px",flexWrap:"wrap",alignItems:"center"}});
+        pills.appendChild(span({style:{background:"#FA823120",color:"#FA8231",padding:"2px 8px",borderRadius:"10px",fontSize:"11px",fontWeight:"700"}},plan.category));
+        if(plan.budget)pills.appendChild(span({style:{background:"#00B89418",color:"#00B894",padding:"2px 8px",borderRadius:"10px",fontSize:"11px",fontWeight:"700"}},"💰 "+plan.budget+" ج.م"));
+        pills.appendChild(span({style:{color:"#b2bec3",fontSize:"11px"}},"بواسطة: "+plan.by));
+        info.appendChild(pills);
+        top.appendChild(info);
+        const acts=div({style:{display:"flex",flexDirection:"column",gap:"6px",alignItems:"flex-end",flexShrink:0}});
+        acts.appendChild(btn({style:{background:st.color+"18",color:st.color,border:`2px solid ${st.color}40`,borderRadius:"10px",padding:"5px 10px",cursor:"pointer",fontSize:"11px",fontWeight:"700",whiteSpace:"nowrap"},onclick:()=>{
+          const next=st.next;
+          upd({homePlans:homePlans.map(p=>p.id===plan.id?{...p,status:next,doneDate:next==="done"?todayStr:undefined}:p)},{type:"edit",title:next==="done"?"✅ تمت خطة":"🔄 تحديث خطة",body:plan.title,childId:null,screen:"homeManage",tab:"plans"});
+        }},st.label));
+        acts.appendChild(div({style:{display:"flex",gap:"4px"}},
+          btn({className:"edit-btn",style:{padding:"5px 8px"},onclick:()=>setState({screen:"fHomePlan",editItem:plan,F:{title:plan.title,desc:plan.desc||"",category:plan.category,month:plan.month,budget:plan.budget||"",by:plan.by}})},"✏️"),
+          btn({className:"del-btn",style:{padding:"5px 8px"},onclick:()=>askDel(`حذف "${plan.title}"؟`,()=>upd({homePlans:homePlans.filter(p=>p.id!==plan.id)}))},"🗑")
+        ));
+        top.appendChild(acts);
+        card.appendChild(top);
+        body.appendChild(card);
+      });
+    });
+
+    // Archive
+    const donePlans=homePlans.filter(p=>p.status==="done");
+    if(donePlans.length>0){
+      body.appendChild(btn({style:{width:"100%",background:"transparent",border:"2px dashed #ddd",borderRadius:"14px",padding:"12px",cursor:"pointer",fontSize:"13px",fontWeight:"700",color:"#b2bec3",marginTop:"8px"},onclick:()=>{STATE={...STATE,showArchive:!S().showArchive};render();}},(showArchive?"🗂️ إخفاء الأرشيف":"🗂️ عرض الأرشيف")+" ("+donePlans.length+")"));
+      if(showArchive){
+        body.appendChild(div({style:{background:"#f8f9ff",borderRadius:"14px",padding:"12px",marginTop:"8px"}},
+          div({style:{fontSize:"11px",fontWeight:"800",color:"#b2bec3",marginBottom:"10px",letterSpacing:"1px"}},"📦 الأرشيف — الخطط المنجزة"),
+          ...donePlans.map(plan=>div({style:{background:"#fff",borderRadius:"12px",padding:"12px",marginBottom:"8px",opacity:"0.7",display:"flex",justifyContent:"space-between",alignItems:"center"}},
+            div({style:{flex:1}},
+              div({style:{fontSize:"14px",fontWeight:"600",color:"#636e72",textDecoration:"line-through"}},plan.title),
+              div({style:{fontSize:"11px",color:"#b2bec3",marginTop:"2px"}},"✅ منجزة: "+(plan.doneDate||"—")+" • "+MONTH_NAMES[plan.month||""]+" • "+plan.by)
+            ),
+            btn({className:"del-btn",style:{padding:"4px 8px",fontSize:"12px"},onclick:()=>askDel(`حذف "${plan.title}"؟`,()=>upd({homePlans:homePlans.filter(p=>p.id!==plan.id)}))},"🗑")
+          ))
+        ));
+      }
+    }
+  }
+
+  page.appendChild(body);
+  return page;
+}
+
+// ── Form: Add/Edit Request ──
+function screenFHomeRequest(){
+  const {F,data}=S();
+  const REQ_CATS=["🛒 مشتريات","🔧 صيانة","💊 طبي","📦 متنوع","👗 ملابس","🍽️ أجهزة منزلية"];
+  const PRIOR_OPTS=[["high","عاجل","#FF6584"],["medium","متوسط","#FA8231"],["low","عادي","#00B894"]];
+  const ps=data.parentSettings||{};
+  const senders=[ps.father||"الأب",ps.mother||"الأم"];
+
+  return buildForm(S().editItem?"تعديل طلب ✏️":"طلب جديد 📋","#6C63FF",()=>setState({screen:"homeManage",homeTab:"requests"}),()=>{
+    if(!F.title)return;
+    const item={id:S().editItem?.id||Date.now(),title:F.title,desc:F.desc||"",category:F.category||REQ_CATS[0],priority:F.priority||"medium",by:F.by||senders[0],status:S().editItem?.status||"pending",date:todayStr};
+    const reqs=data.homeRequests||[];
+    const u=S().editItem?reqs.map(r=>r.id===item.id?item:r):[...reqs,item];
+    upd({homeRequests:u},{type:S().editItem?"edit":"add",title:S().editItem?"تم تعديل طلب":"طلب جديد",body:item.title,childId:null,screen:"homeManage",tab:"requests"});
+    setState({screen:"homeManage",homeTab:"requests"});
+  },[
+    lbl("عنوان الطلب"),
+    el("input",{"data-fid":"hreq-title",className:"inp",type:"text",placeholder:"مثال: شراء ثلاجة جديدة...",value:F.title||"",oninput:e=>sf("title",e.target.value)}),
+    lbl("التفاصيل (اختياري)"),
+    el("textarea",{"data-fid":"hreq-desc",style:{...{border:"2px solid #eef0f5",borderRadius:"12px",padding:"11px 13px",fontSize:"14px",width:"100%",outline:"none",background:"#fff",marginBottom:"4px"},height:"70px",resize:"none"},placeholder:"أي تفاصيل إضافية...",value:F.desc||"",oninput:e=>sf("desc",e.target.value)}),
+    lbl("الفئة"),
+    div({style:{display:"flex",gap:"6px",flexWrap:"wrap",marginBottom:"8px"}},...REQ_CATS.map(c=>btn({className:"chip-btn",style:{background:F.category===c?"#6C63FF":"#f0f0f8",color:F.category===c?"#fff":"#555"},onclick:()=>sfr("category",c)},c))),
+    lbl("الأولوية"),
+    div({style:{display:"flex",gap:"8px",marginBottom:"8px"}},...PRIOR_OPTS.map(([k,l2,col])=>btn({className:"chip-btn",style:{flex:1,background:F.priority===k?col:"#f0f0f8",color:F.priority===k?"#fff":"#555"},onclick:()=>sfr("priority",k)},l2))),
+    lbl("بواسطة"),
+    div({style:{display:"flex",gap:"8px",marginBottom:"8px"}},...senders.map(s=>btn({className:"chip-btn",style:{flex:1,background:F.by===s?"#6C63FF":"#f0f0f8",color:F.by===s?"#fff":"#555"},onclick:()=>sfr("by",s)},s)))
+  ]);
+}
+
+// ── Form: Add/Edit Plan ──
+function screenFHomePlan(){
+  const {F,data}=S();
+  const PLAN_CATS=["🏖️ رحلات","🎂 مناسبات","🏫 دراسة","💰 مالي","🏥 طبي","🏗️ تجديد"];
+  const MONTHS=["2026-06","2026-07","2026-08","2026-09","2026-10","2026-11","2026-12","2027-01","2027-02","2027-03"];
+  const MONTH_NAMES={"2026-06":"يونيو 26","2026-07":"يوليو 26","2026-08":"أغسطس 26","2026-09":"سبتمبر 26","2026-10":"أكتوبر 26","2026-11":"نوفمبر 26","2026-12":"ديسمبر 26","2027-01":"يناير 27","2027-02":"فبراير 27","2027-03":"مارس 27"};
+  const ps=data.parentSettings||{};
+  const senders=[ps.father||"الأب",ps.mother||"الأم"];
+
+  return buildForm(S().editItem?"تعديل خطة ✏️":"خطة جديدة 📅","#FA8231",()=>setState({screen:"homeManage",homeTab:"plans"}),()=>{
+    if(!F.title)return;
+    const item={id:S().editItem?.id||Date.now(),title:F.title,desc:F.desc||"",category:F.category||PLAN_CATS[0],month:F.month||MONTHS[0],budget:F.budget||"",by:F.by||senders[0],status:S().editItem?.status||"planned",date:todayStr};
+    const plans=data.homePlans||[];
+    const u=S().editItem?plans.map(p=>p.id===item.id?item:p):[...plans,item];
+    upd({homePlans:u},{type:S().editItem?"edit":"add",title:S().editItem?"تم تعديل خطة":"خطة جديدة",body:item.title+" — "+MONTH_NAMES[item.month],childId:null,screen:"homeManage",tab:"plans"});
+    setState({screen:"homeManage",homeTab:"plans"});
+  },[
+    lbl("عنوان الخطة"),
+    el("input",{"data-fid":"hplan-title",className:"inp",type:"text",placeholder:"مثال: رحلة صيفية...",value:F.title||"",oninput:e=>sf("title",e.target.value)}),
+    lbl("التفاصيل (اختياري)"),
+    el("textarea",{"data-fid":"hplan-desc",style:{...{border:"2px solid #eef0f5",borderRadius:"12px",padding:"11px 13px",fontSize:"14px",width:"100%",outline:"none",background:"#fff",marginBottom:"4px"},height:"70px",resize:"none"},placeholder:"أي تفاصيل إضافية...",value:F.desc||"",oninput:e=>sf("desc",e.target.value)}),
+    lbl("الفئة"),
+    div({style:{display:"flex",gap:"6px",flexWrap:"wrap",marginBottom:"8px"}},...PLAN_CATS.map(c=>btn({className:"chip-btn",style:{background:F.category===c?"#FA8231":"#f0f0f8",color:F.category===c?"#fff":"#555"},onclick:()=>sfr("category",c)},c))),
+    lbl("الشهر المستهدف"),
+    div({style:{display:"flex",gap:"6px",flexWrap:"wrap",marginBottom:"8px"}},...MONTHS.map(m=>btn({className:"chip-btn",style:{background:F.month===m?"#FA8231":"#f0f0f8",color:F.month===m?"#fff":"#555",fontSize:"12px"},onclick:()=>sfr("month",m)},MONTH_NAMES[m]))),
+    lbl("الميزانية (اختياري)"),
+    el("input",{"data-fid":"hplan-budget",className:"inp",type:"number",placeholder:"0 ج.م",value:F.budget||"",oninput:e=>sf("budget",e.target.value)}),
+    lbl("بواسطة"),
+    div({style:{display:"flex",gap:"8px",marginBottom:"8px"}},...senders.map(s=>btn({className:"chip-btn",style:{flex:1,background:F.by===s?"#FA8231":"#f0f0f8",color:F.by===s?"#fff":"#555"},onclick:()=>sfr("by",s)},s)))
+  ]);
+}
+
+
 // ── Render ──
 function render(){
   const {data,sync,screen,toast,confirm}=S();
@@ -1462,7 +1757,7 @@ function render(){
 
   // Build screen content
   const screens={
-    home:screenHome,settings:screenSettings,reports:screenReports,child:screenChild,parentSetup:screenParentSetup,generalChat:screenGeneralChat,notifications:screenNotifications,
+    home:screenHome,settings:screenSettings,reports:screenReports,child:screenChild,parentSetup:screenParentSetup,generalChat:screenGeneralChat,notifications:screenNotifications,homeManage:screenHomeManage,fHomeRequest:screenFHomeRequest,fHomePlan:screenFHomePlan,
     fHw:screenFHw,fExam:screenFExam,fGrade:screenFGrade,fNote:screenFNote,
     fStudy:screenFStudy,fGoal:screenFGoal,fSupply:screenFSupply,
     fAllowance:screenFAllowance,fAllowanceSettings:screenFAllowanceSettings,
