@@ -6,23 +6,40 @@
 <title>📖 مدرستي</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;direction:rtl;background:#1a1a2e;overflow:hidden;height:100vh}
+body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;direction:rtl;overflow:hidden;height:100vh}
 input,select,textarea,button{font-family:inherit;direction:rtl}
-::-webkit-scrollbar{width:0;height:0}
-.page{display:flex;flex-direction:column;height:100vh;width:100%;max-width:100%;background:#F8F9FF}
-@media(min-width:768px){
-  body{background:linear-gradient(135deg,#1a1a2e 0%,#2d1b69 100%);display:flex;align-items:stretch}
-  .page{flex-direction:row;max-width:100%;height:100vh;overflow:hidden}
-  .sidebar{width:280px;background:linear-gradient(180deg,#1a1a2e 0%,#2d1b69 100%);flex-shrink:0;display:flex;flex-direction:column;padding:0;overflow:hidden}
-  .main-area{flex:1;display:flex;flex-direction:column;overflow:hidden}
-  .hdr{border-radius:0}
-  .scroll{padding:20px 24px 40px}
-  .card{border-radius:20px;margin-bottom:12px}
+::-webkit-scrollbar{width:6px;height:0}
+::-webkit-scrollbar-track{background:rgba(255,255,255,.05)}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2);border-radius:3px}
+
+/* ── Mobile (default) ── */
+.app-wrapper{display:flex;height:100vh;width:100%;background:#F8F9FF}
+.sidebar{display:none}
+.main-panel{flex:1;display:flex;flex-direction:column;height:100vh;overflow:hidden;background:#F8F9FF}
+.page{display:flex;flex-direction:column;height:100%;overflow:hidden}
+.mobile-nav{display:flex;gap:8px;padding:10px 14px;background:#fff;border-bottom:1px solid #f0f0f0;overflow-x:auto;flex-shrink:0}
+.mobile-nav button{flex-shrink:0}
+.children-grid{display:flex;flex-direction:column;gap:0}
+
+/* ── Desktop ── */
+@media(min-width:900px){
+  body{background:linear-gradient(135deg,#0f0c29 0%,#302b63 50%,#24243e 100%)}
+  .app-wrapper{border-radius:0;box-shadow:none}
+  .sidebar{display:flex;flex-direction:column;width:260px;min-width:260px;background:rgba(255,255,255,.06);backdrop-filter:blur(20px);border-left:1px solid rgba(255,255,255,.08);overflow:hidden;flex-shrink:0}
+  .main-panel{flex:1;border-radius:0;overflow:hidden}
+  .mobile-nav{display:none!important}
+  .mobile-header-stats{display:none!important}
+  .children-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+  .desktop-content{padding:24px!important}
+  .card{border-radius:20px!important;margin-bottom:0!important}
+  .scroll{padding:24px 28px 40px!important}
+  .desktop-top-bar{display:flex!important}
 }
-@media(max-width:767px){
-  .sidebar{display:none}
-  .desktop-only{display:none}
+@media(max-width:899px){
+  .desktop-top-bar{display:none!important}
+  ::-webkit-scrollbar{width:0}
 }
+
 .hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;flex-shrink:0}
 .scroll{flex:1;overflow-y:auto;padding:14px 14px 80px;-webkit-overflow-scrolling:touch}
 .card{background:#fff;border-radius:18px;padding:14px;margin-bottom:10px;box-shadow:0 2px 16px rgba(0,0,0,.055)}
@@ -32,8 +49,6 @@ input,select,textarea,button{font-family:inherit;direction:rtl}
 .back-btn{background:rgba(255,255,255,.22);border:none;color:#fff;border-radius:12px;padding:7px 14px;font-size:18px;cursor:pointer}
 .pill{padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;display:inline-flex;align-items:center}
 .tab-btn{flex:1;padding:11px 2px;border:none;background:none;font-size:17px;cursor:pointer;min-width:40px;transition:all .2s;border-bottom:3px solid transparent}
-.lbl{font-size:13px;font-weight:700;color:#636e72;margin-bottom:6px;margin-top:12px}
-.chip-btn{border:none;border-radius:12px;padding:8px 16px;cursor:pointer;font-weight:700;font-size:13px;transition:all .2s}
 .nav-btn{border:none;border-radius:12px;padding:8px 16px;cursor:pointer;font-weight:700;font-size:12px;white-space:nowrap}
 .edit-btn{background:#f0f0f8;border:none;border-radius:10px;padding:7px 11px;cursor:pointer;font-size:14px;color:#6C63FF}
 .del-btn{background:#FEE2E2;border:none;border-radius:10px;padding:7px 11px;cursor:pointer;font-size:14px;color:#EF4444}
@@ -43,11 +58,19 @@ input,select,textarea,button{font-family:inherit;direction:rtl}
 .toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);color:#fff;padding:11px 22px;border-radius:22px;font-size:14px;font-weight:700;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.25);white-space:nowrap;animation:slideD .3s ease}
 .confirm-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:9998;padding:20px}
 .confirm-box{background:#fff;border-radius:24px;padding:28px;max-width:300px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3)}
-.no-print{} 
+.sb-nav-btn{display:block;width:100%;text-align:right;border:none;border-radius:12px;padding:11px 14px;cursor:pointer;font-size:14px;margin-bottom:4px;transition:all .2s}
+.sb-child-btn{display:flex;align-items:center;gap:10px;width:100%;border-radius:14px;padding:10px 12px;cursor:pointer;margin-bottom:6px;transition:all .2s;border:1px solid transparent}
+.desktop-top-bar{display:none;background:#fff;border-bottom:2px solid #f0f0f0;padding:0 24px;align-items:center;justify-content:space-between;min-height:56px;flex-shrink:0}
 @keyframes slideD{from{transform:translateX(-50%) translateY(-20px);opacity:0}to{transform:translateX(-50%) translateY(0);opacity:1}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-@media print{.no-print{display:none!important}*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}}
+@media print{
+  .no-print{display:none!important}
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  body{overflow:auto!important;background:#fff!important;height:auto!important}
+  .app-wrapper,.main-panel,.page{height:auto!important;overflow:visible!important}
+  .sidebar{display:none!important}
+  .scroll{overflow:visible!important;padding:0!important}
+}
 </style>
 </head>
 <body>
@@ -695,7 +718,7 @@ function screenHome(){
     const cancelBtn=btn({style:{background:"rgba(255,255,255,.15)",border:"none",color:"#fff",borderRadius:"8px",padding:"3px 10px",cursor:"pointer",fontSize:"12px",marginRight:"auto"},onclick:()=>upd({vacationMode:{active:false,until:""}}) },"إلغاء");
     vBanner.appendChild(cancelBtn);hdr.appendChild(vBanner);
   }
-  const statRow=div({style:{display:"flex",gap:"6px",marginTop:"12px",flexWrap:"wrap"}});
+  const statRow=div({className:"mobile-header-stats",style:{display:"flex",gap:"6px",marginTop:"12px",flexWrap:"wrap"}});
   [[Object.values(homework).flat().filter(h=>!h.done).length,"واجب","📚"],[Object.values(exams).flat().length,"اختبار","📝"],[upcoming.length,"حدث","📅"]].forEach(([v,l,ic])=>statRow.appendChild(div({style:{background:"rgba(255,255,255,.12)",backdropFilter:"blur(10px)",padding:"6px 14px",borderRadius:"20px",fontSize:"12px",fontWeight:"700",color:"#fff",border:"1px solid rgba(255,255,255,.1)"}},ic+" "+v+" "+l)));
   hdr.appendChild(statRow);
   page.appendChild(hdr);
@@ -722,8 +745,8 @@ function screenHome(){
     page.appendChild(resBox);
   }
 
-  // Quick nav
-  const nav=div({className:"no-print",style:{display:"flex",gap:"8px",padding:"10px 14px",background:"#fff",borderBottom:"1px solid #f0f0f0",overflowX:"auto",flexShrink:0}});
+  // Quick nav - mobile only
+  const nav=div({className:"mobile-nav no-print"});
   nav.appendChild(btn({className:"nav-btn",style:{background:"#EEF2FF",color:"#6C63FF"},onclick:()=>setState({screen:"reports"})},"📄 التقارير"));
   nav.appendChild(btn({className:"nav-btn",style:{background:"#FFF7ED",color:"#FA8231"},onclick:()=>setState({screen:"settings"})},"⚙️ الإعدادات"));
   nav.appendChild(btn({className:"nav-btn",style:{background:"#FAF5FF",color:"#A29BFE"},onclick:()=>openAdd("fEvent",{title:"",date:"",type:"holiday",childIds:[]})},"📅 حدث جديد"));
@@ -734,7 +757,9 @@ function screenHome(){
   const body=div({className:"scroll"});
 
   // Children
+  const isDesktop2=window.innerWidth>=900;
   body.appendChild(div({style:{fontSize:"11px",fontWeight:"800",color:"#b2bec3",marginBottom:"10px",letterSpacing:"1.5px"}},"أطفالي"));
+  const childrenGrid=div({className:"children-grid"});
   children.forEach(c=>{
     const pending=(homework[c.id]||[]).filter(h=>!h.done).length;
     const pts=points[c.id]?.total||0;
@@ -771,8 +796,9 @@ function screenHome(){
     pbWrap.appendChild(pillRow);
     inner.appendChild(pbWrap);
     card.appendChild(inner);
-    body.appendChild(card);
+    childrenGrid.appendChild(card);
   });
+  body.appendChild(childrenGrid);
 
   // Events
   body.appendChild(div({style:{fontSize:"11px",fontWeight:"800",color:"#b2bec3",marginBottom:"10px",marginTop:"6px",letterSpacing:"1.5px"}},"📅 أحداث قادمة"));
@@ -807,65 +833,95 @@ function screenHome(){
 }
 
 
+// ── PDF Print ──
+function printPDF(){
+  window.print();
+}
+
 // ── Sidebar (Desktop) ──
 function buildSidebar(data){
-  const {children,homework,exams,points,grades,allowance,supplies,vacationMode,sync,lastPull}=data;
-  const sb=div({style:{width:"280px",background:"linear-gradient(180deg,#1a1a2e 0%,#2d1b69 100%)",flexShrink:0,display:"flex",flexDirection:"column",overflow:"hidden"}});
+  const {children,homework,exams,points,vacationMode,sync,lastPull}=data;
+  const sb=div({style:{display:"flex",flexDirection:"column",height:"100vh",overflow:"hidden"}});
   
-  // Logo
-  const logo=div({style:{padding:"24px 20px 16px",borderBottom:"1px solid rgba(255,255,255,.1)"}});
-  logo.appendChild(div({style:{fontSize:"28px",fontWeight:"900",color:"#fff",letterSpacing:"-1px"}},"📖 مدرستي"));
-  logo.appendChild(div({style:{color:"rgba(255,255,255,.55)",fontSize:"11px",marginTop:"4px"}},new Date().toLocaleDateString("ar-SA",{weekday:"long",year:"numeric",month:"long",day:"numeric"})));
-  logo.appendChild(div({style:{marginTop:"8px"}},syncDot(sync,lastPull)));
+  // Logo area
+  const logo=div({style:{padding:"20px 16px 16px",borderBottom:"1px solid rgba(255,255,255,.08)"}});
+  logo.appendChild(div({style:{fontSize:"22px",fontWeight:"900",color:"#fff",letterSpacing:"-0.5px"}},"📖 مدرستي"));
+  logo.appendChild(div({style:{color:"rgba(255,255,255,.45)",fontSize:"10px",marginTop:"4px"}},new Date().toLocaleDateString("ar-SA",{weekday:"long",month:"long",day:"numeric"})));
+  logo.appendChild(div({style:{marginTop:"6px"}},syncDot(sync,lastPull)));
   sb.appendChild(logo);
 
-  // Nav buttons
-  const nav=div({style:{padding:"12px 12px",borderBottom:"1px solid rgba(255,255,255,.1)"}});
-  const navItems=[["home","🏠 الرئيسية"],["reports","📄 التقارير"],["settings","⚙️ الإعدادات"]];
-  navItems.forEach(([sc2,label])=>{
-    const active=S().screen===sc2||(sc2==="home"&&["home","child","fHw","fExam","fGrade","fNote","fStudy","fGoal","fSupply","fAllowance","fAllowanceSettings","fPoints","fEvent"].includes(S().screen));
-    nav.appendChild(btn({style:{display:"block",width:"100%",textAlign:"right",background:active?"rgba(108,99,255,.4)":"transparent",color:"#fff",border:"none",borderRadius:"12px",padding:"10px 14px",cursor:"pointer",fontWeight:active?"700":"500",fontSize:"14px",marginBottom:"4px"},onclick:()=>setState({screen:sc2})},label));
+  // Nav
+  const nav=div({style:{padding:"10px 10px",borderBottom:"1px solid rgba(255,255,255,.08)"}});
+  const isHome=["home"].includes(S().screen);
+  const isChild=["child","fHw","fExam","fGrade","fNote","fStudy","fGoal","fSupply","fAllowance","fAllowanceSettings","fPoints"].includes(S().screen);
+  
+  [["🏠  الرئيسية","home",isHome],["📄  التقارير","reports",S().screen==="reports"],["⚙️  الإعدادات","settings",S().screen==="settings"]].forEach(([label,sc2,active])=>{
+    nav.appendChild(btn({className:"sb-nav-btn",style:{background:active?"rgba(108,99,255,.5)":"transparent",color:active?"#fff":"rgba(255,255,255,.65)",fontWeight:active?"700":"400"},onclick:()=>setState({screen:sc2})},label));
   });
-  // Vacation toggle
-  nav.appendChild(btn({style:{display:"block",width:"100%",textAlign:"right",background:vacationMode.active?"rgba(253,203,110,.3)":"transparent",color:vacationMode.active?"#FDCB6E":"rgba(255,255,255,.7)",border:"none",borderRadius:"12px",padding:"10px 14px",cursor:"pointer",fontWeight:"500",fontSize:"14px",marginBottom:"4px"},onclick:()=>{if(vacationMode.active)upd({vacationMode:{active:false,until:""}});else{const d=window.prompt("تاريخ العودة (YYYY-MM-DD):");if(d)upd({vacationMode:{active:true,until:d}});}}},"🌙 "+(vacationMode.active?"إلغاء الإجازة":"وضع الإجازة")));
-  nav.appendChild(btn({style:{display:"block",width:"100%",textAlign:"right",background:"transparent",color:"rgba(255,255,255,.7)",border:"none",borderRadius:"12px",padding:"10px 14px",cursor:"pointer",fontWeight:"500",fontSize:"14px"},onclick:()=>window.print()},"🖨️ طباعة"));
+  nav.appendChild(btn({className:"sb-nav-btn",style:{background:vacationMode.active?"rgba(253,203,110,.2)":"transparent",color:vacationMode.active?"#FDCB6E":"rgba(255,255,255,.65)"},onclick:()=>{if(vacationMode.active)upd({vacationMode:{active:false,until:""}});else{const d=window.prompt("تاريخ العودة (YYYY-MM-DD):");if(d)upd({vacationMode:{active:true,until:d}});}}},"🌙  "+(vacationMode.active?"إلغاء الإجازة":"وضع الإجازة")));
+  nav.appendChild(btn({className:"sb-nav-btn",style:{background:"transparent",color:"rgba(255,255,255,.65)"},onclick:printPDF},"🖨️  طباعة / PDF"));
   sb.appendChild(nav);
 
-  // Stats
-  const stats=div({style:{padding:"12px 16px",borderBottom:"1px solid rgba(255,255,255,.1)"}});
-  stats.appendChild(div({style:{fontSize:"10px",fontWeight:"800",color:"rgba(255,255,255,.4)",letterSpacing:"1.5px",marginBottom:"8px"}},"الإحصائيات"));
-  const hw_pending=Object.values(homework).flat().filter(h=>!h.done).length;
-  const ex_count=Object.values(exams).flat().length;
-  const pts_total=Object.values(points).reduce((a,p)=>a+(p?.total||0),0);
-  [[hw_pending+" واجب متبقي","📚","#FF6584"],[ex_count+" اختبار قادم","📝","#A29BFE"],[pts_total+" نقطة إجمالي","⭐","#FDCB6E"]].forEach(([label,ic,color])=>{
-    stats.appendChild(div({style:{display:"flex",alignItems:"center",gap:"10px",padding:"7px 0"}},
-      span({style:{fontSize:"18px"}},ic),
-      span({style:{color:"#fff",fontSize:"13px",fontWeight:"600"}},label)
+  // Stats cards
+  const statsWrap=div({style:{padding:"10px 12px",borderBottom:"1px solid rgba(255,255,255,.08)"}});
+  statsWrap.appendChild(div({style:{fontSize:"9px",fontWeight:"800",color:"rgba(255,255,255,.3)",letterSpacing:"1.5px",marginBottom:"8px",textTransform:"uppercase"}},"ملخص سريع"));
+  const hw_p=Object.values(homework).flat().filter(h=>!h.done).length;
+  const ex_c=Object.values(exams).flat().length;
+  const pts_t=Object.values(points).reduce((a,p)=>a+(p?.total||0),0);
+  [[hw_p,"واجب متبقي","📚","#FF6584"],[ex_c,"اختبار قادم","📝","#A29BFE"],[pts_t,"نقطة إجمالي","⭐","#FDCB6E"]].forEach(([v,l,ic,color])=>{
+    statsWrap.appendChild(div({style:{display:"flex",alignItems:"center",gap:"10px",padding:"6px 8px",borderRadius:"10px",marginBottom:"4px",background:"rgba(255,255,255,.04)"}},
+      span({style:{fontSize:"16px",flexShrink:0}},ic),
+      div({style:{flex:1}},span({style:{color:"#fff",fontSize:"13px",fontWeight:"600"}},String(v)),span({style:{color:"rgba(255,255,255,.4)",fontSize:"11px",marginRight:"4px"}},l))
     ));
   });
-  sb.appendChild(stats);
+  sb.appendChild(statsWrap);
 
   // Children list
-  const cList=div({style:{flex:1,overflowY:"auto",padding:"12px"}});
-  cList.appendChild(div({style:{fontSize:"10px",fontWeight:"800",color:"rgba(255,255,255,.4)",letterSpacing:"1.5px",marginBottom:"8px"}},"أطفالي"));
+  const cList=div({style:{flex:1,overflowY:"auto",padding:"10px 10px"}});
+  cList.appendChild(div({style:{fontSize:"9px",fontWeight:"800",color:"rgba(255,255,255,.3)",letterSpacing:"1.5px",marginBottom:"8px",textTransform:"uppercase"}},"الأطفال"));
   children.forEach(c=>{
-    const active=S().child?.id===c.id&&["child","fHw","fExam","fGrade","fNote","fStudy","fGoal","fSupply","fAllowance","fAllowanceSettings","fPoints"].includes(S().screen);
+    const active=S().child?.id===c.id&&isChild;
     const pending=(homework[c.id]||[]).filter(h=>!h.done).length;
-    const pts=(points[c.id]?.total)||0;
-    const btn2=btn({style:{display:"flex",alignItems:"center",gap:"10px",width:"100%",background:active?`${c.color}40`:"rgba(255,255,255,.05)",border:active?`1px solid ${c.color}60`:"1px solid transparent",borderRadius:"14px",padding:"10px 12px",cursor:"pointer",marginBottom:"6px",transition:"all .2s"},onclick:()=>goChild(c)});
-    btn2.appendChild(div({style:{width:"38px",height:"38px",borderRadius:"12px",background:`linear-gradient(135deg,${c.color},${c.color}88)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"20px",flexShrink:0}},c.emoji));
-    const info=div({style:{flex:1,textAlign:"right"}},div({style:{color:"#fff",fontWeight:"700",fontSize:"14px"}},c.name),div({style:{color:"rgba(255,255,255,.5)",fontSize:"11px",marginTop:"2px"}},c.grade));
-    btn2.appendChild(info);
-    if(pending>0)btn2.appendChild(div({style:{background:c.color,color:"#fff",borderRadius:"10px",padding:"2px 8px",fontSize:"11px",fontWeight:"700",flexShrink:0}},String(pending)));
-    cList.appendChild(btn2);
+    const pts2=(points[c.id]?.total)||0;
+    const b=btn({className:"sb-child-btn",style:{background:active?`${c.color}30`:"rgba(255,255,255,.04)",border:active?`1px solid ${c.color}50`:"1px solid transparent"},onclick:()=>goChild(c)});
+    b.appendChild(div({style:{width:"36px",height:"36px",borderRadius:"10px",background:`linear-gradient(135deg,${c.color},${c.color}88)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"18px",flexShrink:0}},c.emoji));
+    b.appendChild(div({style:{flex:1,textAlign:"right",minWidth:0}},div({style:{color:"#fff",fontWeight:"700",fontSize:"13px",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}},c.name),div({style:{color:"rgba(255,255,255,.4)",fontSize:"10px",marginTop:"1px"}},c.grade)));
+    if(pending>0)b.appendChild(div({style:{background:c.color,color:"#fff",borderRadius:"8px",padding:"2px 7px",fontSize:"10px",fontWeight:"700",flexShrink:0}},String(pending)));
+    cList.appendChild(b);
   });
+  cList.appendChild(btn({style:{display:"block",width:"100%",textAlign:"center",background:"rgba(255,255,255,.06)",color:"rgba(255,255,255,.5)",border:"1px dashed rgba(255,255,255,.15)",borderRadius:"12px",padding:"9px",cursor:"pointer",fontSize:"12px",marginTop:"8px"},onclick:()=>setState({childF:{name:"",grade:"",color:PALETTE[0],emoji:EMOJIS[0]},screen:"addChild"})},"+ إضافة طفل"));
   sb.appendChild(cList);
-
-  // Add child btn
-  const addChild=div({style:{padding:"12px"}});
-  addChild.appendChild(btn({style:{display:"block",width:"100%",background:"rgba(108,99,255,.3)",color:"#fff",border:"1px dashed rgba(108,99,255,.6)",borderRadius:"12px",padding:"10px",cursor:"pointer",fontSize:"13px",fontWeight:"600"},onclick:()=>setState({childF:{name:"",grade:"",color:PALETTE[0],emoji:EMOJIS[0]},screen:"addChild"})},"+ إضافة طفل"));
-  sb.appendChild(addChild);
   return sb;
+}
+
+// ── Desktop Top Bar ──
+function buildTopBar(data){
+  const {children,vacationMode}=data;
+  const {screen,child}=S();
+  const bar=div({className:"desktop-top-bar no-print"});
+  
+  // Breadcrumb
+  const bread=div({style:{display:"flex",alignItems:"center",gap:"8px",color:"#636e72",fontSize:"14px"}});
+  const screenNames={home:"الرئيسية",reports:"التقارير",settings:"الإعدادات",child:child?.name||"",fHw:"واجب",fExam:"اختبار",fGrade:"درجة",fNote:"ملاحظة",fStudy:"مذاكرة",fGoal:"هدف",fSupply:"مستلزم",fAllowance:"مصروف",fAllowanceSettings:"إعدادات المصروف",fPoints:"نقاط",fEvent:"حدث",addChild:"إضافة طفل",editChild:"تعديل بيانات"};
+  if(child&&["child","fHw","fExam","fGrade","fNote","fStudy","fGoal","fSupply","fAllowance","fAllowanceSettings","fPoints"].includes(screen)){
+    bread.appendChild(span({style:{cursor:"pointer",color:"#6C63FF"},onclick:()=>setState({screen:"home"})},"الرئيسية"));
+    bread.appendChild(span(null,"›"));
+    bread.appendChild(div({style:{width:"20px",height:"20px",borderRadius:"6px",background:`linear-gradient(135deg,${child.color},${child.color}88)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"12px"}},child.emoji));
+    bread.appendChild(span({style:{color:"#2d3436",fontWeight:"700"}},child.name));
+    if(screen!=="child"){bread.appendChild(span(null,"›"));bread.appendChild(span({style:{color:"#2d3436",fontWeight:"700"}},screenNames[screen]||""));}
+  } else {
+    bread.appendChild(span({style:{color:"#2d3436",fontWeight:"700",fontSize:"16px"}},screenNames[screen]||"الرئيسية"));
+  }
+  bar.appendChild(bread);
+  
+  // Actions
+  const actions=div({className:"no-print",style:{display:"flex",gap:"8px",alignItems:"center"}});
+  actions.appendChild(btn({style:{background:"#f0f0f8",color:"#6C63FF",border:"none",borderRadius:"10px",padding:"8px 16px",cursor:"pointer",fontWeight:"700",fontSize:"13px"},onclick:printPDF},"🖨️ طباعة PDF"));
+  if(["child","fHw","fExam","fGrade","fNote","fStudy","fGoal","fSupply","fAllowance","fAllowanceSettings","fPoints"].includes(screen)){
+    actions.appendChild(btn({style:{background:"#fff",color:"#636e72",border:"2px solid #eee",borderRadius:"10px",padding:"8px 16px",cursor:"pointer",fontWeight:"700",fontSize:"13px"},onclick:()=>setState({screen:"home"})},"← الرئيسية"));
+  }
+  bar.appendChild(actions);
+  return bar;
 }
 
 // ── Render ──
@@ -883,14 +939,22 @@ function render(){
   // Confirm dialog
   if(confirm){
     const bg=div({className:"confirm-bg no-print"});
-    const box=div({className:"confirm-box"},div({style:{fontSize:"40px",marginBottom:"12px"}},"🗑️"),div({style:{fontSize:"17px",fontWeight:"800",color:"#2d3436",marginBottom:"8px"}},"تأكيد الحذف"),div({style:{fontSize:"14px",color:"#636e72",marginBottom:"22px",lineHeight:"1.7"}},confirm.msg),div({style:{display:"flex",gap:"10px"}},btn({style:{flex:1,padding:"12px",borderRadius:"14px",border:"2px solid #eee",background:"#fff",color:"#636e72",fontWeight:"700",cursor:"pointer",fontSize:"14px"},onclick:()=>setState({confirm:null})},"إلغاء"),btn({style:{flex:1,padding:"12px",borderRadius:"14px",border:"none",background:"linear-gradient(135deg,#FF6584,#ff4757)",color:"#fff",fontWeight:"700",cursor:"pointer",fontSize:"14px"},onclick:confirm.onYes},"حذف")));
+    const box=div({className:"confirm-box"},
+      div({style:{fontSize:"40px",marginBottom:"12px"}},"🗑️"),
+      div({style:{fontSize:"17px",fontWeight:"800",color:"#2d3436",marginBottom:"8px"}},"تأكيد الحذف"),
+      div({style:{fontSize:"14px",color:"#636e72",marginBottom:"22px",lineHeight:"1.7"}},confirm.msg),
+      div({style:{display:"flex",gap:"10px"}},
+        btn({style:{flex:1,padding:"12px",borderRadius:"14px",border:"2px solid #eee",background:"#fff",color:"#636e72",fontWeight:"700",cursor:"pointer",fontSize:"14px"},onclick:()=>setState({confirm:null})},"إلغاء"),
+        btn({style:{flex:1,padding:"12px",borderRadius:"14px",border:"none",background:"linear-gradient(135deg,#FF6584,#ff4757)",color:"#fff",fontWeight:"700",cursor:"pointer",fontSize:"14px"},onclick:confirm.onYes},"حذف")
+      )
+    );
     bg.appendChild(box);app.appendChild(bg);
   }
 
   // Loading
   if(!data){app.appendChild(screenLoading());return;}
 
-  // Screens
+  // Build screen content
   const screens={
     home:screenHome,settings:screenSettings,reports:screenReports,child:screenChild,
     fHw:screenFHw,fExam:screenFExam,fGrade:screenFGrade,fNote:screenFNote,
@@ -900,25 +964,29 @@ function render(){
   };
   const fn=screens[screen]||screenHome;
   const screenEl=fn();
+
+  const isDesktop=window.innerWidth>=900;
   
-  // Desktop: wrap with sidebar
-  const isDesktop=window.innerWidth>=768;
-  const isFormScreen=["fHw","fExam","fGrade","fNote","fStudy","fGoal","fSupply","fAllowance","fAllowanceSettings","fPoints","fEvent","addChild","editChild"].includes(screen);
-  
-  if(isDesktop&&data){
-    const wrapper=div({style:{display:"flex",height:"100vh",width:"100%",overflow:"hidden"}});
-    wrapper.appendChild(buildSidebar(data));
-    // Main area - remove mobile-only elements from child screen
-    const mainArea=div({style:{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:"#F8F9FF"}});
-    mainArea.appendChild(screenEl);
-    wrapper.appendChild(mainArea);
+  if(isDesktop){
+    const wrapper=div({className:"app-wrapper"});
+    // Sidebar
+    const sb=buildSidebar(data);
+    wrapper.appendChild(sb);
+    // Main panel
+    const main=div({className:"main-panel"});
+    main.appendChild(buildTopBar(data));
+    main.appendChild(screenEl);
+    wrapper.appendChild(main);
     app.appendChild(wrapper);
   } else {
-    app.appendChild(screenEl);
+    const wrapper=div({className:"app-wrapper"});
+    wrapper.appendChild(screenEl);
+    app.appendChild(wrapper);
   }
 }
 
-window.addEventListener("resize",render);
+window.addEventListener("resize",()=>{render();});
+
 
 // ── Init ──
 loadData();
