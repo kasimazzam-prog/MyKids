@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<title>📖 مدرستي</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://unpkg.com/recharts/umd/Recharts.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body,#root{height:100%;width:100%;}
+body{background:#F8F9FF;font-family:'Segoe UI',Tahoma,Arial,sans-serif;direction:rtl;overflow:hidden;}
+input,select,textarea,button{font-family:inherit;direction:rtl;}
+::-webkit-scrollbar{width:0;height:0;}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes slideDown{from{transform:translateX(-50%) translateY(-20px);opacity:0}to{transform:translateX(-50%) translateY(0);opacity:1}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.page{animation:fadeIn 0.2s ease;}
+@media print{
+  .no-print{display:none!important}
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  body{overflow:auto!important;background:#fff!important}
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+// ══════════════════════════════════════════
+// مفاتيح JSONBin — لا تشاركها مع أحد
+// ══════════════════════════════════════════
+const API_KEY = "$2a$10$bTwrrAEC8We6iL62BjcgJOn7jAd/RuQMgRYox18BkR6QOE8txsluC";
+const BIN_ID  = "6a1897e521f9ee59d296ab96";
+// ══════════════════════════════════════════
+
+const { useState, useEffect, useCallback, useRef } = React;
+const { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } = Recharts;
+
+const DAYS     = ["السبت","الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس"];
+const SUBJECTS = ["رياضيات","عربي","إنجليزي","علوم","اجتماعيات","تربية إسلامية","حاسب","تربية فنية"];
+const EMOJIS   = ["👦","👧","🧒","👶","🧑","🎓"];
+const PALETTE  = ["#6C63FF","#FF6584","#43E97B","#FA8231","#A29BFE","#00CEC9","#FD79A8"];
+const BADGES   = [{id:"star",icon:"⭐",label:"نجم",req:50},{id:"fire",icon:"🔥",label:"متميز",req:100},{id:"crown",icon:"👑",label:"الأول",req:200},{id:"rocket",icon:"🚀",label:"تفوق",req:300}];
+const NOTE_T   = {positive:{label:"إيجابية",color:"#00B894",icon:"🌟"},academic:{label:"أكاديمية",color:"#0984E3",icon:"📖"},behavioral:{label:"سلوكية",color:"#FDCB6E",icon:"📋"}};
+const EVENT_T  = {holiday:{label:"إجازة",color:"#00B894",icon:"🏖️"},meeting:{label:"اجتماع",color:"#FDCB6E",icon:"👨‍👩‍👧"},trip:{label:"رحلة",color:"#A29BFE",icon:"🚌"},activity:{label:"نشاط",color:"#FD79A8",icon:"🎨"}};
+const PRIOR    = {high:{label:"عاجل",color:"#FF6584"},medium:{label:"متوسط",color:"#FA8231"},low:{label:"عادي",color:"#43E97B"}};
+
+const scoreColor = p => p>=90?"#00B894":p>=75?"#0984E3":p>=60?"#FDCB6E":"#FF6584";
+const getDU = ds => { const d=Math.ceil((new Date(ds)-new Date())/86400000); return d<0?"انتهى":d===0?"اليوم!":d===1?"غداً":`${d} أيام`; };
+const todayName = (()=>{ const m={6:"السبت",0:"الأحد",1:"الاثنين",2:"الثلاثاء",3:"الأربعاء",4:"الخميس"}; return m[new Date().getDay()]||"السبت"; })();
+const todayStr  = new Date().toISOString().split("T")[0];
+const fmt       = ds => { try{ return new Date(ds).toLocaleDateString("ar",{month:"short",day:"numeric"}); }catch(e){return ds;} };
+
+const DEF = {
+  children:[
+    {id:1,name:"أحمد",grade:"الصف الرابع",color:"#6C63FF",emoji:"👦"},
+    {id:2,name:"سارة",grade:"الصف السادس",color:"#FF6584",emoji:"👧"},
+    {id:3,name:"محمد",grade:"الصف الأول",color:"#43E97B",emoji:"👦"},
+  ],
+  schedule:{
+    1:{السبت:["رياضيات","عربي"],الأحد:["إنجليزي","علوم"],الاثنين:["رياضيات","تربية إسلامية"],الثلاثاء:["عربي","علوم"],الأربعاء:["إنجليزي"],الخميس:[]},
+    2:{السبت:["عربي","إنجليزي"],الأحد:["رياضيات","علوم"],الاثنين:["اجتماعيات"],الثلاثاء:["رياضيات","إنجليزي"],الأربعاء:["عربي","حاسب"],الخميس:[]},
+    3:{السبت:["عربي"],الأحد:["رياضيات"],الاثنين:["تربية إسلامية"],الثلاثاء:["عربي","رياضيات"],الأربعاء:["إنجليزي"],الخميس:[]},
+  },
+  studySchedule:{
+    1:{السبت:[{id:1,subject:"رياضيات",start:"16:00",duration:45},{id:2,subject:"عربي",start:"17:00",duration:30}],الأحد:[{id:3,subject:"إنجليزي",start:"16:00",duration:40}],الاثنين:[],الثلاثاء:[],الأربعاء:[],الخميس:[]},
+    2:{السبت:[{id:1,subject:"رياضيات",start:"15:30",duration:60}],الأحد:[],الاثنين:[{id:2,subject:"إنجليزي",start:"16:00",duration:45}],الثلاثاء:[],الأربعاء:[],الخميس:[]},
+    3:{السبت:[{id:1,subject:"عربي",start:"16:00",duration:30}],الأحد:[],الاثنين:[],الثلاثاء:[],الأربعاء:[],الخميس:[]},
+  },
+  homework:{
+    1:[{id:1,subject:"رياضيات",task:"حل تمارين ص 45",due:"2026-05-30",done:false},{id:2,subject:"عربي",task:"قراءة الدرس والإجابة",due:"2026-06-01",done:false}],
+    2:[{id:1,subject:"علوم",task:"بحث عن المجموعة الشمسية",due:"2026-05-31",done:false}],
+    3:[{id:1,subject:"عربي",task:"كتابة الحروف 3 مرات",due:"2026-05-29",done:true}],
+  },
+  exams:{
+    1:[{id:1,subject:"رياضيات",date:"2026-06-05",notes:"الفصل الثالث"}],
+    2:[{id:1,subject:"علوم",date:"2026-06-08",notes:"الوحدة الخامسة"}],
+    3:[],
+  },
+  grades:{
+    1:[{id:1,subject:"رياضيات",score:88,max:100,date:"2026-05-10",type:"اختبار"},{id:2,subject:"عربي",score:92,max:100,date:"2026-05-12",type:"اختبار"},{id:3,subject:"إنجليزي",score:75,max:100,date:"2026-05-15",type:"اختبار"}],
+    2:[{id:1,subject:"رياضيات",score:78,max:100,date:"2026-05-10",type:"اختبار"},{id:2,subject:"إنجليزي",score:90,max:100,date:"2026-05-14",type:"اختبار"}],
+    3:[{id:1,subject:"عربي",score:80,max:100,date:"2026-05-11",type:"اختبار"},{id:2,subject:"رياضيات",score:70,max:100,date:"2026-05-16",type:"اختبار"}],
+  },
+  points:{
+    1:{total:120,history:[{id:1,date:"2026-05-20",reason:"أنهى جميع واجبات الأسبوع",amount:20}]},
+    2:{total:85,history:[{id:1,date:"2026-05-21",reason:"اختبار علوم ممتاز",amount:25}]},
+    3:{total:40,history:[{id:1,date:"2026-05-23",reason:"إنهاء واجب العربي",amount:10}]},
+  },
+  teacherNotes:{
+    1:[{id:1,teacher:"أ. خالد",subject:"رياضيات",note:"أداء ممتاز في الحصة",type:"positive",date:"2026-05-20"}],
+    2:[{id:1,teacher:"أ. منى",subject:"علوم",note:"يجب مراجعة الفصل الثالث",type:"academic",date:"2026-05-19"}],
+    3:[{id:1,teacher:"أ. فاطمة",subject:"عربي",note:"يحتاج تشجيع في القراءة",type:"behavioral",date:"2026-05-18"}],
+  },
+  calendarEvents:[
+    {id:1,title:"إجازة نهاية الأسبوع",date:"2026-05-30",type:"holiday",childIds:[]},
+    {id:2,title:"رحلة علمية",date:"2026-06-10",type:"trip",childIds:[1,2]},
+    {id:3,title:"اجتماع أولياء الأمور",date:"2026-06-15",type:"meeting",childIds:[]},
+  ],
+  allowance:{
+    1:{daily:10,balance:35,history:[{id:1,date:"2026-05-26",amount:10,type:"منح",note:"مصروف الأحد"}]},
+    2:{daily:15,balance:45,history:[{id:1,date:"2026-05-26",amount:15,type:"منح",note:"مصروف الأحد"}]},
+    3:{daily:5,balance:10,history:[{id:1,date:"2026-05-26",amount:5,type:"منح",note:"مصروف الأحد"}]},
+  },
+  goals:{
+    1:[{id:1,subject:"رياضيات",targetPct:90,deadline:"2026-06-30",note:"الحصول على تقدير ممتاز"}],
+    2:[{id:1,subject:"إنجليزي",targetPct:85,deadline:"2026-06-30",note:"تحسين النطق"}],
+    3:[],
+  },
+  supplies:{
+    1:[{id:1,name:"دفتر رياضيات",done:false,priority:"high"},{id:2,name:"أقلام ملونة",done:true,priority:"low"}],
+    2:[{id:1,name:"كتاب علوم فصل 3",done:false,priority:"high"}],
+    3:[{id:1,name:"حقيبة مدرسية",done:false,priority:"medium"}],
+  },
+  vacationMode:{active:false,until:""},
+};
+
+// ── JSONBin ──────────────────────────────
+async function apiLoad() {
+  const r = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`,{headers:{"X-Master-Key":API_KEY}});
+  if(!r.ok) throw new Error("load failed");
+  const j = await r.json();
+  return (j.record && j.record.children) ? j.record : DEF;
+}
+async function apiSave(data) {
+  const r = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`,{method:"PUT",headers:{"Content-Type":"application/json","X-Master-Key":API_KEY},body:JSON.stringify(data)});
+  if(!r.ok) throw new Error("save failed");
+}
+
+// ── UI ───────────────────────────────────
+function Toast({msg,type,onDone}) {
+  useEffect(()=>{const t=setTimeout(onDone,2500);return()=>clearTimeout(t);},[]);
+  const bg=type==="error"?"#FF6584":type==="warn"?"#FDCB6E":"#00B894";
+  return <div className="no-print" style={{position:"fixed",top:16,left:"50%",transform:"translateX(-50%)",background:bg,color:"#fff",padding:"11px 22px",borderRadius:22,fontSize:14,fontWeight:"700",zIndex:9999,boxShadow:"0 8px 24px rgba(0,0,0,0.25)",whiteSpace:"nowrap",animation:"slideDown 0.3s ease"}}>{msg}</div>;
+}
+function Confirm({msg,onYes,onNo}) {
+  return <div className="no-print" style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9998,padding:20}}>
+    <div style={{background:"#fff",borderRadius:24,padding:28,maxWidth:300,width:"100%",textAlign:"center",boxShadow:"0 20px 60px rgba(0,0,0,0.3)"}}>
+      <div style={{fontSize:40,marginBottom:12}}>🗑️</div>
+      <div style={{fontSize:17,fontWeight:"800",color:"#2d3436",marginBottom:8}}>تأكيد الحذف</div>
+      <div style={{fontSize:14,color:"#636e72",marginBottom:22,lineHeight:1.7}}>{msg}</div>
+      <div style={{display:"flex",gap:10}}>
+        <button onClick={onNo} style={{flex:1,padding:"12px",borderRadius:14,border:"2px solid #eee",background:"#fff",color:"#636e72",fontWeight:"700",cursor:"pointer",fontSize:14}}>إلغاء</button>
+        <button onClick={onYes} style={{flex:1,padding:"12px",borderRadius:14,border:"none",background:"linear-gradient(135deg,#FF6584,#ff4757)",color:"#fff",fontWeight:"700",cursor:"pointer",fontSize:14}}>حذف</button>
+      </div>
+    </div>
+  </div>;
+}
+function Pill({label,color,small}) {
+  return <span style={{background:`${color}20`,color,padding:small?"2px 8px":"4px 12px",borderRadius:20,fontSize:small?10:12,fontWeight:"700",display:"inline-flex",alignItems:"center"}}>{label}</span>;
+}
+function PBar({value,max,color,h=8}) {
+  const pct=max?Math.min(100,Math.round(value/max*100)):0;
+  return <div style={{background:"rgba(0,0,0,0.07)",borderRadius:10,height:h,overflow:"hidden"}}>
+    <div style={{background:color,height:h,borderRadius:10,width:`${pct}%`,transition:"width 0.7s cubic-bezier(.4,0,.2,1)"}}/>
+  </div>;
+}
+function SyncDot({status,lastPull}) {
+  const c=status==="synced"?"#00B894":status==="syncing"?"#FDCB6E":status==="error"?"#FF6584":"#a29bfe";
+  const t=status==="synced"?"متزامن":status==="syncing"?"جاري المزامنة...":status==="error"?"خطأ في الاتصال":"جاري التحميل...";
+  return <div style={{display:"flex",alignItems:"center",gap:5,fontSize:11,color:"rgba(255,255,255,0.8)"}}>
+    <span style={{width:7,height:7,borderRadius:"50%",background:c,display:"inline-block",boxShadow:`0 0 6px ${c}`,animation:status==="syncing"?"pulse 1s infinite":""}}/>
+    <span>{t}</span>
+    {lastPull&&status==="synced"&&<span style={{opacity:0.6}}>• {lastPull.toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"})}</span>}
+  </div>;
+}
+function PrintBtn() {
+  return <button className="no-print" onClick={()=>window.print()} style={{background:"rgba(255,255,255,0.18)",border:"1px solid rgba(255,255,255,0.3)",color:"#fff",borderRadius:12,padding:"7px 14px",cursor:"pointer",fontSize:12,fontWeight:"700",display:"flex",alignItems:"center",gap:4,backdropFilter:"blur(10px)"}}>🖨️ طباعة</button>;
+}
+function EditDel({onEdit,onDel,msg,del}) {
+  return <div style={{display:"flex",gap:6,flexShrink:0}}>
+    <button onClick={onEdit} style={{background:"#f0f0f8",border:"none",borderRadius:10,padding:"7px 11px",cursor:"pointer",fontSize:14,color:"#6C63FF"}}>✏️</button>
+    <button onClick={()=>del(msg||"هل تريد الحذف؟",onDel)} style={{background:"#FEE2E2",border:"none",borderRadius:10,padding:"7px 11px",cursor:"pointer",fontSize:14,color:"#EF4444"}}>🗑</button>
+  </div>;
+}
+
+// ── App ──────────────────────────────────
+function App() {
+  const [data,setData]=useState(null);
+  const [sync,setSync]=useState("loading");
+  const [lastPull,setLastPull]=useState(null);
+  const [screen,setScreen]=useState("home");
+  const [child,setChild]=useState(null);
+  const [tab,setTab]=useState("schedule");
+  const [search,setSearch]=useState("");
+  const [editDay,setEditDay]=useState(null);
+  const [schedSubj,setSchedSubj]=useState("");
+  const [hwArchive,setHwArchive]=useState(false);
+  const [editItem,setEditItem]=useState(null);
+  const [toast,setToast]=useState(null);
+  const [confirm,setConfirm]=useState(null);
+  const [childF,setChildF]=useState({name:"",grade:"",color:PALETTE[0],emoji:EMOJIS[0]});
+  const [editingChild,setEditingChild]=useState(null);
+  const [F,setF]=useState({});
+  const sf=(k,v)=>setF(f=>({...f,[k]:v}));
+
+  useEffect(()=>{load();const t=setInterval(load,20000);return()=>clearInterval(t);},[]);
+
+  async function load(){
+    try{
+      setSync("syncing");
+      const d=await apiLoad();
+      setData(d);setLastPull(new Date());setSync("synced");
+    }catch(e){
+      if(!data)setData(DEF);
+      setSync("error");
+    }
+  }
+
+  const save=useCallback(async nd=>{
+    setSync("syncing");
+    setData(nd);
+    try{await apiSave(nd);setSync("synced");setToast({msg:"تم الحفظ ✓",type:"ok"});}
+    catch{setSync("error");setToast({msg:"تعذرت المزامنة ⚠️",type:"error"});}
+  },[]);
+
+  const del=(msg,fn)=>setConfirm({msg,onYes:()=>{fn();setConfirm(null);setToast({msg:"تم الحذف",type:"warn"});}});
+
+  if(!data)return(
+    <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",flexDirection:"column",gap:18,background:"linear-gradient(135deg,#1a1a2e 0%,#6C63FF 100%)"}}>
+      <div style={{fontSize:64}}>📖</div>
+      <div style={{fontSize:26,fontWeight:"900",color:"#fff",letterSpacing:-1}}>مدرستي</div>
+      <div style={{color:"rgba(255,255,255,0.65)",fontSize:15}}>جاري تحميل البيانات...</div>
+      <div style={{display:"flex",gap:6,marginTop:8}}>
+        {[0,1,2].map(i=><div key={i} style={{width:10,height:10,borderRadius:"50%",background:"rgba(255,255,255,0.4)",animation:`pulse 1.2s ${i*0.2}s infinite`}}/>)}
+      </div>
+      {sync==="error"&&<div style={{background:"rgba(255,101,132,0.25)",border:"1px solid #FF6584",color:"#FF6584",padding:"10px 20px",borderRadius:14,fontSize:13,fontWeight:"700",marginTop:8}}>⚠️ تحقق من الاتصال بالإنترنت</div>}
+    </div>
+  );
+
+  const {children,schedule,studySchedule,homework,exams,grades,points,teacherNotes,calendarEvents,allowance,goals,supplies,vacationMode}=data;
+  const upd=p=>save({...data,...p});
+
+  const toggleHw=(cid,id)=>save({...data,homework:{...homework,[cid]:homework[cid].map(h=>h.id===id?{...h,done:!h.done}:h)}});
+  const addSubj=(cid,day,s)=>{if(!s)return;const cs=schedule[cid]||{};upd({schedule:{...schedule,[cid]:{...cs,[day]:[...(cs[day]||[]),s]}}});setSchedSubj("");};
+  const remSubj=(cid,day,i)=>{const cs=schedule[cid]||{};upd({schedule:{...schedule,[cid]:{...cs,[day]:cs[day].filter((_,x)=>x!==i)}}});};
+  const toggleSupply=(cid,id)=>save({...data,supplies:{...supplies,[cid]:(supplies[cid]||[]).map(s=>s.id===id?{...s,done:!s.done}:s)}});
+
+  const openEdit=(sc,item,def)=>{setEditItem(item);setF(def);setScreen(sc);};
+  const openAdd=(sc,def)=>{setEditItem(null);setF(def);setScreen(sc);};
+  const back=()=>{setScreen("child");setEditItem(null);};
+
+  function submitHw(){if(!F.task||!F.due)return;const l=homework[child.id]||[];const u=editItem?l.map(h=>h.id===editItem.id?{...h,...F}:h):[...l,{id:Date.now(),...F,done:false}];upd({homework:{...homework,[child.id]:u}});setScreen("child");}
+  function submitExam(){if(!F.date)return;const l=exams[child.id]||[];const u=editItem?l.map(e=>e.id===editItem.id?{...e,...F}:e):[...l,{id:Date.now(),...F}];upd({exams:{...exams,[child.id]:u}});setScreen("child");}
+  function submitGrade(){if(!F.score||!F.date)return;const it={...F,score:Number(F.score),max:Number(F.max||100)};const l=grades[child.id]||[];const u=editItem?l.map(g=>g.id===editItem.id?{...g,...it}:g):[...l,{id:Date.now(),...it}];upd({grades:{...grades,[child.id]:u}});setScreen("child");}
+  function submitNote(){if(!F.note||!F.date)return;const l=teacherNotes[child.id]||[];const u=editItem?l.map(n=>n.id===editItem.id?{...n,...F}:n):[...l,{id:Date.now(),...F}];upd({teacherNotes:{...teacherNotes,[child.id]:u}});setScreen("child");}
+  function submitStudy(){if(!F.subject||!F.day)return;const ss=studySchedule[child.id]||{};const day=F.day;const l=ss[day]||[];const it={...F,duration:Number(F.duration||45)};const u=editItem?l.map(s=>s.id===editItem.id?{...s,...it}:s):[...l,{id:Date.now(),...it}];upd({studySchedule:{...studySchedule,[child.id]:{...ss,[day]:u}}});setScreen("child");}
+  function submitGoal(){if(!F.deadline)return;const l=goals[child.id]||[];const it={...F,targetPct:Number(F.targetPct||90)};const u=editItem?l.map(g=>g.id===editItem.id?{...g,...it}:g):[...l,{id:Date.now(),...it}];upd({goals:{...goals,[child.id]:u}});setScreen("child");}
+  function submitSupply(){if(!F.name)return;const l=supplies[child.id]||[];const u=editItem?l.map(s=>s.id===editItem.id?{...s,...F}:s):[...l,{id:Date.now(),...F,done:false}];upd({supplies:{...supplies,[child.id]:u}});setScreen("child");}
+  function submitAllowance(){if(!F.amount)return;const amt=Number(F.amount)*(F.type==="صرف"?-1:1);const al=allowance[child.id]||{daily:0,balance:0,history:[]};upd({allowance:{...allowance,[child.id]:{...al,balance:al.balance+amt,history:[{id:Date.now(),date:todayStr,amount:amt,type:F.type,note:F.note||""},...al.history]}}});setScreen("child");}
+  function submitAllowanceSettings(){const al=allowance[child.id]||{daily:0,balance:0,history:[]};upd({allowance:{...allowance,[child.id]:{...al,daily:Number(F.daily||0),balance:Number(F.balance||0)}}});setScreen("child");}
+  function submitPoints(){if(!F.reason||!F.amount)return;const p=points[child.id]||{total:0,history:[]};upd({points:{...points,[child.id]:{total:p.total+Number(F.amount),history:[{id:Date.now(),date:todayStr,reason:F.reason,amount:Number(F.amount)},...p.history]}}});setScreen("child");}
+  function submitEvent(){if(!F.title||!F.date)return;const u=editItem?calendarEvents.map(e=>e.id===editItem.id?{...e,...F}:e):[...calendarEvents,{id:Date.now(),...F,childIds:F.childIds||[]}];upd({calendarEvents:u});setScreen("home");}
+  function submitAddChild(){if(!childF.name||!childF.grade)return;const id=Date.now();const cl=o=>({...o,[id]:[]});upd({children:[...children,{id,...childF}],homework:cl(homework),exams:cl(exams),grades:cl(grades),teacherNotes:cl(teacherNotes),supplies:cl(supplies),goals:cl(goals),points:{...points,[id]:{total:0,history:[]}},schedule:{...schedule,[id]:{}},studySchedule:{...studySchedule,[id]:{}},allowance:{...allowance,[id]:{daily:0,balance:0,history:[]}}});setChildF({name:"",grade:"",color:PALETTE[0],emoji:EMOJIS[0]});setScreen("settings");}
+  function submitEditChild(){if(!childF.name||!childF.grade)return;upd({children:children.map(c=>c.id===editingChild.id?{...c,...childF}:c)});setScreen("settings");}
+  function deleteChild(cid){del("هل تريد حذف هذا الطفل وجميع بياناته نهائياً؟",()=>{const rm=o=>{const n={...o};delete n[cid];return n;};upd({children:children.filter(c=>c.id!==cid),homework:rm(homework),exams:rm(exams),grades:rm(grades),points:rm(points),teacherNotes:rm(teacherNotes),schedule:rm(schedule),studySchedule:rm(studySchedule),allowance:rm(allowance),goals:rm(goals),supplies:rm(supplies)});});}
+
+  const searchRes=search.trim().length>1?(()=>{const q=search.toLowerCase();const r=[];children.forEach(c=>{(homework[c.id]||[]).filter(h=>h.task.toLowerCase().includes(q)||h.subject.toLowerCase().includes(q)).forEach(h=>r.push({type:"📚",child:c,main:`${h.subject}: ${h.task}`,sub:fmt(h.due)}));(exams[c.id]||[]).filter(e=>e.subject.toLowerCase().includes(q)).forEach(e=>r.push({type:"📝",child:c,main:e.subject,sub:fmt(e.date)}));(grades[c.id]||[]).filter(g=>g.subject.toLowerCase().includes(q)).forEach(g=>r.push({type:"📊",child:c,main:`${g.subject}: ${g.score}/${g.max}`,sub:fmt(g.date)}));(supplies[c.id]||[]).filter(s=>s.name.toLowerCase().includes(q)).forEach(s=>r.push({type:"🛒",child:c,main:s.name,sub:s.done?"تم الشراء":"لم يُشترَ"}));});return r;})():[];
+
+  // ── Form Wrapper ──
+  const FW=({title,bk,onSave,color,children:fc})=>{
+    const c=color||child?.color||"#6C63FF";
+    return <div style={S.page} className="page">
+      <div className="no-print" style={S.hdr(c)}>
+        <button style={S.backBtn} onClick={bk}>→</button>
+        <span style={S.hTitle}>{title}</span>
+        <PrintBtn/>
+      </div>
+      <div style={{flex:1,overflowY:"auto",padding:"16px 16px 100px",WebkitOverflowScrolling:"touch"}}>
+        {fc}
+        <button style={S.submitBtn(c)} onClick={onSave}>✓ حفظ</button>
+      </div>
+    </div>;
+  };
+
+  const FL=({t})=><div style={S.flbl}>{t}</div>;
+  const FI=({k,...p})=><input style={S.finp} value={F[k]||""} onChange={e=>sf(k,e.target.value)} {...p}/>;
+  const FSel=({k,opts})=><select style={S.finp} value={F[k]||""} onChange={e=>sf(k,e.target.value)}>{opts.map(o=><option key={o}>{o}</option>)}</select>;
+  const FA=({k,...p})=><textarea style={{...S.finp,height:88,resize:"none"}} value={F[k]||""} onChange={e=>sf(k,e.target.value)} {...p}/>;
+  const FChips=({k,opts,getColor})=><div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:8}}>
+    {opts.map((o,i)=><button key={o} onClick={()=>sf(k,o)} style={{background:F[k]===o?(getColor?getColor(o,i):(child?.color||"#6C63FF")):"#f0f0f8",color:F[k]===o?"#fff":"#555",border:"none",borderRadius:12,padding:"8px 16px",cursor:"pointer",fontWeight:"700",fontSize:13,transition:"all 0.2s"}}>{o}</button>)}
+  </div>;
+
+  // ── FORM SCREENS ──
+  if(screen==="fHw") return <FW title={editItem?"تعديل واجب ✏️":"واجب جديد 📚"} bk={back} onSave={submitHw}>
+    <FL t="المادة"/><FSel k="subject" opts={SUBJECTS}/>
+    <FL t="تفاصيل الواجب"/><FA k="task" placeholder="اكتب تفاصيل الواجب..."/>
+    <FL t="تاريخ التسليم"/><FI k="due" type="date"/>
+  </FW>;
+
+  if(screen==="fExam") return <FW title={editItem?"تعديل اختبار ✏️":"اختبار جديد 📝"} bk={back} onSave={submitExam}>
+    <FL t="المادة"/><FSel k="subject" opts={SUBJECTS}/>
+    <FL t="التاريخ"/><FI k="date" type="date"/>
+    <FL t="ملاحظات (اختياري)"/><FI k="notes" placeholder="الفصل / الوحدة..."/>
+  </FW>;
+
+  if(screen==="fGrade") return <FW title={editItem?"تعديل درجة ✏️":"درجة جديدة 📊"} bk={back} onSave={submitGrade}>
+    <FL t="المادة"/><FSel k="subject" opts={SUBJECTS}/>
+    <FL t="النوع"/><FChips k="type" opts={["اختبار","واجب","مشاركة","مشروع"]}/>
+    <FL t="الدرجة / من"/>
+    <div style={{display:"flex",gap:10}}>
+      <input style={{...S.finp,flex:1}} type="number" placeholder="الدرجة" value={F.score||""} onChange={e=>sf("score",e.target.value)}/>
+      <input style={{...S.finp,flex:1}} type="number" placeholder="من" value={F.max||100} onChange={e=>sf("max",e.target.value)}/>
+    </div>
+    <FL t="التاريخ"/><FI k="date" type="date"/>
+  </FW>;
+
+  if(screen==="fNote") return <FW title={editItem?"تعديل ملاحظة ✏️":"ملاحظة معلم 💬"} bk={back} onSave={submitNote}>
+    <FL t="المعلم"/><FI k="teacher" placeholder="اسم المعلم..."/>
+    <FL t="المادة"/><FSel k="subject" opts={SUBJECTS}/>
+    <FL t="النوع"/>
+    <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:8}}>
+      {Object.entries(NOTE_T).map(([k,v])=><button key={k} onClick={()=>sf("type",k)} style={{background:F.type===k?v.color:"#f0f0f8",color:F.type===k?"#fff":"#555",border:"none",borderRadius:12,padding:"8px 16px",cursor:"pointer",fontWeight:"700",fontSize:13}}>{v.icon} {v.label}</button>)}
+    </div>
+    <FL t="الملاحظة"/><FA k="note" placeholder="اكتب الملاحظة..."/>
+    <FL t="التاريخ"/><FI k="date" type="date"/>
+  </FW>;
+
+  if(screen==="fStudy") return <FW title={editItem?"تعديل جلسة ✏️":"جلسة مذاكرة 📚"} bk={back} onSave={submitStudy}>
+    <FL t="اليوم"/><FChips k="day" opts={DAYS}/>
+    <FL t="المادة"/><FSel k="subject" opts={SUBJECTS}/>
+    <FL t="وقت البدء"/><FI k="start" type="time"/>
+    <FL t="المدة (دقيقة)"/>
+    <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:8}}>
+      {[20,30,45,60,90].map(n=><button key={n} onClick={()=>sf("duration",n)} style={{background:Number(F.duration)===n?(child?.color||"#6C63FF"):"#f0f0f8",color:Number(F.duration)===n?"#fff":"#555",border:"none",borderRadius:12,padding:"8px 18px",cursor:"pointer",fontWeight:"700",fontSize:14}}>{n}د</button>)}
+    </div>
+  </FW>;
+
+  if(screen==="fGoal") return <FW title={editItem?"تعديل هدف ✏️":"هدف جديد 🎯"} bk={back} onSave={submitGoal}>
+    <FL t="المادة"/><FSel k="subject" opts={SUBJECTS}/>
+    <FL t="الهدف (%)"/>
+    <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:8}}>
+      {[70,75,80,85,90,95,100].map(n=><button key={n} onClick={()=>sf("targetPct",n)} style={{background:Number(F.targetPct)===n?(child?.color||"#6C63FF"):"#f0f0f8",color:Number(F.targetPct)===n?"#fff":"#555",border:"none",borderRadius:12,padding:"8px 14px",cursor:"pointer",fontWeight:"700",fontSize:14}}>{n}%</button>)}
+    </div>
+    <FL t="الموعد النهائي"/><FI k="deadline" type="date"/>
+    <FL t="ملاحظة"/><FI k="note" placeholder="وصف الهدف..."/>
+  </FW>;
+
+  if(screen==="fSupply") return <FW title={editItem?"تعديل مستلزم ✏️":"مستلزم جديد 🛒"} bk={back} onSave={submitSupply}>
+    <FL t="اسم المستلزم"/><FI k="name" placeholder="مثال: دفتر رياضيات..."/>
+    <FL t="الأولوية"/>
+    <div style={{display:"flex",gap:8,marginBottom:8}}>
+      {Object.entries(PRIOR).map(([k,v])=><button key={k} onClick={()=>sf("priority",k)} style={{flex:1,background:F.priority===k?v.color:"#f0f0f8",color:F.priority===k?"#fff":"#555",border:"none",borderRadius:12,padding:"10px 6px",cursor:"pointer",fontWeight:"700",fontSize:13}}>{v.label}</button>)}
+    </div>
+  </FW>;
+
+  if(screen==="fAllowance") return <FW title="إدارة المصروف 💰" bk={back} onSave={submitAllowance}>
+    <FL t="النوع"/>
+    <div style={{display:"flex",gap:10,marginBottom:8}}>
+      {["منح","صرف"].map(t=><button key={t} onClick={()=>sf("type",t)} style={{flex:1,background:F.type===t?(t==="منح"?"#00B894":"#FF6584"):"#f0f0f8",color:F.type===t?"#fff":"#555",border:"none",borderRadius:14,padding:"14px",cursor:"pointer",fontWeight:"800",fontSize:16}}>{t==="منح"?"➕ منح":"➖ صرف"}</button>)}
+    </div>
+    <FL t="المبلغ (ريال)"/><FI k="amount" type="number" placeholder="0"/>
+    <FL t="ملاحظة"/><FI k="note" placeholder="سبب المنح أو الصرف..."/>
+  </FW>;
+
+  if(screen==="fAllowanceSettings") return <FW title="إعدادات المصروف ⚙️" bk={back} onSave={submitAllowanceSettings}>
+    <FL t="المصروف اليومي (ريال)"/><FI k="daily" type="number"/>
+    <FL t="الرصيد الحالي (ريال)"/><FI k="balance" type="number"/>
+    <div style={{background:"#FFF9C4",borderRadius:14,padding:14,fontSize:13,color:"#92400E",lineHeight:1.6}}>⚠️ تعديل الرصيد يغير الرصيد الحالي مباشرة دون تسجيل معاملة</div>
+  </FW>;
+
+  if(screen==="fPoints") return <FW title="منح نقاط ⭐" bk={back} onSave={submitPoints}>
+    <FL t="السبب"/><FI k="reason" placeholder="مثال: درجة ممتازة..."/>
+    <FL t="عدد النقاط"/>
+    <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:8}}>
+      {[5,10,20,30,50].map(n=><button key={n} onClick={()=>sf("amount",n)} style={{background:Number(F.amount)===n?(child?.color||"#6C63FF"):"#f0f0f8",color:Number(F.amount)===n?"#fff":"#555",border:"none",borderRadius:12,padding:"10px 18px",cursor:"pointer",fontWeight:"900",fontSize:16}}>{n}⭐</button>)}
+    </div>
+  </FW>;
+
+  if(screen==="fEvent") return <FW title={editItem?"تعديل حدث ✏️":"حدث جديد 📅"} color="#1e3a5f" bk={()=>setScreen("home")} onSave={submitEvent}>
+    <FL t="العنوان"/><FI k="title" placeholder="مثال: رحلة علمية..."/>
+    <FL t="النوع"/>
+    <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:8}}>
+      {Object.entries(EVENT_T).map(([k,v])=><button key={k} onClick={()=>sf("type",k)} style={{background:F.type===k?v.color:"#f0f0f8",color:F.type===k?"#fff":"#555",border:"none",borderRadius:12,padding:"8px 14px",cursor:"pointer",fontWeight:"700",fontSize:13}}>{v.icon} {v.label}</button>)}
+    </div>
+    <FL t="التاريخ"/><FI k="date" type="date"/>
+    <FL t="خاص بطفل (اختياري)"/>
+    <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:8}}>
+      {children.map(c=>{const sel=(F.childIds||[]).includes(c.id);return<button key={c.id} onClick={()=>sf("childIds",sel?(F.childIds||[]).filter(x=>x!==c.id):[...(F.childIds||[]),c.id])} style={{background:sel?c.color:"#f0f0f8",color:sel?"#fff":"#555",border:"none",borderRadius:12,padding:"8px 14px",cursor:"pointer",fontWeight:"700",fontSize:13}}>{c.emoji} {c.name}</button>;})}
+    </div>
+  </FW>;
+
+  // ── CHILD FORM ──
+  if(screen==="addChild"||screen==="editChild") return(
+    <div style={S.page} className="page">
+      <div className="no-print" style={S.hdr(childF.color)}>
+        <button style={S.backBtn} onClick={()=>setScreen("settings")}>→</button>
+        <span style={S.hTitle}>{screen==="addChild"?"إضافة طفل جديد":"تعديل بيانات"}</span>
+        <PrintBtn/>
+      </div>
+      <div style={{flex:1,overflowY:"auto",padding:"16px 16px 100px",WebkitOverflowScrolling:"touch"}}>
+        <div style={S.flbl}>الاسم</div>
+        <input style={S.finp} value={childF.name} onChange={e=>setChildF(f=>({...f,name:e.target.value}))} placeholder="اسم الطفل..."/>
+        <div style={S.flbl}>الصف الدراسي</div>
+        <input style={S.finp} value={childF.grade} onChange={e=>setChildF(f=>({...f,grade:e.target.value}))} placeholder="مثال: الصف الرابع الابتدائي..."/>
+        <div style={S.flbl}>الإيموجي</div>
+        <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:8}}>
+          {EMOJIS.map(e=><button key={e} onClick={()=>setChildF(f=>({...f,emoji:e}))} style={{background:childF.emoji===e?childF.color:"#f0f0f8",color:childF.emoji===e?"#fff":"#333",border:"none",borderRadius:14,padding:"10px 18px",cursor:"pointer",fontSize:24}}>{e}</button>)}
+        </div>
+        <div style={S.flbl}>اللون</div>
+        <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:20}}>
+          {PALETTE.map(c=><button key={c} onClick={()=>setChildF(f=>({...f,color:c}))} style={{width:44,height:44,borderRadius:14,background:c,border:childF.color===c?"4px solid #fff":"4px solid transparent",cursor:"pointer",boxShadow:childF.color===c?`0 0 0 3px ${c}`:"none",transition:"all 0.2s"}}/>)}
+        </div>
+        {/* Preview */}
+        <div style={{background:`linear-gradient(135deg,${childF.color},${childF.color}88)`,borderRadius:24,padding:24,textAlign:"center",color:"#fff",marginBottom:20,boxShadow:`0 8px 30px ${childF.color}40`}}>
+          <div style={{fontSize:52}}>{childF.emoji}</div>
+          <div style={{fontSize:22,fontWeight:"900",marginTop:10}}>{childF.name||"اسم الطفل"}</div>
+          <div style={{fontSize:14,opacity:0.8,marginTop:4}}>{childF.grade||"الصف الدراسي"}</div>
+        </div>
+        <button style={S.submitBtn(childF.color)} onClick={screen==="addChild"?submitAddChild:submitEditChild}>✓ حفظ</button>
+      </div>
+    </div>
+  );
+
+  // ── SETTINGS ──
+  if(screen==="settings") return(
+    <div style={S.page} className="page">
+      <div className="no-print" style={S.hdr("#1e3a5f")}>
+        <button style={S.backBtn} onClick={()=>setScreen("home")}>→</button>
+        <span style={S.hTitle}>⚙️ الإعدادات</span>
+        <PrintBtn/>
+      </div>
+      <div style={{flex:1,overflowY:"auto",padding:"16px 14px 80px",WebkitOverflowScrolling:"touch"}}>
+        <div style={S.sTitle}>إدارة الأطفال</div>
+        {children.map(c=>(
+          <div key={c.id} style={S.card}>
+            <div style={{display:"flex",alignItems:"center",gap:14}}>
+              <div style={{width:54,height:54,borderRadius:18,background:`linear-gradient(135deg,${c.color},${c.color}88)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,flexShrink:0}}>{c.emoji}</div>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:"800",fontSize:16,color:"#2d3436"}}>{c.name}</div>
+                <div style={{fontSize:13,color:"#b2bec3",marginTop:2}}>{c.grade}</div>
+              </div>
+              <div style={{display:"flex",gap:8}}>
+                <button onClick={()=>{setEditingChild(c);setChildF({name:c.name,grade:c.grade,color:c.color,emoji:c.emoji});setScreen("editChild");}} style={{background:`${c.color}15`,color:c.color,border:"none",borderRadius:12,padding:"8px 14px",cursor:"pointer",fontWeight:"700",fontSize:13}}>✏️ تعديل</button>
+                <button onClick={()=>deleteChild(c.id)} style={{background:"#FEE2E2",color:"#EF4444",border:"none",borderRadius:12,padding:"8px 12px",cursor:"pointer",fontSize:16}}>🗑</button>
+              </div>
+            </div>
+          </div>
+        ))}
+        <button style={{...S.submitBtn("#6C63FF"),marginTop:10}} onClick={()=>{setChildF({name:"",grade:"",color:PALETTE[0],emoji:EMOJIS[0]});setScreen("addChild");}}>+ إضافة طفل جديد</button>
+      </div>
+    </div>
+  );
+
+  // ── REPORTS ──
+  if(screen==="reports") return(
+    <div style={S.page} className="page">
+      <div className="no-print" style={S.hdr("#1e3a5f")}>
+        <button style={S.backBtn} onClick={()=>setScreen("home")}>→</button>
+        <span style={S.hTitle}>📄 التقارير الشاملة</span>
+        <PrintBtn/>
+      </div>
+      <div style={{flex:1,overflowY:"auto",padding:"16px 14px 80px",WebkitOverflowScrolling:"touch"}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+          {[{l:"إجمالي الواجبات",v:Object.values(homework).flat().length,i:"📚",c:"#6C63FF"},{l:"المنجزة",v:Object.values(homework).flat().filter(h=>h.done).length,i:"✅",c:"#00B894"},{l:"الاختبارات",v:Object.values(exams).flat().length,i:"📝",c:"#0984E3"},{l:"مجموع النقاط",v:Object.values(points).reduce((a,p)=>a+(p?.total||0),0),i:"⭐",c:"#FDCB6E"}].map((x,i)=>(
+            <div key={i} style={{background:"#fff",borderRadius:18,padding:16,textAlign:"center",boxShadow:"0 4px 20px rgba(0,0,0,0.07)",borderTop:`4px solid ${x.c}`}}>
+              <div style={{fontSize:28}}>{x.i}</div>
+              <div style={{fontSize:26,fontWeight:"900",color:x.c,marginTop:4}}>{x.v}</div>
+              <div style={{fontSize:11,color:"#b2bec3",marginTop:4}}>{x.l}</div>
+            </div>
+          ))}
+        </div>
+        {children.map(c=>{
+          const hw=homework[c.id]||[];const gr=grades[c.id]||[];const pt=points[c.id]||{total:0};const ex=exams[c.id]||[];
+          const done=hw.filter(h=>h.done).length;const tot=hw.length;const pct=tot?Math.round(done/tot*100):0;
+          const avg=gr.length?Math.round(gr.reduce((a,g)=>a+g.score/g.max*100,0)/gr.length):null;
+          const gd=SUBJECTS.map(s=>{const gs=gr.filter(g=>g.subject===s);const a=gs.length?Math.round(gs.reduce((x,g)=>x+g.score/g.max*100,0)/gs.length):null;return{s:s.slice(0,5),a};}).filter(x=>x.a!==null);
+          const next=[...ex].sort((a,b)=>new Date(a.date)-new Date(b.date)).find(e=>new Date(e.date)>=new Date());
+          const al=allowance[c.id]||{balance:0};
+          return(
+            <div key={c.id} style={{background:"#fff",borderRadius:22,padding:18,marginBottom:16,boxShadow:"0 4px 24px rgba(0,0,0,0.08)",overflow:"hidden",position:"relative"}}>
+              <div style={{position:"absolute",top:0,left:0,right:0,height:5,background:`linear-gradient(90deg,${c.color},${c.color}55)`}}/>
+              <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:16,marginTop:4}}>
+                <div style={{width:52,height:52,borderRadius:18,background:`linear-gradient(135deg,${c.color},${c.color}88)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26}}>{c.emoji}</div>
+                <div><div style={{fontWeight:"900",fontSize:18,color:"#2d3436"}}>{c.name}</div><div style={{fontSize:13,color:"#b2bec3"}}>{c.grade}</div></div>
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:8,marginBottom:14}}>
+                {[{v:`${pct}%`,l:"الواجبات",c:c.color},{v:avg?`${avg}%`:"—",l:"الدرجات",c:avg?scoreColor(avg):"#dfe6e9"},{v:`${pt.total}⭐`,l:"النقاط",c:"#FDCB6E"},{v:`${al.balance}ر`,l:"الرصيد",c:"#00B894"}].map((x,i)=>(
+                  <div key={i} style={{background:`${x.c}12`,borderRadius:12,padding:"10px 4px",textAlign:"center"}}>
+                    <div style={{fontSize:14,fontWeight:"900",color:x.c}}>{x.v}</div>
+                    <div style={{fontSize:9,color:"#b2bec3",marginTop:2}}>{x.l}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{marginBottom:12}}>
+                <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:"#b2bec3",marginBottom:4}}><span>إنجاز الواجبات</span><span>{done}/{tot}</span></div>
+                <PBar value={done} max={tot||1} color={c.color} h={10}/>
+              </div>
+              {gd.length>0&&<ResponsiveContainer width="100%" height={90}><BarChart data={gd} margin={{top:0,right:0,left:-30,bottom:0}}><XAxis dataKey="s" tick={{fontSize:9}}/><YAxis domain={[0,100]} tick={{fontSize:9}}/><Tooltip formatter={v=>[`${v}%`]}/><Bar dataKey="a" fill={c.color} radius={[4,4,0,0]}/></BarChart></ResponsiveContainer>}
+              {next&&<div style={{background:`${c.color}10`,borderRadius:12,padding:"8px 14px",fontSize:13,color:"#636e72",marginTop:10}}>📝 أقرب اختبار: <strong style={{color:"#2d3436"}}>{next.subject}</strong> — <span style={{color:c.color,fontWeight:"700"}}>{getDU(next.date)}</span></div>}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  // ── COMPARE ──
+  if(screen==="compare") return(
+    <div style={S.page} className="page">
+      <div className="no-print" style={S.hdr("#1e3a5f")}>
+        <button style={S.backBtn} onClick={()=>setScreen("home")}>→</button>
+        <span style={S.hTitle}>📊 مقارنة الأطفال</span>
+        <PrintBtn/>
+      </div>
+      <div style={{flex:1,overflowY:"auto",padding:"16px 14px 80px",WebkitOverflowScrolling:"touch"}}>
+        {[{l:"متوسط الدرجات",fn:c=>{const g=grades[c.id]||[];return g.length?Math.round(g.reduce((a,x)=>a+x.score/x.max*100,0)/g.length):0;},u:"%"},{l:"إنجاز الواجبات",fn:c=>{const h=homework[c.id]||[];return h.length?Math.round(h.filter(x=>x.done).length/h.length*100):0;},u:"%"},{l:"النقاط",fn:c=>points[c.id]?.total||0,u:"⭐"}].map((m,i)=>(
+          <div key={i} style={S.card}>
+            <div style={{fontWeight:"700",fontSize:14,color:"#636e72",marginBottom:14}}>{m.l}</div>
+            {children.map(c=>{const v=m.fn(c);return(
+              <div key={c.id} style={{marginBottom:12}}>
+                <div style={{display:"flex",justifyContent:"space-between",fontSize:13,fontWeight:"700",marginBottom:5}}>
+                  <span>{c.emoji} {c.name}</span>
+                  <span style={{color:c.color,fontWeight:"900"}}>{v}{m.u}</span>
+                </div>
+                <PBar value={v} max={m.u==="⭐"?300:100} color={c.color} h={10}/>
+              </div>
+            );})}
+          </div>
+        ))}
+        <div style={S.card}>
+          <div style={{fontWeight:"700",fontSize:14,color:"#636e72",marginBottom:12}}>الدرجات بالمادة</div>
+          <ResponsiveContainer width="100%" height={180}>
+            <BarChart data={SUBJECTS.slice(0,5).map(s=>({s:s.slice(0,5),...Object.fromEntries(children.map(c=>{const g=(grades[c.id]||[]).filter(x=>x.subject===s);return[c.name,g.length?Math.round(g.reduce((a,x)=>a+x.score/x.max*100,0)/g.length):0];}))}))} margin={{top:0,right:0,left:-28,bottom:0}}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f5f5f5"/>
+              <XAxis dataKey="s" tick={{fontSize:10}}/>
+              <YAxis domain={[0,100]} tick={{fontSize:10}}/>
+              <Tooltip/>
+              {children.map(c=><Bar key={c.id} dataKey={c.name} fill={c.color} radius={[4,4,0,0]}/>)}
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ── CHILD DETAIL ──
+  if(screen==="child"&&child){
+    const cHw=homework[child.id]||[];
+    const cEx=[...(exams[child.id]||[])].sort((a,b)=>new Date(a.date)-new Date(b.date));
+    const cGr=grades[child.id]||[];
+    const cNt=teacherNotes[child.id]||[];
+    const cPt=points[child.id]||{total:0,history:[]};
+    const cSch=schedule[child.id]||{};
+    const cSt=studySchedule[child.id]||{};
+    const cAl=allowance[child.id]||{daily:0,balance:0,history:[]};
+    const cGoals=goals[child.id]||[];
+    const cSup=supplies[child.id]||[];
+    const gBySubj=SUBJECTS.map(s=>{const g=cGr.filter(x=>x.subject===s);const a=g.length?Math.round(g.reduce((x,y)=>x+y.score/y.max*100,0)/g.length):null;return{s:s.slice(0,5),a};}).filter(x=>x.a!==null);
+    const TABS=[["schedule","📅"],["study","📚"],["homework","✅"],["exams","📝"],["grades","📊"],["goals","🎯"],["points","⭐"],["allowance","💰"],["supplies","🛒"],["notes","💬"]];
+
+    const ED=({onEdit,onDel,msg})=><EditDel onEdit={onEdit} onDel={onDel} msg={msg} del={del}/>;
+
+    return(
+      <div style={S.page} className="page">
+        <div className="no-print" style={{...S.hdr(child.color),flexDirection:"column",gap:6,paddingBottom:18}}>
+          <div style={{display:"flex",justifyContent:"space-between",width:"100%",alignItems:"center"}}>
+            <button style={S.backBtn} onClick={()=>setScreen("home")}>→</button>
+            <div style={{display:"flex",gap:8,alignItems:"center"}}><SyncDot status={sync} lastPull={lastPull}/><PrintBtn/></div>
+          </div>
+          <div style={{fontSize:44}}>{child.emoji}</div>
+          <div style={{color:"#fff",fontSize:20,fontWeight:"900"}}>{child.name}</div>
+          <div style={{color:"rgba(255,255,255,0.75)",fontSize:13}}>{child.grade}</div>
+          <div style={{display:"flex",gap:8,marginTop:6,justifyContent:"center",flexWrap:"wrap"}}>
+            <Pill label={`${cHw.filter(h=>!h.done).length} واجب 📚`} color="#fff"/>
+            <Pill label={`${cPt.total} نقطة ⭐`} color="#fff"/>
+            <Pill label={`${cAl.balance} ر.س 💰`} color="#fff"/>
+          </div>
+        </div>
+
+        <div className="no-print" style={{display:"flex",background:"#fff",borderBottom:"2px solid #f0f0f0",overflowX:"auto",flexShrink:0}}>
+          {TABS.map(([t,ic])=><button key={t} style={{flex:1,padding:"12px 2px",border:"none",background:"none",fontSize:17,color:tab===t?child.color:"#ddd",borderBottom:tab===t?`3px solid ${child.color}`:"3px solid transparent",cursor:"pointer",minWidth:40,transition:"all 0.2s"}} onClick={()=>setTab(t)}>{ic}</button>)}
+        </div>
+
+        <div style={{flex:1,overflowY:"auto",padding:"14px 14px 80px",WebkitOverflowScrolling:"touch"}}>
+
+          {/* SCHEDULE */}
+          {tab==="schedule"&&DAYS.map(day=>(
+            <div key={day} style={{...S.card,borderRight:day===todayName?`4px solid ${child.color}`:"4px solid transparent",transition:"border-color 0.2s"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontWeight:"800",fontSize:15,color:day===todayName?child.color:"#2d3436"}}>{day}</span>
+                  {day===todayName&&<span style={{background:`${child.color}18`,color:child.color,padding:"2px 9px",borderRadius:10,fontSize:11,fontWeight:"700"}}>اليوم</span>}
+                </div>
+                <button style={{background:`${child.color}15`,border:"none",color:child.color,borderRadius:10,padding:"6px 14px",fontSize:12,cursor:"pointer",fontWeight:"700"}} onClick={()=>setEditDay(editDay===day?null:day)}>{editDay===day?"✓ تم":"✏️ تعديل"}</button>
+              </div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:10}}>
+                {(cSch[day]||[]).map((s,i)=><span key={i} style={{background:`${child.color}15`,color:child.color,padding:"6px 14px",borderRadius:20,fontSize:13,fontWeight:"700",display:"flex",alignItems:"center",gap:5}}>{s}{editDay===day&&<span style={{cursor:"pointer",opacity:0.7,fontSize:12,fontWeight:"900"}} onClick={()=>remSubj(child.id,day,i)}>✕</span>}</span>)}
+                {!(cSch[day]?.length)&&editDay!==day&&<span style={{color:"#dfe6e9",fontSize:13,fontStyle:"italic"}}>لا توجد حصص</span>}
+              </div>
+              {editDay===day&&<div style={{display:"flex",gap:8,marginTop:10}}>
+                <select style={{...S.finp,flex:1,marginBottom:0,fontSize:13}} value={schedSubj} onChange={e=>setSchedSubj(e.target.value)}><option value="">اختر مادة...</option>{SUBJECTS.map(s=><option key={s}>{s}</option>)}</select>
+                <button style={{background:child.color,color:"#fff",border:"none",borderRadius:12,padding:"0 18px",cursor:"pointer",fontWeight:"700",fontSize:14,whiteSpace:"nowrap"}} onClick={()=>{if(schedSubj)addSubj(child.id,day,schedSubj);}}>+ إضافة</button>
+              </div>}
+            </div>
+          ))}
+
+          {/* STUDY */}
+          {tab==="study"&&<>
+            <button style={S.addBtn(child.color)} onClick={()=>openAdd("fStudy",{subject:SUBJECTS[0],day:DAYS[0],start:"16:00",duration:45})}>+ إضافة جلسة مذاكرة</button>
+            {DAYS.map(day=>{
+              const ss=[...(cSt[day]||[])].sort((a,b)=>a.start.localeCompare(b.start));
+              if(!ss.length)return null;
+              const tot=ss.reduce((a,s)=>a+s.duration,0);
+              return(
+                <div key={day} style={S.card}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                    <span style={{fontWeight:"800",fontSize:15,color:day===todayName?child.color:"#2d3436"}}>{day}{day===todayName&&<span style={{fontSize:11,color:child.color,marginRight:6,background:`${child.color}15`,padding:"2px 8px",borderRadius:10}}> اليوم</span>}</span>
+                    <Pill label={`${tot} دقيقة`} color={child.color} small/>
+                  </div>
+                  {ss.map(s=>{
+                    const[h,m]=s.start.split(":").map(Number);
+                    const e=new Date(0,0,0,h,m+s.duration);
+                    const end=`${String(e.getHours()).padStart(2,"0")}:${String(e.getMinutes()).padStart(2,"0")}`;
+                    return(
+                      <div key={s.id} style={{display:"flex",alignItems:"center",gap:10,background:`${child.color}08`,borderRadius:16,padding:"10px 14px",marginBottom:8}}>
+                        <div style={{background:`linear-gradient(135deg,${child.color},${child.color}88)`,borderRadius:12,padding:"8px 12px",textAlign:"center",minWidth:60,flexShrink:0}}>
+                          <div style={{fontSize:14,fontWeight:"900",color:"#fff"}}>{s.start}</div>
+                          <div style={{fontSize:10,color:"rgba(255,255,255,0.8)"}}>{s.duration}د</div>
+                        </div>
+                        <div style={{flex:1}}>
+                          <div style={{fontWeight:"800",fontSize:14,color:"#2d3436"}}>{s.subject}</div>
+                          <div style={{fontSize:12,color:"#b2bec3",marginTop:2}}>{s.start} — {end}</div>
+                        </div>
+                        <ED onEdit={()=>openEdit("fStudy",s,{subject:s.subject,day,start:s.start,duration:s.duration})} onDel={()=>{const ss2=cSt[day]||[];upd({studySchedule:{...studySchedule,[child.id]:{...cSt,[day]:ss2.filter(x=>x.id!==s.id)}}});}} msg={`حذف جلسة ${s.subject}؟`}/>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+            {DAYS.every(d=>!(cSt[d]?.length))&&<div style={S.empty}>📚<br/>لا توجد جلسات مذاكرة<br/><span style={{fontSize:13}}>اضغط + لإضافة جلسة</span></div>}
+          </>}
+
+          {/* HOMEWORK */}
+          {tab==="homework"&&<>
+            <div style={{display:"flex",gap:8,marginBottom:12}}>
+              <button style={{...S.addBtn(child.color),flex:1,marginBottom:0}} onClick={()=>openAdd("fHw",{subject:SUBJECTS[0],task:"",due:""})}>+ إضافة واجب</button>
+              <button onClick={()=>setHwArchive(!hwArchive)} style={{background:hwArchive?child.color:"#f0f0f8",color:hwArchive?"#fff":"#636e72",border:"none",borderRadius:14,padding:"0 18px",cursor:"pointer",fontWeight:"700",fontSize:13,transition:"all 0.2s"}} title={hwArchive?"عرض النشطة":"عرض الأرشيف"}>{hwArchive?"📂 نشطة":"🗂️ أرشيف"}</button>
+            </div>
+            {cHw.filter(h=>hwArchive?h.done:!h.done).length===0&&<div style={S.empty}>{hwArchive?"لا توجد واجبات مؤرشفة":"🎉 لا توجد واجبات!"}</div>}
+            {cHw.filter(h=>hwArchive?h.done:!h.done).map(hw=>(
+              <div key={hw.id} style={{...S.card,opacity:hw.done?0.72:1,borderRight:`4px solid ${hw.done?"#e0e0e0":child.color}`,transition:"opacity 0.3s"}}>
+                <div style={{display:"flex",gap:10,alignItems:"flex-start"}}>
+                  <button style={{width:28,height:28,borderRadius:8,border:`2.5px solid ${hw.done?child.color:"#ddd"}`,background:hw.done?child.color:"#fff",color:"#fff",fontWeight:"900",fontSize:15,cursor:"pointer",flexShrink:0,marginTop:2,transition:"all 0.2s"}} onClick={()=>toggleHw(child.id,hw.id)}>{hw.done?"✓":""}</button>
+                  <div style={{flex:1}}>
+                    <Pill label={hw.subject} color={child.color} small/>
+                    <div style={{fontSize:15,color:"#2d3436",fontWeight:"600",marginTop:5,textDecoration:hw.done?"line-through":"none",lineHeight:1.4}}>{hw.task}</div>
+                    <div style={{fontSize:12,color:new Date(hw.due)<new Date()&&!hw.done?"#FF6584":"#b2bec3",marginTop:4}}>📅 {fmt(hw.due)} — {getDU(hw.due)}</div>
+                  </div>
+                  <ED onEdit={()=>openEdit("fHw",hw,{subject:hw.subject,task:hw.task,due:hw.due})} onDel={()=>upd({homework:{...homework,[child.id]:cHw.filter(h=>h.id!==hw.id)}})} msg={`حذف واجب ${hw.subject}؟`}/>
+                </div>
+              </div>
+            ))}
+          </>}
+
+          {/* EXAMS */}
+          {tab==="exams"&&<>
+            <button style={S.addBtn(child.color)} onClick={()=>openAdd("fExam",{subject:SUBJECTS[0],date:"",notes:""})}>+ إضافة اختبار</button>
+            {!cEx.length&&<div style={S.empty}>📭<br/>لا توجد اختبارات</div>}
+            {cEx.map(ex=>(
+              <div key={ex.id} style={{...S.card,borderRight:`4px solid ${child.color}`}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <div style={{flex:1}}>
+                    <div style={{fontWeight:"900",fontSize:16,color:"#2d3436"}}>{ex.subject}</div>
+                    {ex.notes&&<div style={{fontSize:13,color:"#b2bec3",marginTop:3}}>{ex.notes}</div>}
+                    <div style={{fontSize:12,color:"#636e72",marginTop:5}}>📅 {new Date(ex.date).toLocaleDateString("ar",{weekday:"long",month:"long",day:"numeric"})}</div>
+                  </div>
+                  <div style={{display:"flex",flexDirection:"column",gap:8,alignItems:"flex-end"}}>
+                    <Pill label={getDU(ex.date)} color={child.color}/>
+                    <ED onEdit={()=>openEdit("fExam",ex,{subject:ex.subject,date:ex.date,notes:ex.notes||""})} onDel={()=>upd({exams:{...exams,[child.id]:cEx.filter(e=>e.id!==ex.id)}})} msg={`حذف اختبار ${ex.subject}؟`}/>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </>}
+
+          {/* GRADES */}
+          {tab==="grades"&&<>
+            <button style={S.addBtn(child.color)} onClick={()=>openAdd("fGrade",{subject:SUBJECTS[0],score:"",max:100,date:"",type:"اختبار"})}>+ إضافة درجة</button>
+            {gBySubj.length>0&&<div style={S.card}>
+              <div style={{fontWeight:"700",fontSize:13,color:"#b2bec3",marginBottom:10}}>متوسط الدرجات بالمادة</div>
+              <ResponsiveContainer width="100%" height={140}><BarChart data={gBySubj} margin={{top:0,right:0,left:-28,bottom:0}}><CartesianGrid strokeDasharray="3 3" stroke="#f5f5f5"/><XAxis dataKey="s" tick={{fontSize:10}}/><YAxis domain={[0,100]} tick={{fontSize:10}}/><Tooltip formatter={v=>[`${v}%`]}/><Bar dataKey="a" fill={child.color} radius={[6,6,0,0]}/></BarChart></ResponsiveContainer>
+            </div>}
+            {!cGr.length&&<div style={S.empty}>📊<br/>لا توجد درجات</div>}
+            {[...cGr].sort((a,b)=>new Date(b.date)-new Date(a.date)).map(gr=>{
+              const pct=Math.round(gr.score/gr.max*100);
+              return(
+                <div key={gr.id} style={{...S.card,display:"flex",alignItems:"center",gap:14}}>
+                  <div style={{width:56,height:56,borderRadius:18,background:`${scoreColor(pct)}15`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                    <div style={{fontSize:17,fontWeight:"900",color:scoreColor(pct)}}>{pct}%</div>
+                  </div>
+                  <div style={{flex:1}}>
+                    <div style={{fontWeight:"800",fontSize:15,color:"#2d3436"}}>{gr.subject}</div>
+                    <div style={{fontSize:13,color:"#b2bec3",marginTop:2}}>{gr.type} — {gr.score}/{gr.max}</div>
+                    <div style={{fontSize:11,color:"#dfe6e9",marginTop:2}}>📅 {fmt(gr.date)}</div>
+                  </div>
+                  <ED onEdit={()=>openEdit("fGrade",gr,{subject:gr.subject,score:gr.score,max:gr.max,date:gr.date,type:gr.type})} onDel={()=>upd({grades:{...grades,[child.id]:cGr.filter(g=>g.id!==gr.id)}})} msg={`حذف درجة ${gr.subject}؟`}/>
+                </div>
+              );
+            })}
+          </>}
+
+          {/* GOALS */}
+          {tab==="goals"&&<>
+            <button style={S.addBtn(child.color)} onClick={()=>openAdd("fGoal",{subject:SUBJECTS[0],targetPct:90,deadline:"",note:""})}>+ إضافة هدف</button>
+            {!cGoals.length&&<div style={S.empty}>🎯<br/>لا توجد أهداف دراسية</div>}
+            {cGoals.map(g=>{
+              const gs=(grades[child.id]||[]).filter(x=>x.subject===g.subject);
+              const cur=gs.length?Math.round(gs.reduce((a,x)=>a+x.score/x.max*100,0)/gs.length):0;
+              const ok=cur>=g.targetPct;
+              return(
+                <div key={g.id} style={{...S.card,borderRight:`4px solid ${ok?"#00B894":child.color}`}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                    <div style={{flex:1}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+                        <span style={{fontWeight:"900",fontSize:15,color:"#2d3436"}}>{g.subject}</span>
+                        {ok&&<Pill label="✓ تحقق!" color="#00B894" small/>}
+                      </div>
+                      {g.note&&<div style={{fontSize:13,color:"#636e72",marginBottom:8,lineHeight:1.5}}>{g.note}</div>}
+                      <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:"#b2bec3",marginBottom:5}}>
+                        <span>الحالي: <strong style={{color:scoreColor(cur)}}>{cur}%</strong></span>
+                        <span>الهدف: <strong style={{color:child.color}}>{g.targetPct}%</strong></span>
+                      </div>
+                      <PBar value={cur} max={g.targetPct} color={ok?"#00B894":child.color} h={12}/>
+                      <div style={{fontSize:11,color:"#b2bec3",marginTop:6}}>📅 الموعد: {fmt(g.deadline)} — {getDU(g.deadline)}</div>
+                    </div>
+                    <ED onEdit={()=>openEdit("fGoal",g,{subject:g.subject,targetPct:g.targetPct,deadline:g.deadline,note:g.note||""})} onDel={()=>upd({goals:{...goals,[child.id]:cGoals.filter(x=>x.id!==g.id)}})} msg={`حذف هدف ${g.subject}؟`}/>
+                  </div>
+                </div>
+              );
+            })}
+          </>}
+
+          {/* POINTS */}
+          {tab==="points"&&<>
+            <div style={{background:`linear-gradient(135deg,${child.color},${child.color}77)`,borderRadius:26,padding:24,marginBottom:16,textAlign:"center",color:"#fff",boxShadow:`0 10px 40px ${child.color}45`}}>
+              <div style={{fontSize:13,opacity:0.85,letterSpacing:1}}>مجموع النقاط</div>
+              <div style={{fontSize:60,fontWeight:"900",lineHeight:1,marginTop:4}}>{cPt.total}</div>
+              <div style={{fontSize:28,marginTop:6}}>⭐</div>
+            </div>
+            <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
+              {BADGES.map(b=>{const e=cPt.total>=b.req;return<div key={b.id} style={{flex:1,background:e?`${child.color}12`:"#f5f5f5",borderRadius:18,padding:"14px 8px",textAlign:"center",opacity:e?1:0.35,transition:"all 0.3s",minWidth:70}}>
+                <div style={{fontSize:28}}>{b.icon}</div>
+                <div style={{fontSize:11,fontWeight:"700",color:e?child.color:"#b2bec3",marginTop:5}}>{b.label}</div>
+                <div style={{fontSize:10,color:"#dfe6e9",marginTop:2}}>{b.req}⭐</div>
+              </div>;})}
+            </div>
+            <button style={S.addBtn(child.color)} onClick={()=>openAdd("fPoints",{reason:"",amount:10})}>+ منح نقاط</button>
+            {!cPt.history.length&&<div style={S.empty}>لا توجد نقاط بعد</div>}
+            {cPt.history.map((h,i)=>(
+              <div key={i} style={{...S.card,display:"flex",alignItems:"center",gap:14}}>
+                <div style={{width:48,height:48,borderRadius:16,background:`linear-gradient(135deg,${child.color},${child.color}77)`,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:"900",color:"#fff",fontSize:15,flexShrink:0}}>+{h.amount}</div>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:14,color:"#2d3436",fontWeight:"600"}}>{h.reason}</div>
+                  <div style={{fontSize:12,color:"#b2bec3",marginTop:2}}>📅 {fmt(h.date)}</div>
+                </div>
+              </div>
+            ))}
+          </>}
+
+          {/* ALLOWANCE */}
+          {tab==="allowance"&&<>
+            <div style={{display:"flex",gap:10,marginBottom:14}}>
+              <div style={{flex:1,background:"#fff",borderRadius:20,padding:18,textAlign:"center",boxShadow:"0 4px 20px rgba(0,0,0,0.07)",borderTop:"4px solid #00B894"}}>
+                <div style={{fontSize:11,color:"#b2bec3",letterSpacing:0.5}}>الرصيد</div>
+                <div style={{fontSize:28,fontWeight:"900",color:"#00B894",marginTop:4}}>{cAl.balance}<span style={{fontSize:14,opacity:0.7}}> ر.س</span></div>
+              </div>
+              <div style={{flex:1,background:"#fff",borderRadius:20,padding:18,textAlign:"center",boxShadow:"0 4px 20px rgba(0,0,0,0.07)",borderTop:`4px solid ${child.color}`}}>
+                <div style={{fontSize:11,color:"#b2bec3",letterSpacing:0.5}}>اليومي</div>
+                <div style={{fontSize:28,fontWeight:"900",color:child.color,marginTop:4}}>{cAl.daily}<span style={{fontSize:14,opacity:0.7}}> ر.س</span></div>
+              </div>
+            </div>
+            <div style={{display:"flex",gap:8,marginBottom:12}}>
+              <button style={{...S.addBtn("#00B894"),flex:1,marginBottom:0}} onClick={()=>openAdd("fAllowance",{type:"منح",amount:"",note:""})}>➕ منح</button>
+              <button style={{...S.addBtn("#FF6584"),flex:1,marginBottom:0}} onClick={()=>openAdd("fAllowance",{type:"صرف",amount:"",note:""})}>➖ صرف</button>
+              <button onClick={()=>openAdd("fAllowanceSettings",{daily:cAl.daily,balance:cAl.balance})} style={{background:"#f0f0f8",color:"#6C63FF",border:"none",borderRadius:14,padding:"0 16px",cursor:"pointer",fontWeight:"700",fontSize:16,flexShrink:0}}>⚙️</button>
+            </div>
+            {!cAl.history.length&&<div style={S.empty}>💰<br/>لا توجد معاملات بعد</div>}
+            {cAl.history.map(h=>(
+              <div key={h.id} style={{...S.card,display:"flex",alignItems:"center",gap:14}}>
+                <div style={{width:48,height:48,borderRadius:16,background:h.amount>0?"#D1FAE5":"#FEE2E2",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:"900",color:h.amount>0?"#00B894":"#FF6584",fontSize:15,flexShrink:0}}>{h.amount>0?`+${h.amount}`:h.amount}</div>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:14,color:"#2d3436",fontWeight:"600"}}>{h.note||h.type}</div>
+                  <div style={{fontSize:12,color:"#b2bec3",marginTop:2}}>📅 {fmt(h.date)}</div>
+                </div>
+              </div>
+            ))}
+          </>}
+
+          {/* SUPPLIES */}
+          {tab==="supplies"&&<>
+            <button style={S.addBtn(child.color)} onClick={()=>openAdd("fSupply",{name:"",priority:"medium"})}>+ إضافة مستلزم</button>
+            {!cSup.length&&<div style={S.empty}>🛒<br/>القائمة فارغة</div>}
+            {["high","medium","low"].map(pr=>{
+              const items=cSup.filter(s=>s.priority===pr);
+              if(!items.length)return null;
+              const pInfo=PRIOR[pr];
+              return(
+                <div key={pr}>
+                  <div style={{fontSize:12,fontWeight:"800",color:pInfo.color,marginTop:12,marginBottom:8,display:"flex",alignItems:"center",gap:6}}><span style={{width:8,height:8,borderRadius:"50%",background:pInfo.color,display:"inline-block"}}/>{pInfo.label}</div>
+                  {items.map(s=>(
+                    <div key={s.id} style={{...S.card,display:"flex",alignItems:"center",gap:12,opacity:s.done?0.6:1,transition:"opacity 0.3s"}}>
+                      <button style={{width:28,height:28,borderRadius:8,border:`2.5px solid ${s.done?child.color:"#ddd"}`,background:s.done?child.color:"#fff",color:"#fff",fontWeight:"900",fontSize:14,cursor:"pointer",flexShrink:0,transition:"all 0.2s"}} onClick={()=>toggleSupply(child.id,s.id)}>{s.done?"✓":""}</button>
+                      <div style={{flex:1,fontSize:14,color:"#2d3436",fontWeight:"600",textDecoration:s.done?"line-through":"none"}}>{s.name}</div>
+                      <ED onEdit={()=>openEdit("fSupply",s,{name:s.name,priority:s.priority})} onDel={()=>upd({supplies:{...supplies,[child.id]:cSup.filter(x=>x.id!==s.id)}})} msg={`حذف "${s.name}"؟`}/>
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+          </>}
+
+          {/* NOTES */}
+          {tab==="notes"&&<>
+            <button style={S.addBtn(child.color)} onClick={()=>openAdd("fNote",{teacher:"",subject:SUBJECTS[0],note:"",type:"positive",date:""})}>+ إضافة ملاحظة</button>
+            {!cNt.length&&<div style={S.empty}>💬<br/>لا توجد ملاحظات</div>}
+            {[...cNt].sort((a,b)=>new Date(b.date)-new Date(a.date)).map(nt=>{
+              const ntI=NOTE_T[nt.type]||NOTE_T.academic;
+              return(
+                <div key={nt.id} style={{...S.card,borderRight:`4px solid ${ntI.color}`}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                    <div style={{flex:1}}>
+                      <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
+                        <Pill label={`${ntI.icon} ${ntI.label}`} color={ntI.color} small/>
+                        <span style={{fontSize:12,color:"#b2bec3"}}>{nt.subject}</span>
+                      </div>
+                      <div style={{fontSize:14,color:"#2d3436",fontWeight:"500",lineHeight:1.7}}>{nt.note}</div>
+                      <div style={{fontSize:12,color:"#b2bec3",marginTop:6}}>{nt.teacher} — 📅 {fmt(nt.date)}</div>
+                    </div>
+                    <ED onEdit={()=>openEdit("fNote",nt,{teacher:nt.teacher,subject:nt.subject,note:nt.note,type:nt.type,date:nt.date})} onDel={()=>upd({teacherNotes:{...teacherNotes,[child.id]:cNt.filter(n=>n.id!==nt.id)}})} msg="حذف هذه الملاحظة؟"/>
+                  </div>
+                </div>
+              );
+            })}
+          </>}
+        </div>
+      </div>
+    );
+  }
+
+  // ── HOME ─────────────────────────────────
+  const upcoming=[...calendarEvents].sort((a,b)=>new Date(a.date)-new Date(b.date)).filter(e=>new Date(e.date)>=new Date());
+  const todayDate=new Date().toLocaleDateString("ar-SA",{weekday:"long",year:"numeric",month:"long",day:"numeric"});
+
+  return(
+    <div style={S.page} className="page">
+      {toast&&<Toast msg={toast.msg} type={toast.type} onDone={()=>setToast(null)}/>}
+      {confirm&&<Confirm msg={confirm.msg} onYes={confirm.onYes} onNo={()=>setConfirm(null)}/>}
+
+      {/* HEADER */}
+      <div style={{background:"linear-gradient(135deg,#1a1a2e 0%,#6C63FF 100%)",padding:"22px 16px 18px",position:"relative",overflow:"hidden",flexShrink:0}}>
+        <div style={{position:"absolute",inset:0,backgroundImage:"radial-gradient(circle at 15% 50%, rgba(108,99,255,0.4) 0%, transparent 55%),radial-gradient(circle at 85% 20%, rgba(253,121,168,0.25) 0%, transparent 50%)"}}/>
+        <div style={{position:"relative",zIndex:1}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+            <div>
+              <div style={{fontSize:24,fontWeight:"900",color:"#fff",letterSpacing:-1}}>📖 مدرستي</div>
+              <div style={{color:"rgba(255,255,255,0.6)",fontSize:11,marginTop:3}}>{todayDate}</div>
+              <div style={{marginTop:5}}><SyncDot status={sync} lastPull={lastPull}/></div>
+            </div>
+            <PrintBtn/>
+          </div>
+          {vacationMode.active&&<div style={{background:"rgba(253,203,110,0.18)",border:"1px solid rgba(253,203,110,0.4)",borderRadius:14,padding:"10px 14px",marginTop:12,fontSize:13,color:"#FDCB6E",fontWeight:"700",display:"flex",alignItems:"center",gap:8}}>
+            🌙 وضع الإجازة نشط — العودة {fmt(vacationMode.until)}
+            <button onClick={()=>upd({vacationMode:{active:false,until:""}})} style={{background:"rgba(255,255,255,0.15)",border:"none",color:"#fff",borderRadius:8,padding:"3px 10px",cursor:"pointer",fontSize:12,marginRight:"auto"}}>إلغاء</button>
+          </div>}
+          <div style={{display:"flex",gap:6,marginTop:12,flexWrap:"wrap"}}>
+            {[["📚",Object.values(homework).flat().filter(h=>!h.done).length,"واجب متبقي"],["📝",Object.values(exams).flat().length,"اختبار"],["📅",upcoming.length,"حدث قادم"]].map(([ic,v,l])=>(
+              <div key={l} style={{background:"rgba(255,255,255,0.12)",backdropFilter:"blur(10px)",padding:"6px 14px",borderRadius:20,fontSize:12,fontWeight:"700",color:"#fff",border:"1px solid rgba(255,255,255,0.1)"}}>{ic} {v} {l}</div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* SEARCH */}
+      <div className="no-print" style={{padding:"10px 14px",background:"#fff",borderBottom:"1px solid #f0f0f0",flexShrink:0}}>
+        <div style={{position:"relative"}}>
+          <input style={{...S.finp,marginBottom:0,background:"#f5f6ff",paddingRight:42,fontSize:13,border:"2px solid #eef0ff"}} placeholder="🔍 ابحث في الواجبات والدرجات والمستلزمات..." value={search} onChange={e=>setSearch(e.target.value)}/>
+          {search&&<button onClick={()=>setSearch("")} style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",fontSize:16,color:"#b2bec3",lineHeight:1}}>✕</button>}
+        </div>
+      </div>
+
+      {/* SEARCH RESULTS */}
+      {search.trim().length>1&&(
+        <div style={{background:"#fff",borderBottom:"2px solid #f0f0f0",maxHeight:250,overflowY:"auto",flexShrink:0}}>
+          {!searchRes.length&&<div style={{padding:18,textAlign:"center",color:"#b2bec3",fontSize:13}}>لا نتائج لـ "{search}"</div>}
+          {searchRes.map((r,i)=>(
+            <div key={i} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",borderBottom:"1px solid #fafafa",cursor:"pointer"}} onClick={()=>{setChild(r.child);setTab("homework");setScreen("child");setSearch("");}}>
+              <div style={{width:38,height:38,borderRadius:12,background:`${r.child.color}15`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,flexShrink:0}}>{r.type}</div>
+              <div style={{flex:1}}>
+                <div style={{fontSize:13,color:"#2d3436",fontWeight:"700"}}>{r.child.emoji} {r.main}</div>
+                <div style={{fontSize:11,color:"#b2bec3",marginTop:1}}>{r.sub}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* QUICK NAV */}
+      <div className="no-print" style={{display:"flex",gap:8,padding:"10px 14px",background:"#fff",borderBottom:"1px solid #f0f0f0",overflowX:"auto",flexShrink:0}}>
+        {[["📄 التقارير","reports","#EEF2FF","#6C63FF"],["📊 مقارنة","compare","#F0FDF4","#00B894"],["⚙️ الإعدادات","settings","#FFF7ED","#FA8231"],["📅 حدث",null,"#FAF5FF","#A29BFE"],["🌙 إجازة",null,"#FFFBEB","#D97706"]].map(([label,sc,bg,clr],i)=>(
+          <button key={i} onClick={()=>{
+            if(label.includes("حدث")){openAdd("fEvent",{title:"",date:"",type:"holiday",childIds:[]});}
+            else if(label.includes("إجازة")){
+              if(vacationMode.active){upd({vacationMode:{active:false,until:""}});setToast({msg:"تم إلغاء وضع الإجازة",type:"warn"});}
+              else{const d=prompt("أدخل تاريخ العودة للمدرسة:\n(الصيغة: YYYY-MM-DD)");if(d){upd({vacationMode:{active:true,until:d}});setToast({msg:"تم تفعيل وضع الإجازة 🌙",type:"ok"}});}}
+            }
+            else setScreen(sc);
+          }} style={{background:vacationMode.active&&label.includes("إجازة")?"#FDCB6E":bg,color:vacationMode.active&&label.includes("إجازة")?"#fff":clr,border:"none",borderRadius:12,padding:"8px 16px",cursor:"pointer",fontWeight:"700",fontSize:12,whiteSpace:"nowrap",flexShrink:0,transition:"all 0.2s"}}>{label}</button>
+        ))}
+      </div>
+
+      {/* CONTENT */}
+      <div style={{flex:1,overflowY:"auto",padding:"14px 14px 80px",WebkitOverflowScrolling:"touch"}}>
+
+        {/* Children Cards */}
+        <div style={S.sTitle}>أطفالي</div>
+        {children.map(c=>{
+          const pending=(homework[c.id]||[]).filter(h=>!h.done).length;
+          const pts=points[c.id]?.total||0;
+          const todaySubs=(schedule[c.id]||{})[todayName]||[];
+          const todaySt=(studySchedule[c.id]||{})[todayName]||[];
+          const avg=(()=>{const g=grades[c.id]||[];return g.length?Math.round(g.reduce((a,x)=>a+x.score/x.max*100,0)/g.length):null;})();
+          const bal=allowance[c.id]?.balance||0;
+          const hwDone=(homework[c.id]||[]).filter(h=>h.done).length;
+          const hwTot=(homework[c.id]||[]).length;
+          const needSup=(supplies[c.id]||[]).filter(s=>!s.done).length;
+          return(
+            <div key={c.id} style={{background:"#fff",borderRadius:24,marginBottom:14,overflow:"hidden",boxShadow:"0 4px 28px rgba(0,0,0,0.08)",cursor:"pointer",transition:"transform 0.15s, box-shadow 0.15s",WebkitTapHighlightColor:"transparent"}} onClick={()=>{setChild(c);setTab("schedule");setScreen("child");}}>
+              <div style={{height:5,background:`linear-gradient(90deg,${c.color},${c.color}44)`}}/>
+              <div style={{padding:"16px 18px"}}>
+                <div style={{display:"flex",alignItems:"center",gap:14}}>
+                  <div style={{width:56,height:56,borderRadius:20,background:`linear-gradient(135deg,${c.color},${c.color}77)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,flexShrink:0,boxShadow:`0 4px 16px ${c.color}40`}}>{c.emoji}</div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:18,fontWeight:"900",color:"#2d3436"}}>{c.name}</div>
+                    <div style={{fontSize:12,color:"#b2bec3",marginTop:1}}>{c.grade}</div>
+                    {todaySubs.length>0&&<div style={{fontSize:11,color:"#b2bec3",marginTop:4,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>📅 {todaySubs.join(" • ")}</div>}
+                    {todaySt.length>0&&<div style={{fontSize:11,color:c.color,marginTop:2,fontWeight:"600"}}>📚 {todaySt.map(s=>s.subject).join(" • ")}</div>}
+                  </div>
+                  <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:5,flexShrink:0}}>
+                    {pending>0&&<Pill label={`${pending} 📚`} color={c.color} small/>}
+                    {needSup>0&&<Pill label={`🛒 ${needSup}`} color="#FF6584" small/>}
+                    <span style={{color:c.color,fontSize:22,fontWeight:"900",lineHeight:1}}>←</span>
+                  </div>
+                </div>
+                <div style={{marginTop:12}}>
+                  <PBar value={hwDone} max={hwTot||1} color={c.color} h={6}/>
+                  <div style={{display:"flex",gap:6,marginTop:9,flexWrap:"wrap"}}>
+                    {avg&&<Pill label={`${avg}% 📊`} color={scoreColor(avg)} small/>}
+                    <Pill label={`${pts} ⭐`} color={c.color} small/>
+                    <Pill label={`${bal} ر.س 💰`} color="#00B894" small/>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+
+        {/* Events */}
+        <div style={S.sTitle}>📅 أحداث قادمة</div>
+        {upcoming.slice(0,4).map(ev=>{const et=EVENT_T[ev.type]||EVENT_T.activity;return(
+          <div key={ev.id} style={{...S.card,display:"flex",gap:12,alignItems:"center",borderRight:`4px solid ${et.color}`}}>
+            <div style={{width:46,height:46,borderRadius:14,background:`${et.color}15`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>{et.icon}</div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontWeight:"700",fontSize:14,color:"#2d3436"}}>{ev.title}</div>
+              <div style={{fontSize:12,color:"#b2bec3",marginTop:2}}>📅 {fmt(ev.date)} — <span style={{color:et.color,fontWeight:"700"}}>{getDU(ev.date)}</span></div>
+            </div>
+            <div style={{display:"flex",gap:6,flexShrink:0}}>
+              <button onClick={e=>{e.stopPropagation();openEdit("fEvent",ev,{title:ev.title,date:ev.date,type:ev.type,childIds:ev.childIds||[]});}} style={{background:"#f0f0f8",border:"none",borderRadius:10,padding:"7px 11px",cursor:"pointer",fontSize:14,color:"#6C63FF"}}>✏️</button>
+              <button onClick={e=>{e.stopPropagation();del(`حذف "${ev.title}"؟`,()=>upd({calendarEvents:calendarEvents.filter(x=>x.id!==ev.id)}));}} style={{background:"#FEE2E2",border:"none",borderRadius:10,padding:"7px 11px",cursor:"pointer",fontSize:14,color:"#EF4444"}}>🗑</button>
+            </div>
+          </div>
+        );})}
+        {!upcoming.length&&<div style={S.empty}>لا توجد أحداث قادمة</div>}
+
+        {/* Urgent */}
+        <div style={S.sTitle}>⚠️ واجبات عاجلة اليوم</div>
+        {children.map(c=>{
+          const u=(homework[c.id]||[]).filter(h=>!h.done&&h.due<=todayStr);
+          if(!u.length)return null;
+          return<div key={c.id} style={{background:"#fff",borderRadius:18,padding:"14px 16px",marginBottom:10,borderRight:`4px solid ${c.color}`,boxShadow:"0 2px 16px rgba(0,0,0,0.06)"}}>
+            <div style={{fontWeight:"800",color:c.color,marginBottom:8,fontSize:15}}>{c.emoji} {c.name}</div>
+            {u.map(h=><div key={h.id} style={{fontSize:13,color:"#636e72",padding:"3px 0",display:"flex",gap:6,alignItems:"center"}}><span style={{color:c.color,fontWeight:"900"}}>•</span><strong>{h.subject}:</strong> {h.task}</div>)}
+          </div>;
+        })}
+        {children.every(c=>(homework[c.id]||[]).filter(h=>!h.done&&h.due<=todayStr).length===0)&&<div style={S.empty}>✨ ممتاز! لا توجد واجبات عاجلة اليوم</div>}
+      </div>
+    </div>
+  );
+}
+
+// ── Styles ───────────────────────────────
+const S={
+  page:{fontFamily:"'Segoe UI',Tahoma,Arial,sans-serif",direction:"rtl",background:"#F8F9FF",height:"100vh",maxWidth:430,margin:"0 auto",display:"flex",flexDirection:"column",overflow:"hidden"},
+  hdr:c=>({background:`linear-gradient(135deg,${c},${c}cc)`,padding:"14px 16px",display:"flex",flexDirection:"row",alignItems:"center",justifyContent:"space-between",gap:8,flexShrink:0}),
+  hTitle:{color:"#fff",fontSize:16,fontWeight:"800",flex:1,textAlign:"center"},
+  backBtn:{background:"rgba(255,255,255,0.22)",border:"none",color:"#fff",borderRadius:12,padding:"8px 16px",fontSize:18,cursor:"pointer",flexShrink:0},
+  card:{background:"#fff",borderRadius:20,padding:"14px",marginBottom:10,boxShadow:"0 2px 16px rgba(0,0,0,0.055)"},
+  sTitle:{fontSize:11,fontWeight:"800",color:"#b2bec3",marginBottom:10,marginTop:6,letterSpacing:1.5,textTransform:"uppercase"},
+  addBtn:c=>({background:c,color:"#fff",border:"none",borderRadius:16,padding:"14px",width:"100%",fontSize:14,fontWeight:"700",cursor:"pointer",marginBottom:12,boxShadow:`0 6px 22px ${c}40`,transition:"opacity 0.2s"}),
+  submitBtn:c=>({background:`linear-gradient(135deg,${c},${c}bb)`,color:"#fff",border:"none",borderRadius:16,padding:"15px",width:"100%",fontSize:16,fontWeight:"900",cursor:"pointer",marginTop:12,boxShadow:`0 8px 28px ${c}42`,letterSpacing:0.5}),
+  empty:{textAlign:"center",padding:"36px 16px",color:"#dfe6e9",fontSize:14,lineHeight:2.2},
+  flbl:{fontSize:13,fontWeight:"700",color:"#636e72",marginBottom:7,marginTop:14},
+  finp:{border:"2px solid #eef0f5",borderRadius:14,padding:"12px 14px",fontSize:14,width:"100%",boxSizing:"border-box",outline:"none",fontFamily:"inherit",direction:"rtl",marginBottom:4,background:"#fff",transition:"border-color 0.2s"},
+};
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
