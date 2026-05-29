@@ -170,7 +170,7 @@ const QUOTES = [
 ];
 
 const DEF={
-  children:[{id:1,name:"أحمد",grade:"الصف الرابع",color:"#6C63FF",emoji:"👦"},{id:2,name:"سارة",grade:"الصف السادس",color:"#FF6584",emoji:"👧"},{id:3,name:"محمد",grade:"الصف الأول",color:"#43E97B",emoji:"👦"}],
+  children:[{id:1,name:"Adam",grade:"Primary 5",color:"#6C63FF",emoji:"👦"},{id:2,name:"Jasmine",grade:"Primary 1",color:"#FF6584",emoji:"👧"},{id:3,name:"Asser",grade:"Pre KG",color:"#43E97B",emoji:"👦"}],
   schedule:{1:{السبت:["رياضيات","عربي"],الأحد:["إنجليزي","علوم"],الاثنين:["رياضيات"],الثلاثاء:["عربي"],الأربعاء:["إنجليزي"],الخميس:[]},2:{السبت:["عربي","إنجليزي"],الأحد:["رياضيات"],الاثنين:["اجتماعيات"],الثلاثاء:["رياضيات"],الأربعاء:["عربي"],الخميس:[]},3:{السبت:["عربي"],الأحد:["رياضيات"],الاثنين:[],الثلاثاء:[],الأربعاء:[],الخميس:[]}},
   studySchedule:{1:{السبت:[{id:1,subject:"رياضيات",start:"16:00",duration:45},{id:2,subject:"عربي",start:"17:00",duration:30}],الأحد:[],الاثنين:[],الثلاثاء:[],الأربعاء:[],الخميس:[]},2:{},3:{}},
   homework:{1:[{id:1,subject:"رياضيات",task:"Solve exercises p.45",due:"2026-05-30",done:false}],2:[{id:1,subject:"علوم",task:"Solar System research",due:"2026-05-31",done:false}],3:[{id:1,subject:"عربي",task:"كتابة الحروف",due:"2026-05-29",done:true}]},
@@ -229,8 +229,20 @@ async function apiSave(data){
 async function loadData(){
   try{
     setState({sync:"syncing"});
-    const d=await apiLoad();
+    let d=await apiLoad();
+    // Migration: update old names to new ones
+    let needsSave=false;
+    if(d.children&&d.children[0]&&(d.children[0].name==="أحمد"||d.children[0].name==="Adam")){
+      const nameMap={"أحمد":"Adam","سارة":"Jasmine","محمد":"Asser"};
+      const gradeMap={"الصف الرابع":"Primary 5","الصف السادس":"Primary 1","الصف الأول":"Pre KG"};
+      d={...d,children:d.children.map(c=>({...c,name:nameMap[c.name]||c.name,grade:gradeMap[c.grade]||c.grade}))};
+      if(d.parentSettings&&(d.parentSettings.father==="الأب"||!d.parentSettings.father)){
+        d={...d,parentSettings:{...d.parentSettings,father:"Kasim",fatherAvatar:"👨",mother:"Asmaa",motherAvatar:"👩",setupDone:true},chatUsers:{name1:"Kasim",avatar1:"👨",name2:"Asmaa",avatar2:"👩"}};
+      }
+      needsSave=true;
+    }
     setState({data:d,sync:"synced",lastPull:new Date()});
+    if(needsSave)await apiSave(d);
   }catch(e){
     if(!S().data)setState({data:DEF});
     setState({sync:"error"});
@@ -935,7 +947,7 @@ function screenHome(){
   hdr.appendChild(statRow);
   // Mobile quote
   const mQuoteWrap=div({className:"mobile-header-stats",style:{background:"rgba(255,255,255,.12)",borderRadius:"14px",padding:"10px 14px",marginTop:"10px"}});
-  mQuoteWrap.appendChild(div({style:{fontSize:"14px",color:"rgba(255,255,255,.95)",fontStyle:"italic",lineHeight:"1.6",fontWeight:"500"}}),'"'+mobileQuoteText+'"'));
+  mQuoteWrap.appendChild(div({style:{fontSize:"14px",color:"rgba(255,255,255,.95)",fontStyle:"italic",lineHeight:"1.6",fontWeight:"500"}},'"'+mobileQuoteText+'"'));
   if(mobileQuoteSource)mQuoteWrap.appendChild(div({style:{fontSize:"10px",color:"rgba(255,255,255,.6)",marginTop:"4px"}},mobileQuoteSource));
   hdr.appendChild(mQuoteWrap);
   page.appendChild(hdr);
