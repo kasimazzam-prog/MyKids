@@ -32,11 +32,6 @@ input,select,textarea,button{font-family:inherit;direction:rtl;}
 <body>
 <div id="root"></div>
 <script type="text/babel">
-
-window.addEventListener('error', function(e){
-  console.error('Application Error:', e.error || e.message);
-});
-
 // ══════════════════════════════════════════
 // مفاتيح JSONBin — لا تشاركها مع أحد
 // ══════════════════════════════════════════
@@ -59,20 +54,20 @@ const PRIOR    = {high:{label:"عاجل",color:"#FF6584"},medium:{label:"متو�
 const uid = () => {
   try {
     return crypto.randomUUID();
-  } catch {
-    return Date.now() + Math.random().toString(16).slice(2);
+  } catch (e) {
+    return Date.now() + "_" + Math.random().toString(16).slice(2);
   }
 };
+
+const safeLower = (v) => String(v || "").toLowerCase();
 
 
 const scoreColor = p => p>=90?"#00B894":p>=75?"#0984E3":p>=60?"#FDCB6E":"#FF6584";
 const getDU = ds => { const d=Math.ceil((new Date(ds)-new Date())/86400000); return d<0?"انتهى":d===0?"اليوم!":d===1?"غداً":`${d} أيام`; };
 const todayName = (()=>{ const m={6:"السبت",0:"الأحد",1:"الاثنين",2:"الثلاثاء",3:"الأربعاء",4:"الخميس"}; return m[new Date().getDay()]||"السبت"; })();
-const dNow = new Date();
-const todayStr = `${dNow.getFullYear()}-${String(dNow.getMonth()+1).padStart(2,'0')}-${String(dNow.getDate()).padStart(2,'0')}`;
+const nowDate = new Date();
+const todayStr = `${nowDate.getFullYear()}-${String(nowDate.getMonth()+1).padStart(2,'0')}-${String(nowDate.getDate()).padStart(2,'0')}`;
 const fmt       = ds => { try{ return new Date(ds).toLocaleDateString("ar-EG",{month:"short",day:"numeric"}); }catch(e){return ds;} };
-
-const safeLower = v => String(v || "").toLowerCase();
 
 const DEF = {
   children:[
@@ -278,29 +273,7 @@ function App() {
   function submitEditChild(){if(!childF.name||!childF.grade)return;upd({children:children.map(c=>c.id===editingChild.id?{...c,...childF}:c)});setScreen("settings");}
   function deleteChild(cid){del("هل تريد حذف هذا الطفل وجميع بياناته نهائياً؟",()=>{const rm=o=>{const n={...o};delete n[cid];return n;};upd({children:children.filter(c=>c.id!==cid),homework:rm(homework),exams:rm(exams),grades:rm(grades),points:rm(points),teacherNotes:rm(teacherNotes),schedule:rm(schedule),studySchedule:rm(studySchedule),allowance:rm(allowance),goals:rm(goals),supplies:rm(supplies)});});}
 
-  const searchRes = useMemo(() => {
-    if(search.trim().length <= 1) return [];
-    const q = safeLower(search);
-    const r = [];
-    children.forEach(c=>{
-      (homework[c.id]||[])
-        .filter(h=>safeLower(h.task).includes(q)||safeLower(h.subject).includes(q))
-        .forEach(h=>r.push({type:"📚",child:c,main:`${h.subject}: ${h.task}`,sub:fmt(h.due)}));
-
-      (exams[c.id]||[])
-        .filter(e=>safeLower(e.subject).includes(q))
-        .forEach(e=>r.push({type:"📝",child:c,main:e.subject,sub:fmt(e.date)}));
-
-      (grades[c.id]||[])
-        .filter(g=>safeLower(g.subject).includes(q))
-        .forEach(g=>r.push({type:"📊",child:c,main:`${g.subject}: ${g.score}/${g.max}`,sub:fmt(g.date)}));
-
-      (supplies[c.id]||[])
-        .filter(s=>safeLower(s.name).includes(q))
-        .forEach(s=>r.push({type:"🛒",child:c,main:s.name,sub:s.done?"تم الشراء":"لم يُشترَ"}));
-    });
-    return r;
-  }, [search, children, homework, exams, grades, supplies]);
+  const searchRes=search.trim().length>1?(()=>{const q=search.toLowerCase();const r=[];children.forEach(c=>{(homework[c.id]||[]).filter(h=>h.task.toLowerCase().includes(q)||h.subject.toLowerCase().includes(q)).forEach(h=>r.push({type:"📚",child:c,main:`${h.subject}: ${h.task}`,sub:fmt(h.due)}));(exams[c.id]||[]).filter(e=>e.subject.toLowerCase().includes(q)).forEach(e=>r.push({type:"📝",child:c,main:e.subject,sub:fmt(e.date)}));(grades[c.id]||[]).filter(g=>g.subject.toLowerCase().includes(q)).forEach(g=>r.push({type:"📊",child:c,main:`${g.subject}: ${g.score}/${g.max}`,sub:fmt(g.date)}));(supplies[c.id]||[]).filter(s=>s.name.toLowerCase().includes(q)).forEach(s=>r.push({type:"🛒",child:c,main:s.name,sub:s.done?"تم الشراء":"لم يُشترَ"}));});return r;})():[];
 
   // ── Form Wrapper ──
   const FW=({title,bk,onSave,color,children:fc})=>{
