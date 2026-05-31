@@ -45,7 +45,8 @@ input,select,textarea,button{font-family:inherit;direction:rtl}
 .hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;flex-shrink:0}
 .scroll{flex:1;overflow-y:auto;padding:14px 14px 80px;-webkit-overflow-scrolling:touch}
 .card{background:#fff;border-radius:18px;padding:14px;margin-bottom:10px;box-shadow:0 2px 16px rgba(0,0,0,.055)}
-.inp{border:2px solid #eef0f5;border-radius:12px;padding:11px 13px;font-size:14px;width:100%;outline:none;background:#fff;margin-bottom:4px}
+.inp{border:2px solid #eef0f5;border-radius:14px;padding:12px 16px;font-size:15px;width:100%;outline:none;background:#fff;margin-bottom:4px;transition:border-color .2s;font-family:inherit;direction:rtl}
+.inp:focus{border-color:#6C63FF;box-shadow:0 0 0 3px rgba(108,99,255,.1)}
 .btn-add{color:#fff;border:none;border-radius:14px;padding:13px;width:100%;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:12px;box-shadow:0 4px 15px rgba(0,0,0,.2);transform:translateY(0);transition:all .15s}.btn-add:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.25)}.btn-add:active{transform:translateY(1px);box-shadow:0 2px 8px rgba(0,0,0,.15)}
 .btn-sub{color:#fff;border:none;border-radius:14px;padding:14px;width:100%;font-size:15px;font-weight:800;cursor:pointer;margin-top:8px;box-shadow:0 4px 15px rgba(0,0,0,.2);transition:all .15s}.btn-sub:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.25)}
 .back-btn{background:rgba(255,255,255,.25);border:2px solid rgba(255,255,255,.3);color:#fff;border-radius:14px;padding:8px 16px;font-size:20px;cursor:pointer;font-weight:900;min-width:44px;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.2);transition:all .15s}.back-btn:active{transform:scale(.95)}
@@ -340,7 +341,7 @@ function submitSupply2(){const {F,child,data}=S();if(!F.name)return;const l=data
 function submitAllowance(){const {F,child,data}=S();if(!F.amount)return;const amt=Number(F.amount)*(F.type==="صرف"?-1:1);const al=data.allowance[child.id]||{daily:0,balance:0,history:[]};upd({allowance:{...data.allowance,[child.id]:{...al,balance:al.balance+amt,history:[{id:Date.now(),date:todayStr,amount:amt,type:F.type,note:F.note||""},...al.history]}}});setState({screen:"child"});}
 function submitAllowanceSettings(){const {F,child,data}=S();const al=data.allowance[child.id]||{daily:0,balance:0,history:[]};upd({allowance:{...data.allowance,[child.id]:{...al,daily:Number(F.daily||0),balance:Number(F.balance||0)}}});setState({screen:"child"});}
 function submitPoints(){const {F,child,data}=S();if(!F.reason||!F.amount)return;const p=data.points[child.id]||{total:0,history:[]};upd({points:{...data.points,[child.id]:{total:p.total+Number(F.amount),history:[{id:Date.now(),date:todayStr,reason:F.reason,amount:Number(F.amount)},...p.history]}}},{type:"add",title:"تم منح نقاط",body:`${child.emoji} ${child.name} — +${F.amount}⭐ ${F.reason}`,childId:child.id,screen:"child",tab:"points"});setState({screen:"child"});}
-function submitEvent(){const {F,data}=S();if(!F.title||!F.date)return;const u=S().editItem?data.calendarEvents.map(e=>e.id===S().editItem.id?{...e,...F}:e):[...data.calendarEvents,{id:Date.now(),...F,childIds:F.childIds||[]}];upd({calendarEvents:u});setState({screen:"home"});}
+function submitEvent(){const {F,data}=S();if(!F.title||!F.date)return;const item={...F,childIds:F.childIds||[],notes:F.notes||""};const u=S().editItem?data.calendarEvents.map(e=>e.id===S().editItem.id?{...e,...item}:e):[...data.calendarEvents,{id:Date.now(),...item}];upd({calendarEvents:u});setState({screen:"home"});}
 function submitAddChild(){const {childF,data}=S();if(!childF.name||!childF.grade)return;const id=Date.now();const cl=o=>({...o,[id]:[]});upd({children:[...data.children,{id,...childF}],homework:cl(data.homework),exams:cl(data.exams),grades:cl(data.grades),teacherNotes:cl(data.teacherNotes),supplies:cl(data.supplies),goals:cl(data.goals),points:{...data.points,[id]:{total:0,history:[]}},schedule:{...data.schedule,[id]:{}},studySchedule:{...data.studySchedule,[id]:{}},allowance:{...data.allowance,[id]:{daily:0,balance:0,history:[]}}});setState({childF:{name:"",grade:"",color:PALETTE[0],emoji:EMOJIS[0]},screen:"settings"});}
 function submitEditChild(){const {childF,editingChild,data}=S();if(!childF.name||!childF.grade)return;upd({children:data.children.map(c=>c.id===editingChild.id?{...c,...childF}:c)});setState({screen:"settings"});}
 function deleteChild(cid){askDel("هل تريد حذف هذا الطفل وجميع بياناته؟",()=>{const d=S().data;const rm=o=>{const n={...o};delete n[cid];return n};upd({children:d.children.filter(c=>c.id!==cid),homework:rm(d.homework),exams:rm(d.exams),grades:rm(d.grades),points:rm(d.points),teacherNotes:rm(d.teacherNotes),schedule:rm(d.schedule),studySchedule:rm(d.studySchedule),allowance:rm(d.allowance),goals:rm(d.goals),supplies:rm(d.supplies)});});}
@@ -380,15 +381,15 @@ function screenFHw(){
   return buildForm(S().editItem?"تعديل واجب ✏️":"واجب جديد 📚",c,back,submitHw,[
     lbl("المادة"),sel({className:"inp",value:F.subject||SUBJECTS[0],onchange:e=>sf("subject",e.target.value)},...SUBJECTS),
     lbl("الواجب"),txt({className:"inp",style:{height:"88px",resize:"none"},placeholder:"اكتب الواجب...",value:F.task||"",oninput:e=>sf("task",e.target.value)}),
-    lbl("تاريخ التسليم"),inp({className:"inp",type:"date",value:F.due||"",onchange:e=>sf("due",e.target.value)})
+    lbl("تاريخ التسليم"),inp({className:"pro-input",type:"date",value:F.due||"",onchange:e=>sf("due",e.target.value)})
   ]);
 }
 function screenFExam(){
   const {F,child}=S();const c=child?.color||"#6C63FF";
   return buildForm(S().editItem?"تعديل اختبار ✏️":"اختبار جديد 📝",c,back,submitExam,[
     lbl("المادة"),sel({className:"inp",value:F.subject||SUBJECTS[0],onchange:e=>sf("subject",e.target.value)},...SUBJECTS),
-    lbl("التاريخ"),inp({className:"inp",type:"date",value:F.date||"",onchange:e=>sf("date",e.target.value)}),
-    lbl("ملاحظات"),inp({className:"inp",type:"text",placeholder:"الفصل / الوحدة...",value:F.notes||"",oninput:e=>sf("notes",e.target.value)})
+    lbl("التاريخ"),inp({className:"pro-input",type:"date",value:F.date||"",onchange:e=>sf("date",e.target.value)}),
+    lbl("ملاحظات"),inp({className:"pro-input",type:"text",placeholder:"الفصل / الوحدة...",value:F.notes||"",oninput:e=>sf("notes",e.target.value)})
   ]);
 }
 function screenFGrade(){
@@ -398,20 +399,20 @@ function screenFGrade(){
     lbl("النوع"),chipRow("type",["اختبار","واجب","مشاركة","مشروع"]),
     lbl("الدرجة / من"),
     div({style:{display:"flex",gap:"10px"}},
-      inp({className:"inp",type:"number",placeholder:"الدرجة",value:F.score||"",oninput:e=>sf("score",e.target.value)}),
-      inp({className:"inp",type:"number",placeholder:"من",value:F.max||100,oninput:e=>sf("max",e.target.value)})
+      inp({className:"pro-input",type:"number",placeholder:"الدرجة",value:F.score||"",oninput:e=>sf("score",e.target.value)}),
+      inp({className:"pro-input",type:"number",placeholder:"من",value:F.max||100,oninput:e=>sf("max",e.target.value)})
     ),
-    lbl("التاريخ"),inp({className:"inp",type:"date",value:F.date||"",onchange:e=>sf("date",e.target.value)})
+    lbl("التاريخ"),inp({className:"pro-input",type:"date",value:F.date||"",onchange:e=>sf("date",e.target.value)})
   ]);
 }
 function screenFNote(){
   const {F,child}=S();const c=child?.color||"#6C63FF";
   return buildForm(S().editItem?"تعديل ملاحظة ✏️":"ملاحظة معلم 💬",c,back,submitNote,[
-    lbl("المعلم"),inp({className:"inp",type:"text",placeholder:"اسم المعلم...",value:F.teacher||"",oninput:e=>sf("teacher",e.target.value)}),
+    lbl("المعلم"),inp({className:"pro-input",type:"text",placeholder:"اسم المعلم...",value:F.teacher||"",oninput:e=>sf("teacher",e.target.value)}),
     lbl("المادة"),sel({className:"inp",value:F.subject||SUBJECTS[0],onchange:e=>sf("subject",e.target.value)},...SUBJECTS),
     lbl("النوع"),chipRow("type",Object.keys(NOTE_T),o=>NOTE_T[o].color),
     lbl("الملاحظة"),txt({className:"inp",style:{height:"88px",resize:"none"},placeholder:"اكتب الملاحظة...",value:F.note||"",oninput:e=>sf("note",e.target.value)}),
-    lbl("التاريخ"),inp({className:"inp",type:"date",value:F.date||"",onchange:e=>sf("date",e.target.value)})
+    lbl("التاريخ"),inp({className:"pro-input",type:"date",value:F.date||"",onchange:e=>sf("date",e.target.value)})
   ]);
 }
 function screenFStudy(){
@@ -419,7 +420,7 @@ function screenFStudy(){
   return buildForm(S().editItem?"تعديل جلسة ✏️":"جلسة مذاكرة 📚",c,back,submitStudy,[
     lbl("اليوم"),chipRow("day",DAYS),
     lbl("المادة"),sel({className:"inp",value:F.subject||SUBJECTS[0],onchange:e=>sf("subject",e.target.value)},...SUBJECTS),
-    lbl("وقت البدء"),inp({className:"inp",type:"time",value:F.start||"16:00",onchange:e=>sf("start",e.target.value)}),
+    lbl("وقت البدء"),inp({className:"pro-input",type:"time",value:F.start||"16:00",onchange:e=>sf("start",e.target.value)}),
     lbl("المدة (دقيقة)"),
     div({style:{display:"flex",gap:"8px",flexWrap:"wrap",marginBottom:"8px"}},
       ...[20,30,45,60,90].map(n=>btn({className:"chip-btn",style:{background:Number(F.duration)===n?c:"#f0f0f8",color:Number(F.duration)===n?"#fff":"#555"},onclick:()=>sfr("duration",n)},n+"د"))
@@ -434,14 +435,14 @@ function screenFGoal(){
     div({style:{display:"flex",gap:"8px",flexWrap:"wrap",marginBottom:"8px"}},
       ...[70,75,80,85,90,95,100].map(n=>btn({className:"chip-btn",style:{background:Number(F.targetPct)===n?c:"#f0f0f8",color:Number(F.targetPct)===n?"#fff":"#555"},onclick:()=>sfr("targetPct",n)},n+"%"))
     ),
-    lbl("الموعد النهائي"),inp({className:"inp",type:"date",value:F.deadline||"",onchange:e=>sf("deadline",e.target.value)}),
-    lbl("ملاحظة"),inp({className:"inp",type:"text",placeholder:"وصف الهدف...",value:F.note||"",oninput:e=>sf("note",e.target.value)})
+    lbl("الموعد النهائي"),inp({className:"pro-input",type:"date",value:F.deadline||"",onchange:e=>sf("deadline",e.target.value)}),
+    lbl("ملاحظة"),inp({className:"pro-input",type:"text",placeholder:"وصف الهدف...",value:F.note||"",oninput:e=>sf("note",e.target.value)})
   ]);
 }
 function screenFSupply(){
   const {F,child}=S();const c=child?.color||"#6C63FF";
   return buildForm(S().editItem?"تعديل مستلزم ✏️":"مستلزم جديد 🛒",c,back,submitSupply2,[
-    lbl("اسم المستلزم"),inp({className:"inp",type:"text",placeholder:"مثال: دفتر رياضيات...",value:F.name||"",oninput:e=>sf("name",e.target.value)}),
+    lbl("اسم المستلزم"),inp({className:"pro-input",type:"text",placeholder:"مثال: دفتر رياضيات...",value:F.name||"",oninput:e=>sf("name",e.target.value)}),
     lbl("الأولوية"),
     div({style:{display:"flex",gap:"8px",marginBottom:"8px"}},
       ...Object.entries(PRIOR).map(([k,v])=>btn({className:"chip-btn",style:{flex:1,background:F.priority===k?v.color:"#f0f0f8",color:F.priority===k?"#fff":"#555"},onclick:()=>sfr("priority",k)},v.label))
@@ -456,22 +457,22 @@ function screenFAllowance(){
       btn({className:"chip-btn",style:{flex:1,background:F.type==="منح"?"#00B894":"#f0f0f8",color:F.type==="منح"?"#fff":"#555",padding:"12px"},onclick:()=>sfr("type","منح")},"➕ منح"),
       btn({className:"chip-btn",style:{flex:1,background:F.type==="صرف"?"#FF6584":"#f0f0f8",color:F.type==="صرف"?"#fff":"#555",padding:"12px"},onclick:()=>sfr("type","صرف")},"➖ صرف")
     ),
-    lbl("المبلغ (ريال)"),inp({className:"inp",type:"number",placeholder:"0",value:F.amount||"",oninput:e=>sf("amount",e.target.value)}),
-    lbl("ملاحظة"),inp({className:"inp",type:"text",placeholder:"سبب المنح أو الصرف...",value:F.note||"",oninput:e=>sf("note",e.target.value)})
+    lbl("المبلغ (ريال)"),inp({className:"pro-input",type:"number",placeholder:"0",value:F.amount||"",oninput:e=>sf("amount",e.target.value)}),
+    lbl("ملاحظة"),inp({className:"pro-input",type:"text",placeholder:"سبب المنح أو الصرف...",value:F.note||"",oninput:e=>sf("note",e.target.value)})
   ]);
 }
 function screenFAllowanceSettings(){
   const {F,child}=S();const c=child?.color||"#6C63FF";
   return buildForm("إعدادات المصروف ⚙️",c,back,submitAllowanceSettings,[
-    lbl("المصروف اليومي (ريال)"),inp({className:"inp",type:"number",value:F.daily||"",oninput:e=>sf("daily",e.target.value)}),
-    lbl("الرصيد الحالي (ريال)"),inp({className:"inp",type:"number",value:F.balance||"",oninput:e=>sf("balance",e.target.value)}),
+    lbl("المصروف اليومي (ريال)"),inp({className:"pro-input",type:"number",value:F.daily||"",oninput:e=>sf("daily",e.target.value)}),
+    lbl("الرصيد الحالي (ريال)"),inp({className:"pro-input",type:"number",value:F.balance||"",oninput:e=>sf("balance",e.target.value)}),
     div({style:{background:"#FFF9C4",borderRadius:"12px",padding:"12px",fontSize:"13px",color:"#92400E"}},"⚠️ تعديل الرصيد يغيره مباشرة")
   ]);
 }
 function screenFPoints(){
   const {F,child}=S();const c=child?.color||"#6C63FF";
   return buildForm("منح نقاط ⭐",c,back,submitPoints,[
-    lbl("السبب"),inp({className:"inp",type:"text",placeholder:"مثال: درجة ممتازة...",value:F.reason||"",oninput:e=>sf("reason",e.target.value)}),
+    lbl("السبب"),inp({className:"pro-input",type:"text",placeholder:"مثال: درجة ممتازة...",value:F.reason||"",oninput:e=>sf("reason",e.target.value)}),
     lbl("عدد النقاط"),
     div({style:{display:"flex",gap:"8px",flexWrap:"wrap",marginBottom:"8px"}},
       ...[5,10,20,30,50].map(n=>btn({className:"chip-btn",style:{background:Number(F.amount)===n?c:"#f0f0f8",color:Number(F.amount)===n?"#fff":"#555",fontSize:"16px",fontWeight:"900"},onclick:()=>sfr("amount",n)},n+"⭐"))
@@ -481,12 +482,12 @@ function screenFPoints(){
 function screenFEvent(){
   const {F,data}=S();
   return buildForm(S().editItem?"تعديل حدث ✏️":"حدث جديد 📅","#1e3a5f",()=>setState({screen:"home"}),submitEvent,[
-    lbl("العنوان"),inp({className:"inp",type:"text",placeholder:"مثال: رحلة علمية...",value:F.title||"",oninput:e=>sf("title",e.target.value)}),
+    lbl("العنوان"),inp({className:"pro-input",type:"text",placeholder:"مثال: رحلة علمية...",value:F.title||"",oninput:e=>sf("title",e.target.value)}),
     lbl("النوع"),
     div({style:{display:"flex",gap:"8px",flexWrap:"wrap",marginBottom:"8px"}},
       ...Object.entries(EVENT_T).map(([k,v])=>btn({className:"chip-btn",style:{background:F.type===k?v.color:"#f0f0f8",color:F.type===k?"#fff":"#555"},onclick:()=>sfr("type",k)},v.icon+" "+v.label))
     ),
-    lbl("التاريخ"),inp({className:"inp",type:"date",value:F.date||"",onchange:e=>sf("date",e.target.value)}),
+    lbl("التاريخ"),inp({className:"pro-input",type:"date",value:F.date||"",onchange:e=>sf("date",e.target.value)}),
     lbl("خاص بطفل (اختياري)"),
     div({style:{display:"flex",gap:"8px",flexWrap:"wrap",marginBottom:"8px"}},
       ...data.children.map(c=>{
@@ -503,9 +504,9 @@ function screenChildForm(){
   const hdr=makeHdr(childF.color,btn({className:"back-btn",style:{fontWeight:"900",fontSize:"22px"},onclick:()=>setState({screen:"settings"})},"←"),span({style:{color:"#fff",fontSize:"16px",fontWeight:"800"}},screen==="addChild"?"إضافة طفل جديد":"تعديل بيانات"),printBtn());
   const body=div({style:{flex:1,overflowY:"auto",padding:"16px 16px 100px"}});
 
-  const nameInp=inp({className:"inp",type:"text",placeholder:"اسم الطفل...",value:childF.name});
+  const nameInp=inp({className:"pro-input",type:"text",placeholder:"اسم الطفل...",value:childF.name});
   nameInp.oninput=e=>setState({childF:{...S().childF,name:e.target.value}});
-  const gradeInp=inp({className:"inp",type:"text",placeholder:"مثال: الصف الرابع...",value:childF.grade});
+  const gradeInp=inp({className:"pro-input",type:"text",placeholder:"مثال: الصف الرابع...",value:childF.grade});
   gradeInp.oninput=e=>setState({childF:{...S().childF,grade:e.target.value}});
 
   const emojiRow=div({style:{display:"flex",gap:"10px",flexWrap:"wrap",marginBottom:"8px"}},
@@ -838,70 +839,42 @@ function screenChild(){
   // ── CHAT ──
   if(tab==="chat"){
     const msgs=data.chatMessages||[];
-    const users=data.chatUsers||{name1:"الأب",avatar1:"👨",name2:"الأم",avatar2:"👩"};
+    const users2=data.chatUsers||{name1:"Kasim",avatar1:"👨",name2:"Asmaa",avatar2:"👩"};
+    const ps2=data.parentSettings||{};
     let currentUser="1";
     try{currentUser=localStorage.getItem("chatUser")||"1";}catch(e){}
-    const isUser1=currentUser==="1";
 
-    const chatWrap=div({style:{display:"flex",flexDirection:"column",height:"calc(100vh - 280px)"}});
-    const msgsList=div({style:{flex:1,overflowY:"auto",padding:"8px 4px",display:"flex",flexDirection:"column",gap:"8px"}});
+    const allUsers2=[
+      {key:"1",name:ps2.father||users2.name1,avatar:ps2.fatherAvatar||users2.avatar1,color:"#6C63FF"},
+      {key:"2",name:ps2.mother||users2.name2,avatar:ps2.motherAvatar||users2.avatar2,color:"#FF6584"},
+      {key:"c"+child.id,name:child.name,avatar:child.emoji,color:child.color}
+    ];
+    const curU2=allUsers2.find(u=>u.key===currentUser)||allUsers2[0];
 
-    if(!msgs.length){
-      msgsList.appendChild(div({style:{textAlign:"center",padding:"40px",color:"#dfe6e9",fontSize:"14px",lineHeight:"2.2"}},"🗨️ لا توجد رسائل بعد، ابدأ المحادثة مع شريكك"));
-    }
+    const quickActions2=[
+      {label:"✅ أنهى الواجب",text:"✅ أنهى "+child.emoji+" "+child.name+" واجبه اليوم",childId:child.id},
+      {label:"📚 جاهز للمذاكرة",text:"📚 "+child.emoji+" "+child.name+" جاهز للمذاكرة",childId:child.id},
+      {label:"⚠️ لم يذاكر",text:"⚠️ "+child.emoji+" "+child.name+" لم يذاكر بعد",childId:child.id},
+      {label:"🏆 أداء ممتاز",text:"🏆 أداء ممتاز اليوم - "+child.emoji+" "+child.name,childId:child.id},
+      {label:"📝 اختبار قريب",text:"📝 تذكير: اختبار قريب لـ "+child.emoji+" "+child.name,childId:child.id},
+    ];
 
-    msgs.forEach(m=>{
-      const isMine=m.sender===(isUser1?users.name1:users.name2);
-      const msgWrap=div({style:{display:"flex",flexDirection:isMine?"row-reverse":"row",gap:"8px",alignItems:"flex-end"}});
-      const avatarWrap=div({style:{display:"flex",flexDirection:"column",alignItems:"center",gap:"2px"}});
-      avatarWrap.appendChild(div({style:{width:"32px",height:"32px",borderRadius:"50%",background:isMine?child.color+"20":"#f0f0f8",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"16px",flexShrink:0,border:"2px solid "+(isMine?child.color+"40":"#e0e0f0")}},m.avatar));
-      avatarWrap.appendChild(div({style:{fontSize:"9px",color:"#b2bec3",fontWeight:"600",maxWidth:"36px",textAlign:"center",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}},m.sender));
-      msgWrap.appendChild(avatarWrap);
-      const bubble=div({style:{maxWidth:"72%",background:isMine?`linear-gradient(135deg,${child.color},${child.color}cc)`:"#fff",color:isMine?"#fff":"#2d3436",borderRadius:isMine?"18px 18px 4px 18px":"18px 18px 18px 4px",padding:"10px 14px",boxShadow:"0 2px 10px rgba(0,0,0,.1)",fontSize:"14px",lineHeight:"1.5"}});
-      if(m.childId){const cRef=data.children.find(c2=>c2.id===m.childId);if(cRef)bubble.appendChild(div({style:{fontSize:"10px",opacity:"0.75",marginBottom:"4px",fontWeight:"700"}},cRef.emoji+" "+cRef.name));}
-      bubble.appendChild(div(null,m.text));
-      bubble.appendChild(div({style:{fontSize:"10px",opacity:"0.65",marginTop:"4px",textAlign:isMine?"left":"right"}},m.time+" · "+m.sender));
-      msgWrap.appendChild(bubble);
-      msgsList.appendChild(msgWrap);
-    });
-
-    const inputWrap=div({className:"no-print",style:{borderTop:"2px solid #f0f0f8",paddingTop:"8px",flexShrink:0}});
-
-    // Sender toggle
-    const senderRow=div({style:{display:"flex",gap:"6px",marginBottom:"8px",background:"#f0f0f8",borderRadius:"14px",padding:"4px"}});
-    const mkUserBtn=(num,name,avatar)=>btn({style:{flex:1,padding:"7px",borderRadius:"10px",border:"none",background:currentUser===num?child.color:"transparent",color:currentUser===num?"#fff":"#636e72",cursor:"pointer",fontWeight:"700",fontSize:"13px",transition:"all .2s"},onclick:()=>{try{localStorage.setItem("chatUser",num);}catch(e){}setState({tab:"chat"});}},avatar+" "+name);
-    senderRow.append(mkUserBtn("1",users.name1,users.avatar1),mkUserBtn("2",users.name2,users.avatar2));
-    senderRow.appendChild(btn({style:{flex:1,padding:"7px 10px",borderRadius:"10px",border:"none",background:currentUser==="c"+child.id?child.color:"transparent",color:currentUser==="c"+child.id?"#fff":"#636e72",cursor:"pointer",fontWeight:"700",fontSize:"13px",transition:"all .2s"},onclick:()=>{try{localStorage.setItem("chatUser","c"+child.id);}catch(e){}setState({tab:"chat"});}},child.emoji+" "+child.name.slice(0,4)));
-    inputWrap.appendChild(senderRow);
-
-    // Quick actions
-    const quickRow=div({style:{display:"flex",gap:"5px",overflowX:"auto",marginBottom:"8px",paddingBottom:"2px"}});
-    [{label:"✅ أنهى الواجب"},{label:"📚 جاهز للمذاكرة"},{label:"⚠️ لم يذاكر"},{label:"🏆 أداء ممتاز"},{label:"📝 اختبار قريب"},{label:"❤️ أنا أفتقده"}].forEach(qa=>{
-      quickRow.appendChild(btn({style:{background:child.color+"15",border:"2px solid "+child.color+"30",borderRadius:"20px",padding:"5px 11px",cursor:"pointer",fontSize:"11px",fontWeight:"600",whiteSpace:"nowrap",color:child.color,flexShrink:0},onclick:()=>{
+    body.appendChild(buildProChat({
+      msgs:msgs.filter(m=>true),
+      users:allUsers2,
+      children:data.children,
+      data,
+      currentUser:curU2.name,
+      color:child.color,
+      onSend:({text,childId,avatar,sender})=>{
         const now=new Date();
-        upd({chatMessages:[...(data.chatMessages||[]),{id:Date.now(),sender:(currentUser==="1"?users.name1:(currentUser==="2"?users.name2:child.name)),avatar:(currentUser==="1"?users.avatar1:(currentUser==="2"?users.avatar2:child.emoji)),text:qa.label+" "+child.emoji,time:String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0"),date:todayStr,childId:child.id,type:"quick"}]});
-      }},qa.label));
-    });
-    inputWrap.appendChild(quickRow);
-
-    // Text input
-    const inputRow=div({style:{display:"flex",gap:"8px",alignItems:"flex-end"}});
-    const textInp=el("textarea",{style:{flex:1,border:"2px solid #e0deff",borderRadius:"18px",padding:"10px 16px",fontSize:"14px",outline:"none",resize:"none",maxHeight:"80px",fontFamily:"inherit",direction:"rtl",lineHeight:"1.5",background:"#fff"},placeholder:"اكتب رسالة...",rows:1});
-    textInp.oninput=function(){this.style.height="auto";this.style.height=Math.min(this.scrollHeight,80)+"px";};
-    const sendB=btn({style:{width:"42px",height:"42px",borderRadius:"50%",background:`linear-gradient(135deg,${child.color},${child.color}cc)`,border:"none",color:"#fff",fontSize:"19px",cursor:"pointer",flexShrink:0,boxShadow:"0 4px 14px rgba(0,0,0,0.3)"},onclick:()=>{
-      const t=textInp.value.trim();if(!t)return;
-      const now=new Date();
-      upd({chatMessages:[...(data.chatMessages||[]),{id:Date.now(),sender:isUser1?users.name1:users.name2,avatar:isUser1?users.avatar1:users.avatar2,text:t,time:String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0"),date:todayStr,childId:null,type:"text"}]});
-      textInp.value="";
-    }},"↑");
-    const emojiPickerChild=makeEmojiPicker(em=>{textInp.value+=em;});
-    inputRow.append(emojiPickerChild,textInp,sendB);
-    inputWrap.appendChild(inputRow);
-
-    chatWrap.append(msgsList,inputWrap);
-    body.appendChild(chatWrap);
-    // Scroll to bottom
-    setTimeout(()=>{msgsList.scrollTop=msgsList.scrollHeight;},50);
+        upd({chatMessages:[...(data.chatMessages||[]),{id:Date.now(),sender,avatar,text,time:String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0"),date:todayStr,childId:child.id,type:"text"}]});
+      },
+      onUserSwitch:(key)=>{try{localStorage.setItem("chatUser",key);}catch(e){}setState({tab:"chat"});},
+      quickActions:quickActions2,
+      placeholder:"اكتب رسالة عن "+child.name+"...",
+      focusId:"child-chat"
+    }));
   }
 
   page.appendChild(body);
@@ -1230,8 +1203,8 @@ function screenParentSetup(){
   page.appendChild(makeHdr("#6C63FF",btn({className:"back-btn",style:{fontWeight:"900",fontSize:"22px"},onclick:()=>setState({screen:"settings"})},"←"),span({style:{color:"#fff",fontSize:"16px",fontWeight:"800"}},"👨‍👩‍👧 أسماء الوالدين")));
   const body=div({style:{flex:1,overflowY:"auto",padding:"20px 16px"}});
 
-  const fNameInp=el("input",{className:"inp",type:"text",placeholder:"اسم الأب...",value:ps.father});
-  const mNameInp=el("input",{className:"inp",type:"text",placeholder:"اسم الأم...",value:ps.mother});
+  const fNameInp=el("input",{className:"pro-input",type:"text",placeholder:"اسم الأب...",value:ps.father});
+  const mNameInp=el("input",{className:"pro-input",type:"text",placeholder:"اسم الأم...",value:ps.mother});
 
   const AVATARS=["👨","👨‍💼","👨‍🏫","🧔","👱‍♂️","👴"];
   const AVATARSF=["👩","👩‍💼","👩‍🏫","👩‍🦱","👱‍♀️","👵"];
@@ -1266,208 +1239,58 @@ function screenParentSetup(){
 // ── General Chat Screen ──
 function screenGeneralChat(){
   const {data}=S();
-  const {children,generalChat,chatUsers,parentSettings}=data;
-  const ps=parentSettings||{father:"الأب",fatherAvatar:"👨",mother:"الأم",motherAvatar:"👩"};
-  const msgs=generalChat||[];
-  let currentUser="1";
+  const {children,generalChat=[],parentSettings={}}=data;
+  const ps=parentSettings;
+  let currentUser=S().chatUser||"1";
   try{currentUser=localStorage.getItem("chatUser")||"1";}catch(e){}
-  const isUser1=currentUser==="1";
 
-  const page=div({className:"page"});
-  page.appendChild(makeHdr("#2d3436",btn({className:"back-btn",style:{fontWeight:"900",fontSize:"22px"},onclick:()=>setState({screen:"home"})},"←"),span({style:{color:"#fff",fontSize:"16px",fontWeight:"800"}},"💬 شات الأسرة"),printBtn()));
+  const allUsers=[
+    {key:"1",name:ps.father||"Kasim",avatar:ps.fatherAvatar||"👨",color:"#6C63FF"},
+    {key:"2",name:ps.mother||"Asmaa",avatar:ps.motherAvatar||"👩",color:"#FF6584"},
+    ...(children||[]).map(c=>({key:"c"+c.id,name:c.name,avatar:c.emoji,color:c.color}))
+  ];
+  const curU=allUsers.find(u=>u.key===currentUser)||allUsers[0];
 
-  const wrap=div({style:{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}});
-
-  // Participants bar
-  const parts=div({style:{display:"flex",gap:"12px",padding:"10px 16px",background:"#f8f9ff",borderBottom:"1px solid #e8e8f0",overflowX:"auto"}});
-  parts.appendChild(div({style:{textAlign:"center",flexShrink:0}},div({style:{fontSize:"28px"}},(ps.fatherAvatar)||"👨"),div({style:{fontSize:"10px",fontWeight:"600",color:"#6C63FF",marginTop:"2px"}},ps.father)));
-  parts.appendChild(div({style:{textAlign:"center",flexShrink:0}},div({style:{fontSize:"28px"}},(ps.motherAvatar)||"👩"),div({style:{fontSize:"10px",fontWeight:"600",color:"#FF6584",marginTop:"2px"}},ps.mother)));
-  children.forEach(c=>parts.appendChild(div({style:{textAlign:"center",flexShrink:0}},div({style:{width:"36px",height:"36px",borderRadius:"50%",background:`linear-gradient(135deg,${c.color},${c.color}88)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"18px",margin:"0 auto"}},c.emoji),div({style:{fontSize:"10px",fontWeight:"600",color:c.color,marginTop:"2px"}},c.name))));
-  wrap.appendChild(parts);
-
-  // Messages
-  const msgsList=div({style:{flex:1,overflowY:"auto",padding:"12px 14px",display:"flex",flexDirection:"column",gap:"10px"}});
-  if(!msgs.length)msgsList.appendChild(div({style:{textAlign:"center",padding:"40px",color:"#dfe6e9",fontSize:"14px",lineHeight:"2"}},"💬 شات الأسرة — تواصل مع شريكك حول أطفالك"));
-  msgs.forEach(m=>{
-    const isMine=m.sender===(isUser1?ps.father:ps.mother);
-    const msgWrap=div({style:{display:"flex",flexDirection:isMine?"row-reverse":"row",gap:"8px",alignItems:"flex-end"}});
-    const avWrap=div({style:{display:"flex",flexDirection:"column",alignItems:"center",gap:"2px"}});
-    avWrap.appendChild(div({style:{width:"32px",height:"32px",borderRadius:"50%",background:isMine?"#EEF2FF":"#f0f0f8",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"16px",flexShrink:0,border:"2px solid "+(isMine?"#6C63FF40":"#e0e0f0")}},m.avatar||"👤"));
-    avWrap.appendChild(div({style:{fontSize:"9px",color:"#b2bec3",fontWeight:"600"}},m.sender));
-    msgWrap.appendChild(avWrap);
-    const bubble=div({style:{maxWidth:"72%",background:isMine?"linear-gradient(135deg,#6C63FF,#a855f7)":"#fff",color:isMine?"#fff":"#2d3436",borderRadius:isMine?"18px 18px 4px 18px":"18px 18px 18px 4px",padding:"10px 14px",boxShadow:"0 2px 10px rgba(0,0,0,.1)",fontSize:"14px",lineHeight:"1.5"}});
-    if(m.childRef){const c2=children.find(c3=>c3.id===m.childRef);if(c2)bubble.appendChild(div({style:{fontSize:"10px",opacity:"0.75",marginBottom:"4px",fontWeight:"700",display:"flex",alignItems:"center",gap:"4px"}},c2.emoji,c2.name));}
-    bubble.appendChild(div(null,m.text));
-    bubble.appendChild(div({style:{fontSize:"10px",opacity:"0.65",marginTop:"4px",textAlign:isMine?"left":"right"}},m.time));
-    msgWrap.appendChild(bubble);
-    msgsList.appendChild(msgWrap);
-  });
-  wrap.appendChild(msgsList);
-
-  // Input
-  const inputWrap=div({className:"no-print",style:{borderTop:"2px solid #f0f0f8",padding:"10px 14px",flexShrink:0}});
-  const senderRow=div({style:{display:"flex",gap:"6px",marginBottom:"8px",background:"#f0f0f8",borderRadius:"14px",padding:"4px"}});
-  const mkB=(num,name,av,color)=>{
-    const isSelected=currentUser===num;
-    return btn({style:{flex:1,padding:"7px",borderRadius:"10px",border:"none",background:isSelected?color:"transparent",color:isSelected?"#fff":"#636e72",cursor:"pointer",fontWeight:"700",fontSize:"12px",transition:"all .2s",display:"flex",flexDirection:"column",alignItems:"center",gap:"2px"},onclick:()=>{try{localStorage.setItem("chatUser",num);}catch(e){}setState({screen:"generalChat"});}},
-      div({style:{fontSize:"18px"}},av),
-      div(null,name)
-    );
-  };
-  senderRow.append(mkB("1",ps.father,ps.fatherAvatar||"👨","#6C63FF"),mkB("2",ps.mother,ps.motherAvatar||"👩","#FF6584"));
-  // Add children as senders
-  children.forEach((c,idx2)=>{
-    const cKey="c"+c.id;
-    const isSelected=currentUser===cKey;
-    senderRow.appendChild(btn({style:{flex:1,padding:"7px",borderRadius:"10px",border:"none",background:isSelected?c.color:"transparent",color:isSelected?"#fff":"#636e72",cursor:"pointer",fontWeight:"700",fontSize:"12px",transition:"all .2s",display:"flex",flexDirection:"column",alignItems:"center",gap:"2px"},onclick:()=>{try{localStorage.setItem("chatUser",cKey);}catch(e){}setState({screen:"generalChat"});}},div({style:{fontSize:"18px"}},c.emoji),div(null,c.name.slice(0,4))));
-  });
-  inputWrap.appendChild(senderRow);
-
-  // Quick about child
-  const quickRow=div({style:{display:"flex",gap:"5px",overflowX:"auto",marginBottom:"8px"}});
-  children.forEach(c=>{
-    quickRow.appendChild(btn({style:{background:c.color+"15",border:"2px solid "+c.color+"30",borderRadius:"20px",padding:"5px 10px",cursor:"pointer",fontSize:"11px",fontWeight:"600",whiteSpace:"nowrap",color:c.color,flexShrink:0},onclick:()=>{
-      const now=new Date();
-      const nm={id:Date.now(),sender:isUser1?ps.father:ps.mother,avatar:isUser1?(ps.fatherAvatar||"👨"):(ps.motherAvatar||"👩"),text:`📌 تذكير: ${c.emoji} ${c.name}`,time:String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0"),date:todayStr,childRef:c.id,type:"reminder"};
-      upd({generalChat:[...(data.generalChat||[]),nm]});
-    }},c.emoji+" "+c.name));
-  });
-  inputWrap.appendChild(quickRow);
-
-  const inputRow=div({style:{display:"flex",gap:"8px",alignItems:"flex-end"}});
-  const ti2=el("textarea",{style:{flex:1,border:"2px solid #e0deff",borderRadius:"18px",padding:"10px 16px",fontSize:"14px",outline:"none",resize:"none",maxHeight:"80px",fontFamily:"inherit",direction:"rtl",lineHeight:"1.5",background:"#fff"},placeholder:"اكتب رسالة للعائلة...",rows:1});
-  ti2.oninput=function(){this.style.height="auto";this.style.height=Math.min(this.scrollHeight,80)+"px";};
-  const sb2=btn({style:{width:"42px",height:"42px",borderRadius:"50%",background:"linear-gradient(135deg,#6C63FF,#a855f7)",border:"none",color:"#fff",fontSize:"19px",cursor:"pointer",flexShrink:0,boxShadow:"0 4px 14px rgba(108,99,255,.4)"},onclick:()=>{
-    const t=ti2.value.trim();if(!t)return;
-    const now=new Date();
-    let senderName,senderAvatar;
-    if(currentUser==="1"){senderName=ps.father;senderAvatar=ps.fatherAvatar||"👨";}
-    else if(currentUser==="2"){senderName=ps.mother;senderAvatar=ps.motherAvatar||"👩";}
-    else{const sc=children.find(c2=>"c"+c2.id===currentUser);senderName=sc?sc.name:"طفل";senderAvatar=sc?sc.emoji:"🧒";}
-    upd({generalChat:[...(data.generalChat||[]),{id:Date.now(),sender:senderName,avatar:senderAvatar,text:t,time:String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0"),date:todayStr,type:"text"}]});
-    ti2.value="";
-  }},"↑");
-  const emojiPickerGeneral=makeEmojiPicker(em=>{ti2.value+=em;});
-  inputRow.append(emojiPickerGeneral,ti2,sb2);
-  inputWrap.appendChild(inputRow);
-  wrap.append(inputWrap);
-  page.appendChild(wrap);
-  setTimeout(()=>{msgsList.scrollTop=msgsList.scrollHeight;},50);
-  return page;
-}
-
-
-
-// ── Notification helpers ──
-function addNotification(type,title,body,childId,tab){
-  const d=S().data;
-  const now=new Date();
-  const notif={
-    id:Date.now(),type,title,body,
-    time:String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0"),
-    date:todayStr,childId,screen:"child",tab,read:false
-  };
-  saveData({...d,notifications:[notif,...(d.notifications||[])]});
-}
-
-function markAllNotifRead(){
-  const d=S().data;
-  saveData({...d,notifications:(d.notifications||[]).map(n=>({...n,read:true}))});
-}
-
-// ── Notifications Screen ──
-function screenNotifications(){
-  const {data}=S();
-  const notifs=data.notifications||[];
-  const unread=notifs.filter(n=>!n.read).length;
   const page=div({className:"page"});
   page.appendChild(makeHdr("#2d3436",
-    btn({className:"back-btn",style:{fontWeight:"900",fontSize:"22px"},onclick:()=>setState({screen:"home"})},"←"),
-    span({style:{color:"#fff",fontSize:"16px",fontWeight:"800"}},"🔔 الإشعارات"+(unread>0?` (${unread})`:"")),
-    btn({style:{background:"rgba(255,255,255,.2)",border:"none",color:"#fff",borderRadius:"10px",padding:"6px 12px",cursor:"pointer",fontSize:"12px",fontWeight:"700"},onclick:()=>{markAllNotifRead();}},"قراءة الكل")
+    btn({className:"back-btn",onclick:()=>setState({screen:"home"})},"←"),
+    span({style:{color:"#fff",fontSize:"16px",fontWeight:"800"}},"💬 شات الأسرة"),
+    printBtn()
   ));
-  const body=div({className:"scroll"});
 
-  if(!notifs.length){
-    body.appendChild(div({style:{textAlign:"center",padding:"60px 20px",color:"#dfe6e9"}},
-      div({style:{fontSize:"48px",marginBottom:"12px"}},"🔔"),
-      div({style:{fontSize:"16px",fontWeight:"700"}},"لا توجد إشعارات")
+  // Participants bar
+  const parts=div({style:{display:"flex",gap:"10px",padding:"8px 14px",background:"#f8f9ff",borderBottom:"1px solid #e8e8f0",overflowX:"auto",flexShrink:0}});
+  allUsers.forEach(u=>{
+    parts.appendChild(div({style:{textAlign:"center",flexShrink:0}},
+      div({style:{width:"36px",height:"36px",borderRadius:"50%",background:u.color+"20",border:"2px solid "+u.color+"40",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"20px",margin:"0 auto"}},u.avatar),
+      div({style:{fontSize:"9px",fontWeight:"700",color:u.color,marginTop:"2px",maxWidth:"40px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}},u.name)
     ));
-  }
-
-  const typeColors={add:"#00B894",edit:"#0984E3",del:"#FF6584",chat:"#A29BFE"};
-  const typeIcons={add:"➕",edit:"✏️",del:"🗑️",chat:"💬"};
-
-  notifs.forEach(n=>{
-    const c=data.children.find(ch=>ch.id===n.childId);
-    const card=div({style:{
-      background:n.read?"#fff":"#f0f0ff",
-      borderRadius:"16px",padding:"14px",marginBottom:"10px",
-      boxShadow:n.read?"0 1px 6px rgba(0,0,0,.05)":"0 3px 16px rgba(108,99,255,.15)",
-      borderRight:`4px solid ${typeColors[n.type]||"#6C63FF"}`,
-      cursor:"pointer",transition:"all .2s"
-    },onclick:()=>{
-      // Mark read and navigate
-      const d2=S().data;
-      saveData({...d2,notifications:(d2.notifications||[]).map(m=>m.id===n.id?{...m,read:true}:m)});
-      if(n.childId&&n.tab){
-        const ch=d2.children.find(c2=>c2.id===n.childId);
-        if(ch)setState({child:ch,tab:n.tab,screen:"child"});
-      }
-    }});
-    const top=div({style:{display:"flex",alignItems:"center",gap:"10px"}});
-    top.appendChild(div({style:{width:"36px",height:"36px",borderRadius:"12px",background:(typeColors[n.type]||"#6C63FF")+"20",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"18px",flexShrink:0}},typeIcons[n.type]||"📌"));
-    const info=div({style:{flex:1}});
-    info.appendChild(div({style:{fontWeight:"700",fontSize:"14px",color:"#2d3436"}},n.title));
-    info.appendChild(div({style:{fontSize:"12px",color:"#636e72",marginTop:"2px"}},n.body));
-    if(c)info.appendChild(div({style:{fontSize:"11px",color:c.color,marginTop:"3px",fontWeight:"600"}},c.emoji+" "+c.name));
-    top.appendChild(info);
-    top.appendChild(div({style:{textAlign:"left",flexShrink:0}},
-      div({style:{fontSize:"11px",color:"#b2bec3"}},(n.time||"")),
-      !n.read?div({style:{width:"8px",height:"8px",borderRadius:"50%",background:"#6C63FF",margin:"4px 0 0 auto"}}):null
-    ));
-    card.appendChild(top);
-    body.appendChild(card);
   });
-  page.appendChild(body);
+  const chatWrap=div({style:{flex:1,overflow:"hidden",display:"flex",flexDirection:"column"}});
+  chatWrap.appendChild(parts);
+
+  const quickActions=(children||[]).map(c=>({label:c.emoji+" "+c.name+" 📌",text:"📌 تذكير: "+c.emoji+" "+c.name,childId:c.id}));
+
+  chatWrap.appendChild(buildProChat({
+    msgs:generalChat,
+    users:allUsers,
+    children,
+    data,
+    currentUser:curU.name,
+    color:curU.color,
+    onSend:({text,childId,avatar,sender})=>{
+      const now=new Date();
+      upd({generalChat:[...(data.generalChat||[]),{id:Date.now(),sender,avatar,text,time:String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0"),date:todayStr,childRef:childId,type:"text"}]});
+    },
+    onUserSwitch:(key)=>{try{localStorage.setItem("chatUser",key);}catch(e){}setState({screen:"generalChat"});},
+    quickActions,
+    placeholder:"اكتب رسالة للعائلة...",
+    focusId:"gchat"
+  }));
+
+  page.appendChild(chatWrap);
   return page;
 }
-
-
-
-// ── Emoji Picker ──
-function makeEmojiPicker(onSelect){
-  const emojis="😀😂😍🥰😊🤗😎👍👏🙏❤️💪✅⭐🎉🔥💯📚✏️🧪📝🏆🎯💡⏰📅🍎🍕🎮⚽🎨🌟😴🤔😅😘🥳🤩💐🙌🫡🫶💬📢🔔⚠️🌙☀️🌈🎵🎶📱💻🖥️";
-  const chars=[...emojis];
-  let visible=false;
-  
-  const wrap=div({style:{position:"relative",display:"inline-block"}});
-  const toggleBtn=btn({style:{background:"#f0f0f8",border:"2px solid #e0deff",borderRadius:"10px",padding:"8px 10px",cursor:"pointer",fontSize:"18px",lineHeight:"1",flexShrink:0},onclick:(e)=>{
-    e.stopPropagation();
-    visible=!visible;
-    if(visible){
-      const rect=toggleBtn.getBoundingClientRect();
-      picker.style.left=Math.max(4,rect.left-100)+"px";
-      picker.style.bottom=(window.innerHeight-rect.top+8)+"px";
-    }
-    picker.style.display=visible?"flex":"none";
-  }},"😊");
-  
-  const picker=div({style:{display:"none",position:"fixed",bottom:"80px",left:"50px",background:"#fff",borderRadius:"16px",padding:"10px",boxShadow:"0 8px 32px rgba(0,0,0,.2)",zIndex:999,flexWrap:"wrap",gap:"4px",width:"220px",maxHeight:"160px",overflowY:"auto",border:"2px solid #f0f0f8"}});
-  chars.forEach(em=>{
-    picker.appendChild(btn({style:{background:"none",border:"none",fontSize:"20px",cursor:"pointer",padding:"4px",borderRadius:"8px",lineHeight:"1"},onclick:(e)=>{
-      e.stopPropagation();
-      onSelect(em);
-      visible=false;
-      picker.style.display="none";
-    }},em));
-  });
-  
-  document.addEventListener("click",()=>{visible=false;picker.style.display="none";},{once:false});
-  wrap.append(toggleBtn,picker);
-  return wrap;
-}
-
 
 // ── Home Management Screen ──
 function screenHomeManage(){
@@ -1736,6 +1559,174 @@ function screenFHomePlan(){
 }
 
 
+
+// ── Professional Chat Builder ──
+function buildProChat({msgs, users, children, data, currentUser, color, onSend, onUserSwitch, quickActions, placeholder, focusId}){
+  const wrap=div({className:"chat-container"});
+
+  // Messages area
+  const msgArea=div({className:"chat-messages","data-fid":"chat-scroll"});
+
+  if(!msgs.length){
+    msgArea.appendChild(div({style:{textAlign:"center",padding:"40px 20px",color:"#dfe6e9"}},
+      div({style:{fontSize:"48px",marginBottom:"12px"}},"💬"),
+      div({style:{fontSize:"15px",fontWeight:"600",color:"#b2bec3"}},"ابدأ المحادثة"),
+      div({style:{fontSize:"13px",color:"#dfe6e9",marginTop:"4px"}},"الرسائل مزامنة بين الأجهزة")
+    ));
+  }
+
+  // Group messages by date
+  let lastDate="";
+  msgs.forEach((m,idx2)=>{
+    // Date divider
+    if(m.date!==lastDate){
+      lastDate=m.date;
+      const dLabel=m.date===todayStr?"اليوم":m.date;
+      msgArea.appendChild(div({className:"chat-date-divider"},span(null,dLabel)));
+    }
+
+    const isMine=m.sender===currentUser;
+    const prevM=idx2>0?msgs[idx2-1]:null;
+    const showAvatar=!prevM||prevM.sender!==m.sender||prevM.date!==m.date;
+
+    const bWrap=div({className:"chat-bubble-wrap"+(isMine?" mine":"")});
+
+    // Avatar
+    const av=div({className:"chat-avatar",style:{background:isMine?(color||"#6C63FF")+"18":"#f0f0f0",opacity:showAvatar?1:0}},showAvatar?m.avatar:"");
+    bWrap.appendChild(av);
+
+    // Bubble + name + time
+    const bubbleWrap=div({style:{display:"flex",flexDirection:"column",alignItems:isMine?"flex-end":"flex-start",maxWidth:"72%"}});
+    if(showAvatar&&!isMine){
+      bubbleWrap.appendChild(div({className:"chat-sender-name",style:{color:color||"#6C63FF"}},m.sender));
+    }
+    const bubble=div({className:"chat-bubble "+(isMine?"mine":"theirs")});
+    // Child reference tag
+    if(m.childId||m.childRef){
+      const cRef=children&&children.find(c=>c.id===(m.childId||m.childRef));
+      if(cRef)bubble.appendChild(div({style:{fontSize:"11px",opacity:".75",marginBottom:"4px",fontWeight:"700",display:"flex",alignItems:"center",gap:"4px",borderBottom:"1px solid rgba(255,255,255,.2)",paddingBottom:"4px"}},cRef.emoji," ",cRef.name));
+    }
+    bubble.appendChild(span(null,m.text));
+    bubble.appendChild(span({className:"chat-time",style:{textAlign:isMine?"left":"right"}},m.time));
+    bubbleWrap.appendChild(bubble);
+    bWrap.appendChild(bubbleWrap);
+    msgArea.appendChild(bWrap);
+  });
+
+  wrap.appendChild(msgArea);
+
+  // ── Input Bar ──
+  const inputBar=div({className:"chat-input-bar no-print"});
+
+  // Sender switcher
+  const switchRow=div({className:"chat-sender-switch"});
+  users.forEach(u=>{
+    const isActive=u.key===currentUser;
+    const sb=btn({className:"sender-btn"+(isActive?" active":""),onclick:()=>onUserSwitch(u.key)},
+      span(null,u.avatar), span(null,u.name)
+    );
+    switchRow.appendChild(sb);
+  });
+  inputBar.appendChild(switchRow);
+
+  // Quick actions
+  if(quickActions&&quickActions.length){
+    const qaRow=div({className:"quick-actions-row"});
+    quickActions.forEach(qa=>{
+      qaRow.appendChild(btn({className:"quick-action-chip",onclick:()=>{
+        const now=new Date();
+        const curU=users.find(u=>u.key===currentUser)||users[0];
+        onSend({text:qa.text,childId:qa.childId||null,avatar:curU.avatar,sender:curU.name});
+      }},qa.label));
+    });
+    inputBar.appendChild(qaRow);
+  }
+
+  // Input row
+  const inputRow=div({className:"chat-input-wrap"});
+  
+  // Emoji button
+  const emojiBtn=btn({className:"chat-emoji-btn",onclick:(e)=>{
+    e.stopPropagation();
+    const ep=inputRow.querySelector(".emoji-picker-pop");
+    if(ep){ep.remove();return;}
+    const picker=div({className:"emoji-picker-pop",style:{position:"fixed",background:"#fff",borderRadius:"20px",padding:"12px",boxShadow:"0 8px 32px rgba(0,0,0,.2)",zIndex:999,display:"flex",flexWrap:"wrap",gap:"4px",width:"240px",maxHeight:"180px",overflowY:"auto",border:"2px solid #f0f0f8"}});
+    const EMLIST=[..."😀😂🥰😊🤗😎👍👏🙏❤️💪✅⭐🎉🔥💯📚✏️📝🏆🎯💡⏰📅🍎🍕🎮⚽🎨🌟😴🤔😅😘🥳🤩💐🙌🫡🫶💬📢🔔⚠️🌙☀️🌈🎵🎶"];
+    const rect=emojiBtn.getBoundingClientRect();
+    picker.style.bottom=(window.innerHeight-rect.top+8)+"px";
+    picker.style.right=(window.innerWidth-rect.right-10)+"px";
+    EMLIST.forEach(em=>{
+      const eb=btn({style:{background:"none",border:"none",fontSize:"22px",cursor:"pointer",padding:"4px",borderRadius:"8px",lineHeight:"1"},onclick:(ev)=>{ev.stopPropagation();ti.value+=em;ti.focus();}},em);
+      picker.appendChild(eb);
+    });
+    document.body.appendChild(picker);
+    const close=()=>{if(picker.parentNode)picker.remove();document.removeEventListener("click",close);};
+    setTimeout(()=>document.addEventListener("click",close),10);
+  }},"😊");
+  inputRow.appendChild(emojiBtn);
+
+  // Text input
+  const ti=el("textarea",{"data-fid":focusId||"chat-input",className:"chat-input-field",placeholder:placeholder||"اكتب رسالة...",rows:1});
+  ti.oninput=function(){this.style.height="auto";this.style.height=Math.min(this.scrollHeight,120)+"px";};
+  ti.onkeydown=function(e){
+    if(e.key==="Enter"&&!e.shiftKey&&window.innerWidth>=900){e.preventDefault();sendMsg();}
+  };
+  inputRow.appendChild(ti);
+
+  // Send button
+  const sendBtnEl=btn({className:"chat-send-btn",onclick:sendMsg},"↑");
+  inputRow.appendChild(sendBtnEl);
+  inputBar.appendChild(inputRow);
+
+  function sendMsg(){
+    const t=(ti.value||"").trim();
+    if(!t)return;
+    const now=new Date();
+    const curU=users.find(u=>u.key===currentUser)||users[0];
+    onSend({text:t,childId:null,avatar:curU.avatar,sender:curU.name});
+    ti.value="";
+    ti.style.height="auto";
+    ti.focus();
+    setTimeout(()=>{msgArea.scrollTop=msgArea.scrollHeight;},50);
+  }
+
+  wrap.appendChild(inputBar);
+  setTimeout(()=>{msgArea.scrollTop=msgArea.scrollHeight;},50);
+  return wrap;
+}
+
+
+// ── Mobile Bottom Nav ──
+function buildMobileBottomNav(screen,data){
+  const notifCount=(data?.notifications||[]).filter(n=>!n.read).length;
+  const reqCount=(data?.homeRequests||[]).filter(r=>r.status!=="done").length;
+  const isHome=["home","fEvent"].includes(screen);
+  const isBeytna=["homeManage","fHomeRequest","fHomePlan"].includes(screen);
+  const isChat=["generalChat"].includes(screen);
+  const isReports=screen==="reports";
+  const isSettings=["settings","addChild","editChild","parentSetup"].includes(screen);
+
+  const nav=div({className:"mobile-bottom-nav no-print"});
+
+  const mkBtn=(icon,label,isActive,badge,onClick)=>{
+    const b=btn({className:"mob-nav-btn"+(isActive?" active":""),onclick:onClick});
+    const iconWrap=div({style:{position:"relative",display:"inline-flex"}});
+    iconWrap.appendChild(div({className:"nav-icon"},icon));
+    if(badge>0)iconWrap.appendChild(div({style:{position:"absolute",top:"-4px",right:"-6px",background:"#FF6584",color:"#fff",borderRadius:"50%",width:"16px",height:"16px",fontSize:"9px",fontWeight:"900",display:"flex",alignItems:"center",justifyContent:"center",border:"1.5px solid #fff"}},String(badge)));
+    b.appendChild(iconWrap);
+    b.appendChild(div(null,label));
+    return b;
+  };
+
+  nav.appendChild(mkBtn("🏠","الرئيسية",isHome,0,()=>setState({screen:"home"})));
+  nav.appendChild(mkBtn("🏡","بيتنا",isBeytna,reqCount,()=>setState({screen:"homeManage",homeTab:"requests"})));
+  nav.appendChild(mkBtn("💬","الشات",isChat,0,()=>setState({screen:"generalChat"})));
+  nav.appendChild(mkBtn("📄","التقارير",isReports,0,()=>setState({screen:"reports"})));
+  nav.appendChild(mkBtn("🔔","الإشعارات",screen==="notifications",notifCount,()=>setState({screen:"notifications"})));
+
+  return nav;
+}
+
 // ── Render ──
 function render(){
   const {data,sync,screen,toast,confirm}=S();
@@ -1787,10 +1778,8 @@ function render(){
   
   if(isDesktop){
     const wrapper=div({className:"app-wrapper"});
-    // Sidebar
     const sb=buildSidebar(data);
     wrapper.appendChild(sb);
-    // Main panel
     const main=div({className:"main-panel"});
     main.appendChild(buildTopBar(data));
     main.appendChild(screenEl);
@@ -1799,6 +1788,9 @@ function render(){
   } else {
     const wrapper=div({className:"app-wrapper"});
     wrapper.appendChild(screenEl);
+    // Mobile bottom nav
+    const mbn=buildMobileBottomNav(screen,data);
+    wrapper.appendChild(mbn);
     app.appendChild(wrapper);
   }
 }
