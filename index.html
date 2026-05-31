@@ -212,7 +212,7 @@ const DEF={
 };
 
 // ── State ──
-let STATE={data:null,sync:"loading",screen:"home",child:null,tab:"schedule",search:"",editDay:null,schedSubj:"",hwArchive:false,editItem:null,toast:null,confirm:null,childF:{name:"",grade:"",color:PALETTE[0],emoji:EMOJIS[0]},editingChild:null,F:{},lastPull:null};
+let STATE={data:null,sync:"loading",screen:"home",child:null,tab:"schedule",search:"",editDay:null,schedSubj:"",hwArchive:false,editItem:null,toast:null,confirm:null,childF:{name:"",grade:"",color:PALETTE[0],emoji:EMOJIS[0]},editingChild:null,F:{},lastPull:null,homeTab:"requests",showArchive:false,chatUser:"1"};
 const S=()=>STATE;
 function setState(patch){STATE={...STATE,...patch};render();}
 const sf=(k,v)=>setState({F:{...S().F,[k]:v}});
@@ -1820,6 +1820,56 @@ render=function(){
 // ── Init ──
 loadData();
 setInterval(loadData,20000);
+
+// ── Pull to refresh ──
+let ptrStart=null;
+let ptrEl=null;
+document.addEventListener("touchstart",e=>{
+  if(e.touches[0].clientY<80&&window.scrollY===0){
+    ptrStart=e.touches[0].clientY;
+  }
+},{passive:true});
+document.addEventListener("touchmove",e=>{
+  if(ptrStart===null)return;
+  const dy=e.touches[0].clientY-ptrStart;
+  if(dy>60&&!ptrEl){
+    ptrEl=div({style:{position:"fixed",top:0,left:"50%",transform:"translateX(-50%)",background:"#6C63FF",color:"#fff",padding:"8px 20px",borderRadius:"0 0 16px 16px",fontSize:"13px",fontWeight:"700",zIndex:9999,display:"flex",alignItems:"center",gap:"8px"}});
+    ptrEl.appendChild(span(null,"↻"));
+    ptrEl.appendChild(span(null,"سحب للتحديث..."));
+    document.body.appendChild(ptrEl);
+  }
+},{passive:true});
+document.addEventListener("touchend",e=>{
+  if(ptrStart!==null&&ptrEl){
+    ptrEl.remove();ptrEl=null;
+    loadData();
+    const toast2=div({className:"toast",style:{background:"#6C63FF"}});
+    toast2.textContent="🔄 جاري التحديث...";
+    document.body.appendChild(toast2);
+    setTimeout(()=>toast2.remove(),2000);
+  }
+  ptrStart=null;
+},{passive:true});
+
+// ── Swipe navigation (mobile) ──
+let swipeStart=null;
+document.addEventListener("touchstart",e=>{
+  swipeStart={x:e.touches[0].clientX,y:e.touches[0].clientY,time:Date.now()};
+},{passive:true});
+document.addEventListener("touchend",e=>{
+  if(!swipeStart)return;
+  const dx=e.changedTouches[0].clientX-swipeStart.x;
+  const dy=Math.abs(e.changedTouches[0].clientY-swipeStart.y);
+  const dt=Date.now()-swipeStart.time;
+  swipeStart=null;
+  if(Math.abs(dx)<60||dy>40||dt>400)return; // not a swipe
+  const screen=S().screen;
+  const screens=["home","homeManage","generalChat","reports","notifications"];
+  const idx=screens.indexOf(screen);
+  if(dx>0&&idx>0){setState({screen:screens[idx-1]});} // swipe right = go back
+  else if(dx<0&&idx>=0&&idx<screens.length-1){setState({screen:screens[idx+1]});} // swipe left = forward
+},{passive:true});
+
 </script>
 </body>
 </html>
