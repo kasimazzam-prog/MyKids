@@ -17,7 +17,7 @@
   --text:#2d3436;--text2:#636e72;--text3:#b2bec3;
   --border:#eef0f5;--card-shadow:0 2px 16px rgba(0,0,0,.06);
   --radius:16px;--radius-sm:10px;--radius-lg:24px;
-  --hdr-h:56px;--nav-h:60px;
+  --hdr-h:56px;--nav-h:58px;
   --safe-bottom:env(safe-area-inset-bottom,0px);
 }
 [data-theme="dark"]{--chat-bg:#0b141a;
@@ -76,15 +76,10 @@ input,select,textarea,button{font-family:inherit;direction:rtl;color:inherit}
 .desk-bar .actions{display:flex;gap:8px;align-items:center}
 
 /* ── Bottom Nav ── */
-.bottom-nav{position:fixed;bottom:0;left:0;right:0;display:flex;
-  background:var(--bg2);border-top:1px solid var(--border);
-  padding:6px 0 var(--safe-bottom);z-index:100;
-  box-shadow:0 -4px 20px rgba(0,0,0,.08)}
-.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;
-  background:none;border:none;cursor:pointer;padding:5px 2px;
-  color:var(--text3);font-size:10px;font-weight:600;position:relative;transition:color .2s}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--bg2);border-top:1px solid var(--border);padding:5px 0 var(--safe-bottom);z-index:100;box-shadow:0 -4px 20px rgba(0,0,0,.08)}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;background:none;border:none;cursor:pointer;padding:5px 1px;color:var(--text3);font-size:8.5px;font-weight:600;position:relative;transition:color .2s;min-width:0}
 .nav-item.active{color:var(--primary)}
-.nav-item .nav-icon{font-size:22px;line-height:1}
+.nav-item .nav-icon{font-size:18px;line-height:1}
 .nav-badge{position:absolute;top:0;right:calc(50% - 16px);
   background:var(--secondary);color:#fff;border-radius:10px;
   padding:1px 5px;font-size:9px;font-weight:900;border:1.5px solid var(--bg2)}
@@ -1515,9 +1510,6 @@ function screenHome(){
     page.appendChild(resBox);
   }
 
-  const navBtns=div({className:"mob-only",style:{display:"flex",gap:"6px",padding:"8px 14px",background:"var(--bg2)",borderBottom:"1px solid var(--border)",overflowX:"auto"}});
-  [["🏡 بيتنا","homeManage","#FA8231"],["💬 شات","generalChat","#00B894"],["📅 تقويم","calendar","#A29BFE"],["📄 تقارير","reports","#6C63FF"],["⏰ تذكيرات","reminders","#FDCB6E"],["⚙️","settings","#636e72"]].forEach(([l,sc2,color])=>{navBtns.appendChild(btn({className:"btn-sm",style:{flexShrink:0,borderColor:color+"40",color,background:color+"10"},onclick:()=>setState({screen:sc2})},l));});
-  page.appendChild(navBtns);
 
   const qEl=div({className:"mob-only",style:{padding:"10px 14px",background:"linear-gradient(135deg,var(--primary)15,var(--primary2)10)",borderBottom:"1px solid var(--border)"}});
   qEl.appendChild(div({style:{fontSize:"14px",fontStyle:"italic",color:"var(--text)",fontWeight:"500",lineHeight:"1.5"}},'"'+quote+'"'));
@@ -2398,7 +2390,7 @@ function buildBottomNav(screen,data){
   const uc=unreadCount();const pr=pendingRequests();
   const nav=div({className:"bottom-nav mob-only no-print"});
   const mk=(icon,lbl,sc2,badge)=>{
-    const isAct=sc2==="home"?["home","fEvent"].includes(screen):sc2==="homeManage"?["homeManage","fHomeRequest","fHomePlan"].includes(screen):sc2==="generalChat"?screen===sc2:sc2==="reports"?screen===sc2:sc2==="notifications"?screen===sc2:false;
+    const isAct=sc2==="home"?["home","fEvent","child","addChild","editChild","cropPhoto"].includes(screen):sc2==="homeManage"?["homeManage","fHomeRequest","fHomePlan"].includes(screen):sc2==="calendar"?screen==="calendar":sc2==="reports"?["reports","compare"].includes(screen):sc2==="reminders"?screen==="reminders":sc2==="settings"?["settings","parentSetup"].includes(screen):screen===sc2;
     const b=btn({className:"nav-item"+(isAct?" active":""),onclick:()=>{if(sc2==="home")setState({screen:"home"});else setState({screen:sc2});}});
     const iw=div({style:{position:"relative",display:"inline-flex"}});
     iw.appendChild(div({className:"nav-icon"},icon));
@@ -2410,8 +2402,11 @@ function buildBottomNav(screen,data){
   nav.appendChild(mk("🏠","الرئيسية","home",0));
   nav.appendChild(mk("🏡","بيتنا","homeManage",pr));
   nav.appendChild(mk("💬","شات","generalChat",0));
+  nav.appendChild(mk("📅","تقويم","calendar",0));
   nav.appendChild(mk("📄","تقارير","reports",0));
+  nav.appendChild(mk("⏰","تذكيرات","reminders",0));
   nav.appendChild(mk("🔔","إشعارات","notifications",uc));
+  nav.appendChild(mk("⚙️","إعدادات","settings",0));
   return nav;
 }
 
