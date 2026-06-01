@@ -316,6 +316,15 @@ input,select,textarea,button{font-family:inherit;direction:rtl;color:inherit}
   .card{box-shadow:none!important;border:1px solid #ddd!important;break-inside:avoid}
   @page{margin:1.5cm;size:A4 portrait}
 }
+
+/* Chat message menu + edit banner */
+.msg-menu-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:10000;display:flex;align-items:flex-end;justify-content:center;animation:fadeIn .15s}
+.msg-menu-sheet{background:var(--bg2);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:14px 10px calc(14px + var(--safe-bottom));box-shadow:0 -8px 30px rgba(0,0,0,.25);animation:slideUp .2s}
+.msg-menu-btn{display:block;width:100%;text-align:right;background:none;border:none;padding:13px 16px;font-size:15px;font-weight:600;color:var(--text);cursor:pointer;border-radius:12px;font-family:inherit}
+.msg-menu-btn:active{background:var(--bg3)}
+.edit-banner{display:flex;align-items:center;gap:8px;padding:8px 14px;margin-bottom:6px;background:var(--bg3);border-radius:12px;border-right:3px solid var(--primary)}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
 </style>
 
 <meta name="apple-mobile-web-app-title" content="بيتنا"/>
@@ -602,14 +611,16 @@ async function loadData(silent=false){
     const newHash=hashData(d);
     const changed=newHash!==_lastHash;
     _lastHash=newHash;
-    
+
+    // Silent poll with NO changes → do nothing (prevents chat flicker/scroll jump)
+    if(silent&&!changed&&ST.data){ ST.sync="synced"; syncDotRefresh(); return; }
+
     if(changed||!ST.data){
       // Detect new notifications from other device
       if(ST.data&&d.notifications){
         const oldIds=new Set((ST.data.notifications||[]).map(n=>n.id));
         const newNotifs=d.notifications.filter(n=>!oldIds.has(n.id));
         newNotifs.forEach(n=>{
-          // Browser push notification
           if("Notification" in window&&Notification.permission==="granted"){
             try{new Notification("🏠 بيتنا — "+n.title,{body:n.body||"",tag:String(n.id)});}catch(e){}
           }
@@ -619,8 +630,17 @@ async function loadData(silent=false){
       ST.lastPull=new Date();
     }
     ST.sync="synced";
+
+    // Don't yank the chat out from under the user while they're typing
+    const onChat = ST.screen==="generalChat" || (ST.screen==="child" && ST.tab==="chat");
+    const ae = document.activeElement;
+    const typing = ae && (ae.classList&&ae.classList.contains("chat-field"));
+    if(silent && onChat && typing){ syncDotRefresh(); return; }
+
+    // On chat screen with a silent change, append only new messages instead of full re-render
+    if(silent && onChat && changed){ refreshChatMessages(); syncDotRefresh(); return; }
+
     render();
-    // Request notification permission on first load
     if("Notification" in window&&Notification.permission==="default"){
       Notification.requestPermission();
     }
@@ -629,8 +649,36 @@ async function loadData(silent=false){
       restoreFromBackup();
       if(!ST.data){ST.data=DEF;showToast("تعذر الاتصال — تم تحميل البيانات الافتراضية","warn");}
     }
-    ST.sync="error";render();
+    ST.sync="error";
+    if(!silent)render();
   }
+}
+
+// Update just the sync indicator without re-rendering everything
+function syncDotRefresh(){
+  try{
+    const dots=document.querySelectorAll("[data-syncdot]");
+    dots.forEach(d=>{d.style.background=ST.sync==="synced"?"#00B894":ST.sync==="error"?"#FF6584":"#FDCB6E";});
+  }catch(e){}
+}
+
+// Append new chat messages in place, preserving scroll position
+function refreshChatMessages(){
+  try{
+    const onGeneral = ST.screen==="generalChat";
+    const msgs = onGeneral ? (ST.data.generalChat||[])
+      : ((ST.data.chatMessages||[]).filter(m=>m.childId===ST.child?.id||!m.childId));
+    const area=document.querySelector(".chat-msgs");
+    if(!area){render();return;}
+    const atBottom = area.scrollHeight - area.scrollTop - area.clientHeight < 80;
+    const shown = area.querySelectorAll("[data-mid]").length;
+    if(msgs.length===shown) return; // nothing new visible
+    // Simplest safe approach: full re-render then restore scroll if user was at bottom
+    const prevTop=area.scrollTop;
+    render();
+    const area2=document.querySelector(".chat-msgs");
+    if(area2){ area2.scrollTop = atBottom ? area2.scrollHeight : prevTop; }
+  }catch(e){ render(); }
 }
 
 // ═══════════════════════════════════════════════════════
@@ -718,7 +766,7 @@ function syncDot(){
   const c={synced:"#00B894",syncing:"#FDCB6E",error:"#FF6584",loading:"#a29bfe"}[s]||"#a29bfe";
   const t={synced:"متزامن",syncing:"مزامنة...",error:"خطأ",loading:"تحميل"}[s]||"";
   const w=div({style:{display:"flex",alignItems:"center",gap:"4px",fontSize:"11px",color:"rgba(255,255,255,.75)"}});
-  w.appendChild(span({style:{width:"7px",height:"7px",borderRadius:"50%",background:c,display:"inline-block"}}));
+  w.appendChild(span({"data-syncdot":"1",style:{width:"7px",height:"7px",borderRadius:"50%",background:c,display:"inline-block"}}));
   w.appendChild(span(null,t));
   if(S().lastPull&&s==="synced"){
     w.appendChild(span({style:{opacity:".6"}}," • "+S().lastPull.toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"})));
@@ -780,7 +828,7 @@ function buildForm(title,color,backFn,submitFn,fieldsArr){
 // ═══════════════════════════════════════════════════════
 // PROFESSIONAL CHAT BUILDER
 // ═══════════════════════════════════════════════════════
-function buildChat({msgs,allUsers,currentUserName,color,onSend,quickActions,placeholder,focusId}){
+function buildChat({msgs,allUsers,currentUserName,color,onSend,onEdit,onDelete,onSeen,quickActions,placeholder,focusId}){
   const wrap=div({className:"chat-wrap"});
   const msgArea=div({className:"chat-msgs"});
 
@@ -790,6 +838,12 @@ function buildChat({msgs,allUsers,currentUserName,color,onSend,quickActions,plac
       div({style:{fontSize:"14px",fontWeight:"600"}},"لا توجد رسائل بعد"),
       div({style:{fontSize:"12px",marginTop:"4px"}},"اكتب أول رسالة 👇")
     ));
+  }
+
+  // Mark visible messages from others as seen by current user
+  if(onSeen){
+    const unseen=msgs.filter(m=>m.sender!==currentUserName&&!(m.seenBy||[]).includes(currentUserName));
+    if(unseen.length){ setTimeout(()=>onSeen(unseen.map(m=>m.id)),400); }
   }
 
   let lastDate="",lastSender="";
@@ -804,7 +858,7 @@ function buildChat({msgs,allUsers,currentUserName,color,onSend,quickActions,plac
     lastSender=m.sender;
     const u=allUsers.find(u2=>u2.name===m.sender);
 
-    const row=div({className:"msg-row"+(isMine?" mine":"")});
+    const row=div({className:"msg-row"+(isMine?" mine":""),"data-mid":String(m.id)});
 
     if(!isMine){
       const av=div({className:"msg-avatar",style:{
@@ -827,7 +881,31 @@ function buildChat({msgs,allUsers,currentUserName,color,onSend,quickActions,plac
 
     const txtRow=div({className:"bubble-txt"},span(null,m.text));
     bubble.appendChild(txtRow);
-    bubble.appendChild(span({className:"msg-time"+(isMine?" mine":"")},m.time));
+
+    // Meta line: edited tag + time + read receipt
+    const meta=div({style:{display:"flex",alignItems:"center",gap:"4px",justifyContent:"flex-end",marginTop:"1px"}});
+    if(m.edited)meta.appendChild(span({style:{fontSize:"9px",opacity:".5",fontStyle:"italic"}},"معدّلة"));
+    meta.appendChild(span({className:"msg-time"+(isMine?" mine":"")},m.time));
+    if(isMine){
+      // read receipt: how many OTHER users have seen
+      const others=allUsers.filter(x=>x.name!==currentUserName).map(x=>x.name);
+      const seenCount=(m.seenBy||[]).filter(n=>others.includes(n)).length;
+      const allSeen=others.length>0&&seenCount>=others.length;
+      meta.appendChild(span({style:{fontSize:"11px",color:allSeen?"#34B7F1":"#92a0a8",fontWeight:"700",lineHeight:"1"}},seenCount>0?"✓✓":"✓"));
+    }
+    bubble.appendChild(meta);
+
+    // Long-press / right-click → actions menu (only for own messages or admins)
+    const canManage=isMine||can("edit");
+    if(canManage&&(onEdit||onDelete)){
+      let pressTimer=null;
+      const openMenu=(ev)=>{ ev.preventDefault(); showMsgMenu(m,isMine); };
+      bubble.addEventListener("contextmenu",openMenu);
+      bubble.addEventListener("touchstart",()=>{pressTimer=setTimeout(()=>showMsgMenu(m,isMine),500);},{passive:true});
+      bubble.addEventListener("touchend",()=>clearTimeout(pressTimer));
+      bubble.addEventListener("touchmove",()=>clearTimeout(pressTimer));
+      bubble.style.cursor="pointer";
+    }
 
     bWrap.appendChild(bubble);
     row.appendChild(bWrap);
@@ -836,8 +914,25 @@ function buildChat({msgs,allUsers,currentUserName,color,onSend,quickActions,plac
 
   wrap.appendChild(msgArea);
 
+  // Actions menu
+  function showMsgMenu(m,isMine){
+    const old=document.querySelector(".msg-menu-overlay");if(old)old.remove();
+    const overlay=div({className:"msg-menu-overlay",onclick:function(e){if(e.target===overlay)overlay.remove();}});
+    const sheet=div({className:"msg-menu-sheet"});
+    sheet.appendChild(div({style:{fontSize:"12px",color:"var(--text3)",padding:"4px 16px 10px",borderBottom:"1px solid var(--border)",maxWidth:"260px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",direction:"rtl"}},"💬 "+m.text));
+    sheet.appendChild(btn({className:"msg-menu-btn",onclick:()=>{navigator.clipboard&&navigator.clipboard.writeText(m.text);showToast("📋 تم نسخ الرسالة","ok");overlay.remove();}},"📋 نسخ"));
+    if(isMine&&onEdit)sheet.appendChild(btn({className:"msg-menu-btn",onclick:()=>{overlay.remove();startEdit(m);}},"✏️ تعديل"));
+    if(onDelete)sheet.appendChild(btn({className:"msg-menu-btn",style:{color:"#FF6584"},onclick:()=>{overlay.remove();askDel("حذف هذه الرسالة؟",()=>onDelete(m.id));}},"🗑️ حذف"));
+    sheet.appendChild(btn({className:"msg-menu-btn",style:{color:"var(--text3)"},onclick:()=>overlay.remove()},"إلغاء"));
+    overlay.appendChild(sheet);
+    document.body.appendChild(overlay);
+  }
+
   // ── Input bar — WhatsApp style ──
   const bar=div({className:"chat-bar no-print"});
+  let editingId=null;
+  const editBanner=div({className:"edit-banner",style:{display:"none"}});
+  bar.appendChild(editBanner);
   const inputRow=div({className:"chat-input-row"});
 
   const eBtn=btn({className:"chat-emoji-btn",onclick:(ev)=>{
@@ -864,8 +959,21 @@ function buildChat({msgs,allUsers,currentUserName,color,onSend,quickActions,plac
   bar.appendChild(inputRow);
   wrap.appendChild(bar);
 
+  function startEdit(m){
+    editingId=m.id;
+    tf.value=m.text;
+    tf.dispatchEvent(new Event("input"));
+    tf.focus();
+    editBanner.style.display="flex";
+    editBanner.innerHTML="";
+    editBanner.appendChild(span({style:{flex:1,fontSize:"12px",color:color,fontWeight:"700"}},"✏️ تعديل الرسالة"));
+    editBanner.appendChild(btn({style:{background:"none",border:"none",color:"var(--text3)",cursor:"pointer",fontSize:"16px"},onclick:()=>cancelEdit()},"✕"));
+  }
+  function cancelEdit(){ editingId=null;tf.value="";tf.style.height="auto";editBanner.style.display="none"; }
+
   function send(){
     const t=(tf.value||"").trim();if(!t)return;
+    if(editingId&&onEdit){ onEdit(editingId,t); cancelEdit(); return; }
     const now=new Date();
     const curU=allUsers.find(u=>u.name===currentUserName)||allUsers[0];
     onSend({text:t,childId:null,sender:curU.name,avatar:curU.avatar});
@@ -1314,7 +1422,12 @@ function screenChild(){
     const ps2=data.parentSettings||{};
     const chatUser=S().currentUser?.name||(ps2.father||"Kasim");
     const allUsers=[{name:ps2.father||"Kasim",avatar:ps2.fatherAvatar||"👨",color:"#6C63FF"},{name:ps2.mother||"Asmaa",avatar:ps2.motherAvatar||"👩",color:"#FF6584"},{name:child.name,avatar:child.emoji,color:child.color}];
-    body.appendChild(buildChat({msgs,allUsers,currentUserName:chatUser,color:child.color,onSend:({text,childId,sender,avatar})=>{const now=new Date();upd({chatMessages:[...(data.chatMessages||[]),{id:Date.now(),sender,avatar,text,time:String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0"),date:todayStr,childId:child.id,type:"text"}]});},placeholder:"رسالة عن "+child.name+"...",focusId:"child-chat"}));
+    body.appendChild(buildChat({msgs,allUsers,currentUserName:chatUser,color:child.color,
+      onSend:({text,childId,sender,avatar})=>{const now=new Date();upd({chatMessages:[...(data.chatMessages||[]),{id:Date.now(),sender,avatar,text,time:String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0"),date:todayStr,childId:child.id,type:"text",seenBy:[sender]}]});},
+      onEdit:(id,text)=>{upd({chatMessages:(data.chatMessages||[]).map(m=>m.id===id?{...m,text,edited:true}:m)});},
+      onDelete:(id)=>{upd({chatMessages:(data.chatMessages||[]).filter(m=>m.id!==id)});},
+      onSeen:(ids)=>{const set=new Set(ids);const nc=(S().data.chatMessages||[]).map(m=>set.has(m.id)?{...m,seenBy:[...new Set([...(m.seenBy||[]),chatUser])]}:m);save({...S().data,chatMessages:nc});},
+      placeholder:"رسالة عن "+child.name+"...",focusId:"child-chat"}));
   }
 
   page.appendChild(body);
@@ -1487,7 +1600,12 @@ function screenGeneralChat(){
   page.appendChild(hdr);
   // "logged in as" small banner
   page.appendChild(div({style:{display:"flex",alignItems:"center",justifyContent:"center",gap:"6px",padding:"6px",background:curU.color+"12",borderBottom:"1px solid var(--border)",flexShrink:0,fontSize:"12px",color:curU.color,fontWeight:"700"}},span(null,curU.avatar),span(null,"أنت تكتب باسم "+curU.name)));
-  const gchatEl=buildChat({msgs:generalChat,allUsers,currentUserName:curU.name,color:curU.color,onSend:({text,childId,sender,avatar})=>{const now=new Date();upd({generalChat:[...(data.generalChat||[]),{id:Date.now(),sender,avatar,text,time:String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0"),date:todayStr,childRef:childId,type:"text"}]});},placeholder:"اكتب رسالة...",focusId:"gchat"});
+  const gchatEl=buildChat({msgs:generalChat,allUsers,currentUserName:curU.name,color:curU.color,
+    onSend:({text,childId,sender,avatar})=>{const now=new Date();upd({generalChat:[...(data.generalChat||[]),{id:Date.now(),sender,avatar,text,time:String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0"),date:todayStr,childRef:childId,type:"text",seenBy:[sender]}]});},
+    onEdit:(id,text)=>{upd({generalChat:(data.generalChat||[]).map(m=>m.id===id?{...m,text,edited:true}:m)});},
+    onDelete:(id)=>{upd({generalChat:(data.generalChat||[]).filter(m=>m.id!==id)});},
+    onSeen:(ids)=>{const set=new Set(ids);const ng=(S().data.generalChat||[]).map(m=>set.has(m.id)?{...m,seenBy:[...new Set([...(m.seenBy||[]),curU.name])]}:m);save({...S().data,generalChat:ng});},
+    placeholder:"اكتب رسالة...",focusId:"gchat"});
   page.appendChild(gchatEl);
   return page;
 }
@@ -2274,7 +2392,7 @@ function startPolling(){
   if(_pollInterval)clearInterval(_pollInterval);
   _pollInterval=setInterval(()=>{
     loadData(true); // silent refresh
-  },15000); // every 15s
+  },20000); // every 20s
 }
 startPolling();
 
