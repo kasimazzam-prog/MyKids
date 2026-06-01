@@ -594,8 +594,28 @@ function upd(patch,notif){
   if(notif){
     const n={id:Date.now(),...notif,time:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"}),date:todayStr,read:false};
     d.notifications=[n,...(d.notifications||[])].slice(0,100);
+    // Push via ntfy so other devices get notified even when app is closed
+    sendNtfy(notif.title,notif.body,d);
   }
   save(d);
+}
+
+// ── ntfy.sh push notifications (free, no account) ──
+function sendNtfy(title,body,data){
+  try{
+    const topic=(data?.ntfyTopic||S().data?.ntfyTopic||"").trim();
+    if(!topic)return; // not configured
+    const sender=S().currentUser?.name||"بيتنا";
+    fetch("https://ntfy.sh/"+encodeURIComponent(topic),{
+      method:"POST",
+      headers:{
+        "Title":encodeURIComponent("🏠 "+(title||"بيتنا")).replace(/%/g,"="), // ascii-safe attempt
+        "Tags":"house",
+        "Priority":"default"
+      },
+      body:(title?title+"\n":"")+(body||"")+"\n— "+sender
+    }).catch(()=>{});
+  }catch(e){}
 }
 
 // ── Smart Realtime Sync ──
@@ -1694,7 +1714,7 @@ function screenSettings(){
   if(can("edit")){
     body.appendChild(div({className:"sec-title"},"المستخدمون والصلاحيات"));
     const usersCard=div({className:"card"});
-    users.forEach(u=>{const row=div({style:{display:"flex",alignItems:"center",gap:"10px",padding:"8px 0",borderBottom:"1px solid var(--border)"}});row.appendChild(div({style:{width:"36px",height:"36px",borderRadius:"50%",background:"var(--bg3)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"20px",flexShrink:0}},u.avatar||"👤"));const info=div({style:{flex:1}});info.appendChild(div({style:{fontWeight:"700",fontSize:"14px"}},u.name));info.appendChild(div({style:{fontSize:"11px",color:"var(--text3)"}},(ROLES[u.role]?.l||u.role)+" — رمز: "+(u.pin||"0000")));row.appendChild(info);row.appendChild(btn({style:{background:u.active!==false?"#D1FAE5":"#FEE2E2",color:u.active!==false?"#00B894":"#FF6584",border:"none",borderRadius:"8px",padding:"4px 10px",cursor:"pointer",fontSize:"11px",fontWeight:"700"},onclick:()=>{const nu=users.map(x=>x.id===u.id?{...x,active:!(x.active!==false)}:x);upd({users:nu});}},u.active!==false?"نشط":"معطّل"));usersCard.appendChild(row);});
+    users.forEach(u=>{const row=div({style:{display:"flex",alignItems:"center",gap:"10px",padding:"8px 0",borderBottom:"1px solid var(--border)"}});row.appendChild(div({style:{width:"36px",height:"36px",borderRadius:"50%",background:"var(--bg3)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"20px",flexShrink:0}},u.avatar||"👤"));const info=div({style:{flex:1}});info.appendChild(div({style:{fontWeight:"700",fontSize:"14px"}},u.name));info.appendChild(div({style:{fontSize:"11px",color:"var(--text3)"}},(ROLES[u.role]?.l||u.role)+" — رمز: "+(u.pin||"0000")));row.appendChild(info);const actBtns=div({style:{display:"flex",gap:"5px",alignItems:"center",flexShrink:0}});actBtns.appendChild(btn({style:{background:"rgba(108,99,255,.12)",color:"var(--primary)",border:"none",borderRadius:"8px",padding:"5px 9px",cursor:"pointer",fontSize:"13px"},onclick:()=>{const np=prompt("رمز جديد لـ "+u.name+" (4 أرقام):",u.pin||"0000");if(np===null)return;const clean=String(np).trim();if(!/^[0-9]{4}$/.test(clean)){showToast("يجب أن يكون 4 أرقام","error");return;}upd({users:users.map(x=>x.id===u.id?{...x,pin:clean}:x)});showToast("✅ تم تغيير رمز "+u.name,"ok");}},"🔑"));actBtns.appendChild(btn({style:{background:u.active!==false?"#D1FAE5":"#FEE2E2",color:u.active!==false?"#00B894":"#FF6584",border:"none",borderRadius:"8px",padding:"5px 10px",cursor:"pointer",fontSize:"11px",fontWeight:"700"},onclick:()=>{const nu=users.map(x=>x.id===u.id?{...x,active:!(x.active!==false)}:x);upd({users:nu});}},u.active!==false?"نشط":"معطّل"));row.appendChild(actBtns);usersCard.appendChild(row);});
     body.appendChild(usersCard);
     body.appendChild(div({className:"sec-title"},"إضافة مستخدم"));
     const newUserCard=div({className:"card"});
