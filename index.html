@@ -1824,6 +1824,99 @@ function screenParentSetup(){
   return page;
 }
 
+// ── Photo Crop Screen ──
+function screenCropPhoto(){
+  const page=div({className:"screen"});
+  page.appendChild(makeHdr("#1e3a5f","✂️ قص الصورة",backBtn(()=>setState({screen:S().cropReturn||"settings",screen2:null}))));
+  const body=div({className:"scroll",style:{display:"flex",flexDirection:"column",alignItems:"center",padding:"20px 14px"}});
+  body.appendChild(div({style:{fontSize:"13px",color:"var(--text3)",marginBottom:"14px",textAlign:"center"}},"اسحب الصورة لتحريكها، واستخدم الشريط للتكبير"));
+
+  const BOX=280;
+  // Crop viewport
+  const viewport=div({style:{width:BOX+"px",height:BOX+"px",borderRadius:"50%",overflow:"hidden",position:"relative",background:"#000",boxShadow:"0 0 0 3px var(--primary), 0 8px 30px rgba(0,0,0,.3)",touchAction:"none",cursor:"grab"}});
+  const imgEl=el("img",{src:S().cropSrc,style:{position:"absolute",userSelect:"none",pointerEvents:"none"}});
+  viewport.appendChild(imgEl);
+  body.appendChild(viewport);
+
+  // State
+  let natW=0,natH=0,baseScale=1;
+  let zoom=S().cropZoom||1, tx=S().cropX||0, ty=S().cropY||0;
+
+  function applyTransform(){
+    const w=natW*baseScale*zoom, h=natH*baseScale*zoom;
+    imgEl.style.width=w+"px";
+    imgEl.style.height=h+"px";
+    // clamp so image always covers the circle
+    const minX=BOX-w, minY=BOX-h;
+    tx=Math.min(0,Math.max(minX,tx));
+    ty=Math.min(0,Math.max(minY,ty));
+    imgEl.style.left=tx+"px";
+    imgEl.style.top=ty+"px";
+  }
+
+  imgEl.onload=()=>{
+    natW=imgEl.naturalWidth||imgEl.width;
+    natH=imgEl.naturalHeight||imgEl.height;
+    baseScale=Math.max(BOX/natW,BOX/natH); // cover
+    // center
+    const w=natW*baseScale*zoom, h=natH*baseScale*zoom;
+    if(!S().cropX&&!S().cropY){tx=(BOX-w)/2;ty=(BOX-h)/2;}
+    applyTransform();
+  };
+  // if cached
+  if(imgEl.complete&&imgEl.naturalWidth){imgEl.onload();}
+
+  // Drag handlers
+  let dragging=false,sx=0,sy=0,stx=0,sty=0;
+  function start(x,y){dragging=true;sx=x;sy=y;stx=tx;sty=ty;viewport.style.cursor="grabbing";}
+  function move(x,y){if(!dragging)return;tx=stx+(x-sx);ty=sty+(y-sy);applyTransform();}
+  function end(){dragging=false;viewport.style.cursor="grab";}
+  viewport.addEventListener("mousedown",e=>{e.preventDefault();start(e.clientX,e.clientY);});
+  window.addEventListener("mousemove",e=>move(e.clientX,e.clientY));
+  window.addEventListener("mouseup",end);
+  viewport.addEventListener("touchstart",e=>{const t=e.touches[0];start(t.clientX,t.clientY);},{passive:true});
+  viewport.addEventListener("touchmove",e=>{const t=e.touches[0];move(t.clientX,t.clientY);},{passive:true});
+  viewport.addEventListener("touchend",end);
+
+  // Zoom slider
+  const zoomWrap=div({style:{width:BOX+"px",marginTop:"20px",display:"flex",alignItems:"center",gap:"10px"}});
+  zoomWrap.appendChild(span({style:{fontSize:"18px"}},"🔍"));
+  const slider=el("input",{type:"range",min:"1",max:"4",step:"0.05",value:String(zoom),style:{flex:"1",accentColor:"var(--primary)"}});
+  slider.oninput=(e)=>{
+    const old=zoom; zoom=parseFloat(e.target.value);
+    // zoom toward center
+    const cx=BOX/2,cy=BOX/2;
+    tx=cx-((cx-tx)*(zoom/old));
+    ty=cy-((cy-ty)*(zoom/old));
+    applyTransform();
+  };
+  zoomWrap.appendChild(slider);
+  body.appendChild(zoomWrap);
+
+  // Action buttons
+  const btns=div({style:{display:"flex",gap:"10px",marginTop:"24px",width:BOX+"px"}});
+  btns.appendChild(btn({className:"btn-sm",style:{flex:"1"},onclick:()=>setState({screen:S().cropReturn||"settings"})},"إلغاء"));
+  btns.appendChild(btn({className:"btn-primary",style:{flex:"2",margin:"0",boxShadow:"0 4px 14px rgba(108,99,255,.4)"},onclick:()=>{
+    // Render crop to canvas
+    const out=256;
+    const cv=document.createElement("canvas");cv.width=out;cv.height=out;
+    const ctx=cv.getContext("2d");
+    // round clip
+    ctx.beginPath();ctx.arc(out/2,out/2,out/2,0,Math.PI*2);ctx.closePath();ctx.clip();
+    const scale=baseScale*zoom*(out/BOX);
+    ctx.drawImage(imgEl,tx*(out/BOX),ty*(out/BOX),natW*scale,natH*scale);
+    const dataUrl=cv.toDataURL("image/jpeg",0.85);
+    ST.childF={...ST.childF,photo:dataUrl};
+    ST.cropSrc=null;
+    setState({screen:S().cropReturn||"editChild"});
+    showToast("✅ تم حفظ الصورة","ok");
+  }},"✓ تطبيق القص"));
+  body.appendChild(btns);
+
+  page.appendChild(body);
+  return page;
+}
+
 // ── Child Form ──
 function screenChildForm(){
   const {childF,screen}=S();
@@ -1841,14 +1934,27 @@ function screenChildForm(){
   body.appendChild(div({className:"field-label"},"📷 صورة الطفل (اختياري)"));
   const photoRow=div({style:{display:"flex",alignItems:"center",gap:"12px",marginBottom:"14px"}});
   const preview=div({style:{width:"64px",height:"64px",borderRadius:"50%",overflow:"hidden",flexShrink:0,border:"3px solid "+childF.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"32px",background:childF.color+"18"}});
-  if(childF.photo){const im=el("img",{src:childF.photo,style:{width:"100%",height:"100%",objectFit:"cover"}});preview.appendChild(im);}
+  if(childF.photo){preview.appendChild(el("img",{src:childF.photo,style:{width:"100%",height:"100%",objectFit:"cover"}}));}
   else preview.appendChild(span(null,childF.emoji));
   photoRow.appendChild(preview);
   const fileInp=el("input",{type:"file",accept:"image/*",style:{display:"none"}});
-  fileInp.onchange=(e)=>{const f=e.target.files&&e.target.files[0];if(!f)return;if(f.size>3*1024*1024){showToast("الصورة كبيرة (الحد 3MB)","error");return;}const rdr=new FileReader();rdr.onload=()=>{const img=new Image();img.onload=()=>{const cv=document.createElement("canvas");const sz=256;cv.width=sz;cv.height=sz;const ctx=cv.getContext("2d");const mn=Math.min(img.width,img.height);ctx.drawImage(img,(img.width-mn)/2,(img.height-mn)/2,mn,mn,0,0,sz,sz);ST.childF={...ST.childF,photo:cv.toDataURL("image/jpeg",0.8)};render();};img.src=rdr.result;};rdr.readAsDataURL(f);};
+  fileInp.onchange=(e)=>{
+    const f=e.target.files&&e.target.files[0];
+    if(!f)return;
+    if(f.size>8*1024*1024){showToast("الصورة كبيرة جداً (الحد 8MB)","error");return;}
+    const rdr=new FileReader();
+    rdr.onerror=()=>showToast("تعذّر قراءة الصورة","error");
+    rdr.onload=()=>{
+      // Open crop screen with the raw image
+      ST.cropSrc=rdr.result;
+      ST.cropReturn=isAdd?"addChild":"editChild";
+      ST.cropZoom=1;ST.cropX=0;ST.cropY=0;
+      setState({screen:"cropPhoto"});
+    };
+    rdr.readAsDataURL(f);
+  };
   const btnCol=div({style:{display:"flex",flexDirection:"column",gap:"6px"}});
-  const pickBtn=btn({className:"btn-sm",onclick:()=>fileInp.click()},childF.photo?"📷 تغيير الصورة":"📷 اختر صورة");
-  btnCol.appendChild(pickBtn);
+  btnCol.appendChild(btn({className:"btn-sm",onclick:()=>fileInp.click()},childF.photo?"📷 تغيير الصورة":"📷 اختر صورة"));
   if(childF.photo)btnCol.appendChild(btn({className:"btn-sm",style:{color:"#FF6584",borderColor:"#FF658440"},onclick:()=>{ST.childF={...ST.childF,photo:null};render();}},"🗑 إزالة الصورة"));
   btnCol.appendChild(fileInp);
   photoRow.appendChild(btnCol);
@@ -2369,7 +2475,7 @@ function _render(){
   const screens={
     home:screenHome,settings:screenSettings,reports:screenReports,child:screenChild,
     parentSetup:screenParentSetup,generalChat:screenGeneralChat,notifications:screenNotifications,
-    homeManage:screenHomeManage,addChild:screenChildForm,editChild:screenChildForm,
+    homeManage:screenHomeManage,addChild:screenChildForm,editChild:screenChildForm,cropPhoto:screenCropPhoto,
     calendar:screenCalendar,compare:screenCompare,reminders:screenReminders,gradeTrend:screenGradeTrend,allowanceChart:screenAllowanceChart,
     fHw:screenFHw,fExam:screenFExam,fGrade:screenFGrade,fNote:screenFNote,
     fStudy:screenFStudy,fGoal:screenFGoal,fSupply:screenFSupply,
