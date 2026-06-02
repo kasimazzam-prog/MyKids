@@ -653,6 +653,16 @@ function migrateData(d){
     if(!d.studySchedule[p.id])d.studySchedule[p.id]={};
     if(!d.allowance[p.id])d.allowance[p.id]={daily:0,balance:0,history:[]};
   });
+  // Ensure every child has a login user account
+  if(!d.users)d.users=[];
+  (d.children||[]).forEach((c,i)=>{
+    const hasUser=d.users.some(u=>u.role==="child"&&u.childId===c.id);
+    if(!hasUser){
+      _migrated=true;
+      const defaultPins=["0000","1111","2222","3333","4444","5555"];
+      d.users.push({id:"u_child_"+c.id,name:c.name,avatar:c.emoji||"🧒",role:"child",childId:c.id,pin:defaultPins[i]||"0000",active:true});
+    }
+  });
   if(_migrated){ try{ setTimeout(()=>{ apiSave(d); },800); }catch(e){} }
   return d;
 }
@@ -972,7 +982,16 @@ function buildChat({msgs,allUsers,currentUserName,color,onSend,onEdit,onDelete,o
       if(c)bubble.appendChild(div({style:{fontSize:"11px",fontWeight:"700",opacity:".75",marginBottom:"3px",display:"flex",alignItems:"center",gap:"4px"}},c.emoji+" "+c.name));
     }
 
-    const txtRow=div({className:"bubble-txt"},span(null,m.text));
+    const txtRow=div({className:"bubble-txt"});
+    // Highlight @mentions
+    const parts=String(m.text).split(/(@[\u0600-\u06FF\w]+)/g);
+    parts.forEach(part=>{
+      if(part.startsWith("@")){
+        txtRow.appendChild(span({style:{color:isMine?"#075E54":color,fontWeight:"800",background:(isMine?"#075E54":color)+"18",borderRadius:"4px",padding:"0 3px"}},part));
+      }else if(part){
+        txtRow.appendChild(document.createTextNode(part));
+      }
+    });
     bubble.appendChild(txtRow);
 
     // Meta line: edited tag + time + read receipt
@@ -1039,7 +1058,20 @@ function buildChat({msgs,allUsers,currentUserName,color,onSend,onEdit,onDelete,o
     bar.appendChild(picker);
     setTimeout(()=>document.addEventListener("click",function h(){if(picker.parentNode)picker.remove();document.removeEventListener("click",h);},{once:true}),10);
   }},"😊");
+  // Mention button
+  const mBtn=btn({className:"chat-emoji-btn",style:{fontSize:"18px",fontWeight:"800"},onclick:(ev)=>{
+    ev.stopPropagation();
+    const old=document.querySelector(".mention-picker");
+    if(old){old.remove();return;}
+    const picker=div({className:"emoji-picker mention-picker",style:{gridTemplateColumns:"1fr",maxHeight:"180px"}});
+    allUsers.filter(u=>u.name!==currentUserName).forEach(u=>{
+      picker.appendChild(btn({className:"e-btn",style:{fontSize:"14px",fontWeight:"700",display:"flex",alignItems:"center",gap:"8px",justifyContent:"flex-start",padding:"8px 12px",width:"100%"},onclick:(e)=>{e.stopPropagation();tf.value+=(tf.value&&!tf.value.endsWith(" ")?" ":"")+"@"+u.name+" ";tf.dispatchEvent(new Event("input"));tf.focus();picker.remove();}},(u.avatar||"👤")+" "+u.name));
+    });
+    bar.appendChild(picker);
+    setTimeout(()=>document.addEventListener("click",function h(){if(picker.parentNode)picker.remove();document.removeEventListener("click",h);},{once:true}),10);
+  }},"@");
   inputRow.appendChild(eBtn);
+  inputRow.appendChild(mBtn);
 
   const tf=textarea({"data-fid":focusId||"chat",className:"chat-field",placeholder:placeholder||"رسالة",rows:1});
   tf.oninput=function(){this.style.height="auto";this.style.height=Math.min(this.scrollHeight,110)+"px";};
@@ -1562,7 +1594,7 @@ function screenHome(){
   const page=div({className:"screen"});
   const hdr=div({className:"hdr hdr-dark"});
   hdr.appendChild(div({style:{width:"40px"}}));
-  hdr.appendChild(div({style:{flex:1,textAlign:"center"}},div({style:{fontSize:"20px",fontWeight:"900",color:"#fff",letterSpacing:"-.5px"}},"🏠 بيتنا"),div({style:{fontSize:"10px",color:"rgba(255,255,255,.6)",marginTop:"1px"}},todayHijri),div({style:{fontSize:"9px",color:"rgba(255,255,255,.45)",marginTop:"1px"}},"📅 "+todayGreg)));
+  hdr.appendChild(div({style:{flex:1,textAlign:"center"}},div({style:{fontSize:"20px",fontWeight:"900",color:"#fff",letterSpacing:"-.5px"}},"🏠 بيتنا"),div({style:{fontSize:"10px",color:"rgba(255,255,255,.6)",marginTop:"2px",whiteSpace:"nowrap"}},todayHijri+" • "+todayGreg)));
   const hdrRight=div({style:{display:"flex",gap:"6px",alignItems:"center"}});
   const bellWrap=div({style:{position:"relative"},className:"no-print"});
   bellWrap.appendChild(btn({style:{background:"rgba(255,255,255,.15)",border:"none",color:"#fff",borderRadius:"10px",padding:"6px 10px",cursor:"pointer",fontSize:"18px"},onclick:()=>setState({screen:"notifications"})},"🔔"));
@@ -1594,7 +1626,7 @@ function screenHome(){
 
 
   if(feat("quote")){const qEl=div({className:"mob-only",style:{padding:"10px 14px",background:"linear-gradient(135deg,var(--primary)15,var(--primary2)10)",borderBottom:"1px solid var(--border)"}});
-  qEl.appendChild(div({style:{fontSize:"14px",fontStyle:"italic",color:"var(--text)",fontWeight:"500",lineHeight:"1.5"}},'"'+quote+'"'));
+  qEl.appendChild(div({style:{fontSize:"17px",fontStyle:"italic",color:"var(--text)",fontWeight:"800",lineHeight:"1.6",textAlign:"center"}},'"'+quote+'"'));
   page.appendChild(qEl);}
 
   const body=div({className:"scroll"});
@@ -1645,7 +1677,8 @@ function screenHome(){
 
   // Parents section
   const parents=data.parents||[];
-  if(parents.length && feat("parentsSection")){
+  const canSeeParents=S().currentUser?.role==="admin"||S().currentUser?.role==="parent";
+  if(parents.length && feat("parentsSection") && canSeeParents){
     body.appendChild(div({className:"sec-title"},"الوالدان 👨‍👩‍👧"));
     const pgrid=div({className:"card-grid",style:{marginBottom:"16px"}});
     parents.forEach(p=>{ pgrid.appendChild(makeMemberCard(p)); });
@@ -2941,7 +2974,12 @@ setInterval(()=>{
   }
 },300000); // check every 5 minutes
 setTimeout(checkReminders,5000); // check soon after load
-window.addEventListener("resize",()=>render());
+window.addEventListener("resize",()=>{
+  // Don't re-render while typing (Android keyboard triggers resize → would lose focus & close keyboard)
+  const ae=document.activeElement;
+  if(ae&&(ae.tagName==="INPUT"||ae.tagName==="TEXTAREA"||ae.tagName==="SELECT"))return;
+  render();
+});
 
 // Pull to refresh
 let ptrY=null,ptrEl2=null;
