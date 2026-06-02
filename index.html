@@ -623,6 +623,40 @@ function hashData(d){
   try{return JSON.stringify(d).slice(0,200);}catch{return "";}
 }
 
+// Ensure loaded data has all newer fields (for users with old saved data)
+function migrateData(d){
+  if(!d)return d;
+  let _migrated=false;
+  // Add parents if missing
+  if(!d.parents||!Array.isArray(d.parents)||d.parents.length===0){
+    _migrated=true;
+    const ps=d.parentSettings||{};
+    d.parents=[
+      {id:"p1",name:ps.father||"الأب",grade:"الأب",color:"#6C63FF",emoji:ps.fatherAvatar||"👨",isParent:true},
+      {id:"p2",name:ps.mother||"الأم",grade:"الأم",color:"#FF6584",emoji:ps.motherAvatar||"👩",isParent:true},
+    ];
+  }
+  // Ensure features object exists
+  if(!d.features)d.features={};
+  // Ensure data slots exist for parents (so their tabs work)
+  ["homework","exams","grades","teacherNotes","supplies","goals"].forEach(key=>{
+    if(!d[key])d[key]={};
+    d.parents.forEach(p=>{ if(!d[key][p.id])d[key][p.id]=[]; });
+  });
+  if(!d.points)d.points={};
+  if(!d.schedule)d.schedule={};
+  if(!d.studySchedule)d.studySchedule={};
+  if(!d.allowance)d.allowance={};
+  d.parents.forEach(p=>{
+    if(!d.points[p.id])d.points[p.id]={total:0,history:[]};
+    if(!d.schedule[p.id])d.schedule[p.id]={};
+    if(!d.studySchedule[p.id])d.studySchedule[p.id]={};
+    if(!d.allowance[p.id])d.allowance[p.id]={daily:0,balance:0,history:[]};
+  });
+  if(_migrated){ try{ setTimeout(()=>{ apiSave(d); },800); }catch(e){} }
+  return d;
+}
+
 async function loadData(silent=false){
   try{
     if(!silent){ST.sync="syncing";render();}
@@ -645,7 +679,7 @@ async function loadData(silent=false){
           }
         });
       }
-      ST.data=d;
+      ST.data=migrateData(d);
       ST.lastPull=new Date();
     }
     ST.sync="synced";
@@ -666,7 +700,7 @@ async function loadData(silent=false){
   }catch(e){
     if(!ST.data){
       restoreFromBackup();
-      if(!ST.data){ST.data=DEF;showToast("تعذر الاتصال — تم تحميل البيانات الافتراضية","warn");}
+      if(!ST.data){ST.data=migrateData(DEF);showToast("تعذر الاتصال — تم تحميل البيانات الافتراضية","warn");}
     }
     ST.sync="error";
     if(!silent)render();
@@ -2804,7 +2838,7 @@ function restoreFromBackup(){
     if(keys.length>0){
       const backup=JSON.parse(localStorage.getItem(keys[0])||"{}");
       if(backup.data?.children){
-        ST.data=backup.data;
+        ST.data=migrateData(backup.data);
         showToast("📦 تم تحميل النسخة الاحتياطية: "+backup.date,"warn");
         render();
       }
