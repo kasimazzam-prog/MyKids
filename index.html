@@ -216,9 +216,7 @@ input,select,textarea,button{font-family:inherit;direction:rtl;color:inherit}
   max-width:300px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3)}
 
 /* ── Login ── */
-.login-screen{height:100%;display:flex;flex-direction:column;
-  background:linear-gradient(135deg,#1a1a2e 0%,var(--primary) 100%);
-  align-items:center;justify-content:center;padding:24px;padding-top:var(--safe-top);padding-bottom:var(--safe-bottom)}
+.login-screen{min-height:100%;height:auto;display:flex;flex-direction:column;background:linear-gradient(135deg,#1a1a2e 0%,var(--primary) 100%);align-items:center;justify-content:flex-start;padding:24px;padding-top:calc(24px + var(--safe-top));padding-bottom:calc(40px + var(--safe-bottom));overflow-y:auto}
 .login-box{background:rgba(255,255,255,.08);backdrop-filter:blur(20px);
   border:1px solid rgba(255,255,255,.15);border-radius:var(--radius-lg);
   padding:32px 24px;width:100%;max-width:360px}
@@ -503,7 +501,7 @@ const DEF={
     {id:1,type:"add",title:"New homework added",body:"Adam — Maths: Solve exercises p.45",time:"09:00",date:"2026-05-29",childId:1,screen:"child",tab:"homework",read:false},
   ],
   parentSettings:{father:"Kasim",fatherAvatar:"👨",mother:"Asmaa",motherAvatar:"👩",setupDone:true},
-  features:{homeManage:true,generalChat:true,calendar:true,reports:true,reminders:true,childChat:true,points:true,allowance:true,goals:true,supplies:true,studySchedule:true,teacherNotes:true},
+  features:{homeManage:true,generalChat:true,calendar:true,reports:true,reminders:true,childChat:true,points:true,allowance:true,goals:true,supplies:true,studySchedule:true,teacherNotes:true,search:true,quote:true,upcomingEvents:true,urgentHw:true,compare:true,gradeTrend:true,vacationMode:true},
   chatUsers:{name1:"Kasim",avatar1:"👨",name2:"Asmaa",avatar2:"👩"},
   users:[
     {id:"u1",name:"Kasim",avatar:"👨",role:"admin",pin:"1234",active:true},
@@ -630,7 +628,7 @@ async function loadData(silent=false){
     _lastHash=newHash;
 
     // Silent poll with NO changes → do nothing (prevents chat flicker/scroll jump)
-    if(silent&&!changed&&ST.data){ ST.sync="synced"; syncDotRefresh(); return; }
+    if(silent&&!changed&&ST.data){ ST.sync="synced"; syncDotRefresh(); updateAppBadge(); return; }
 
     if(changed||!ST.data){
       // Detect new notifications from other device
@@ -655,7 +653,7 @@ async function loadData(silent=false){
     if(silent && onChat && typing){ syncDotRefresh(); return; }
 
     // On chat screen with a silent change, append only new messages instead of full re-render
-    if(silent && onChat && changed){ refreshChatMessages(); syncDotRefresh(); return; }
+    if(silent && onChat && changed){ refreshChatMessages(); syncDotRefresh(); updateAppBadge(); return; }
 
     render();
     if("Notification" in window&&Notification.permission==="default"){
@@ -812,6 +810,17 @@ function syncDot(){
 // Notification count
 function unreadCount(){
   return (S().data?.notifications||[]).filter(n=>!n.read).length;
+}
+
+// Update the app icon badge (red number) — works on installed PWA where supported
+function updateAppBadge(){
+  try{
+    const total=unreadCount()+pendingRequests();
+    if("setAppBadge" in navigator){
+      if(total>0)navigator.setAppBadge(total).catch(()=>{});
+      else navigator.clearAppBadge().catch(()=>{});
+    }
+  }catch(e){}
 }
 function pendingRequests(){
   return (S().data?.homeRequests||[]).filter(r=>r.status!=="done").length;
@@ -1120,7 +1129,7 @@ function deleteChild(cid){
 // ═══════════════════════════════════════════════════════
 function screenLogin(){
   const {data,pinInput,loginError}=S();
-  const page=div({className:"login-screen"});
+  const page=div({className:"login-screen",style:{flex:"1",minHeight:"0"}});
   if(!data){
     page.appendChild(div({style:{textAlign:"center",color:"#fff"}},div({style:{fontSize:"60px"}},"🏠"),div({style:{fontSize:"24px",fontWeight:"900",marginTop:"12px"}},"بيتنا"),div({style:{fontSize:"14px",opacity:".7",marginTop:"8px"}},"جاري التحميل...")));
     return page;
@@ -1157,7 +1166,7 @@ function screenLogin(){
         else if(ST.pinInput.length<4)ST.pinInput+=k;
         if(ST.pinInput.length===4){
           const u=ST.selectedLoginUser;
-          if(ST.pinInput===(u.pin||"0000")){ST.currentUser=u;ST.pinInput="";ST.loginError="";ST.selectedLoginUser=null;try{localStorage.setItem("currentUserId",u.id);}catch(e){}setState({screen:"home"});}
+          if(ST.pinInput===(u.pin||"0000")){ST.currentUser=u;ST.pinInput="";ST.loginError="";ST.selectedLoginUser=null;try{localStorage.setItem("currentUserId",u.id);}catch(e){}try{if("Notification" in window&&Notification.permission==="default")Notification.requestPermission().then(()=>updateAppBadge());}catch(e){}setState({screen:"home"});}
           else{ST.loginError="الرمز خطأ، حاول مرة أخرى";ST.pinInput="";}
         }
         render();
@@ -1414,7 +1423,7 @@ function screenChild(){
   if(tab==="grades"){
     const gradesTopRow=div({style:{display:"flex",gap:"8px",marginBottom:"12px"}});
     if(can("edit"))gradesTopRow.appendChild(btn({className:"btn-primary",style:{flex:1,boxShadow:"0 4px 14px "+child.color+"40"},onclick:()=>setState({screen:"fGrade",editItem:null,F:{subject:SUBJ[0],score:"",max:100,date:"",type:"اختبار"}})},"+ إضافة درجة"));
-    if(cGr.length>=2)gradesTopRow.appendChild(btn({className:"btn-sm",onclick:()=>setState({screen:"gradeTrend"})},"📈 التطور"));
+    if(feat("gradeTrend")&&cGr.length>=2)gradesTopRow.appendChild(btn({className:"btn-sm",onclick:()=>setState({screen:"gradeTrend"})},"📈 التطور"));
     body.appendChild(gradesTopRow);
     const bySubj=SUBJ.map(s=>{const gs=cGr.filter(g=>g.subject===s);const avg=gs.length?Math.round(gs.reduce((a,g)=>a+g.score/g.max*100,0)/gs.length):null;return{s,avg};}).filter(x=>x.avg!==null);
     if(bySubj.length>0){const avgCard=div({className:"card"});avgCard.appendChild(div({style:{fontWeight:"700",fontSize:"13px",color:"var(--text2)",marginBottom:"10px"}},"متوسط الدرجات"));bySubj.forEach(({s,avg})=>{const row=div({style:{marginBottom:"8px"}});row.appendChild(div({style:{display:"flex",justifyContent:"space-between",fontSize:"13px",marginBottom:"4px"}},span(null,s),span({style:{color:sc(avg),fontWeight:"700"}},avg+"%")));row.appendChild(pbar(avg,100,sc(avg),8));avgCard.appendChild(row);});body.appendChild(avgCard);}
@@ -1485,12 +1494,15 @@ function screenHome(){
   const {children,homework,exams,grades,points,schedule,studySchedule,allowance,calendarEvents,supplies,vacationMode}=data;
   const upcoming=[...calendarEvents].sort((a,b)=>new Date(a.date)-new Date(b.date)).filter(e=>new Date(e.date)>=new Date());
   const uc=unreadCount();
-  const todayDate=new Date().toLocaleDateString("ar-SA",{weekday:"long",year:"numeric",month:"long",day:"numeric"});
+  const _now=new Date();
+  const todayHijri=_now.toLocaleDateString("ar-SA-u-ca-islamic",{weekday:"long",year:"numeric",month:"long",day:"numeric"});
+  const todayGreg=_now.toLocaleDateString("ar-EG",{year:"numeric",month:"long",day:"numeric"});
+  const todayDate=todayHijri;
   const quote=weekQuote();
   const page=div({className:"screen"});
   const hdr=div({className:"hdr hdr-dark"});
   hdr.appendChild(div({style:{width:"40px"}}));
-  hdr.appendChild(div({style:{flex:1,textAlign:"center"}},div({style:{fontSize:"20px",fontWeight:"900",color:"#fff",letterSpacing:"-.5px"}},"🏠 بيتنا"),div({style:{fontSize:"10px",color:"rgba(255,255,255,.6)",marginTop:"1px"}},todayDate)));
+  hdr.appendChild(div({style:{flex:1,textAlign:"center"}},div({style:{fontSize:"20px",fontWeight:"900",color:"#fff",letterSpacing:"-.5px"}},"🏠 بيتنا"),div({style:{fontSize:"10px",color:"rgba(255,255,255,.6)",marginTop:"1px"}},todayHijri),div({style:{fontSize:"9px",color:"rgba(255,255,255,.45)",marginTop:"1px"}},"📅 "+todayGreg)));
   const hdrRight=div({style:{display:"flex",gap:"6px",alignItems:"center"}});
   const bellWrap=div({style:{position:"relative"},className:"no-print"});
   bellWrap.appendChild(btn({style:{background:"rgba(255,255,255,.15)",border:"none",color:"#fff",borderRadius:"10px",padding:"6px 10px",cursor:"pointer",fontSize:"18px"},onclick:()=>setState({screen:"notifications"})},"🔔"));
@@ -1505,11 +1517,11 @@ function screenHome(){
   if(vacationMode?.active)syncBar.appendChild(div({style:{fontSize:"11px",fontWeight:"700",color:"#D97706"}},"🌙 إجازة — العودة "+fmt(vacationMode.until)));
   page.appendChild(syncBar);
 
-  const searchWrap=div({style:{padding:"8px 14px",background:"var(--bg2)",borderBottom:"1px solid var(--border)"}});
+  if(feat("search")){const searchWrap=div({style:{padding:"8px 14px",background:"var(--bg2)",borderBottom:"1px solid var(--border)"}});
   const searchInp=inp({className:"field-input",placeholder:"🔍 ابحث...",value:search,style:{padding:"9px 14px",fontSize:"13px",background:"var(--bg3)"}});
   let searchTimer;searchInp.oninput=e=>{clearTimeout(searchTimer);const v=e.target.value;searchTimer=setTimeout(()=>setState({search:v}),400);};
   searchWrap.appendChild(searchInp);
-  page.appendChild(searchWrap);
+  page.appendChild(searchWrap);}
 
   if(search&&search.trim().length>1){
     const q=search.toLowerCase();const res=[];
@@ -1521,9 +1533,9 @@ function screenHome(){
   }
 
 
-  const qEl=div({className:"mob-only",style:{padding:"10px 14px",background:"linear-gradient(135deg,var(--primary)15,var(--primary2)10)",borderBottom:"1px solid var(--border)"}});
+  if(feat("quote")){const qEl=div({className:"mob-only",style:{padding:"10px 14px",background:"linear-gradient(135deg,var(--primary)15,var(--primary2)10)",borderBottom:"1px solid var(--border)"}});
   qEl.appendChild(div({style:{fontSize:"14px",fontStyle:"italic",color:"var(--text)",fontWeight:"500",lineHeight:"1.5"}},'"'+quote+'"'));
-  page.appendChild(qEl);
+  page.appendChild(qEl);}
 
   const body=div({className:"scroll"});
   body.appendChild(div({className:"sec-title"},"أطفالي 👨‍👧‍👦"));
@@ -1570,10 +1582,10 @@ function screenHome(){
   const hReqs=(data.homeRequests||[]).filter(r=>r.status!=="done");
   if(hReqs.length>0){body.appendChild(div({className:"sec-title"},"🏡 طلبات بيتنا المعلقة"));const hCard=div({className:"card",style:{cursor:"pointer",borderRight:"4px solid #FA8231"},onclick:()=>setState({screen:"homeManage",homeTab:"requests"})});hReqs.slice(0,3).forEach(r=>hCard.appendChild(div({style:{display:"flex",alignItems:"center",gap:"8px",padding:"5px 0",borderBottom:"1px solid var(--border)"}},span({style:{fontSize:"18px"}},r.category.split(" ")[0]),div({style:{flex:1,fontSize:"13px",fontWeight:"600"}},r.title),span({style:{background:PRIOR[r.priority]?.c+"20",color:PRIOR[r.priority]?.c,padding:"2px 6px",borderRadius:"8px",fontSize:"10px",fontWeight:"700"}},PRIOR[r.priority]?.l||r.priority))));body.appendChild(hCard);}
 
-  if(upcoming.length>0){body.appendChild(div({className:"sec-title"},"📅 أحداث قادمة"));upcoming.slice(0,4).forEach(ev=>{const et=EVENT_T[ev.type]||EVENT_T.activity;body.appendChild(div({className:"card",style:{display:"flex",gap:"10px",alignItems:"flex-start",borderRight:"4px solid "+et.c}},div({style:{width:"42px",height:"42px",borderRadius:"12px",background:et.c+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"20px",flexShrink:0}},et.i),div({style:{flex:1,minWidth:0}},div({style:{fontWeight:"700",fontSize:"14px"}},ev.title),ev.notes?div({style:{fontSize:"12px",color:"var(--text2)",marginTop:"2px"}},ev.notes):null,div({style:{fontSize:"12px",color:"var(--text3)",marginTop:"3px"}},"📅 "+fmt(ev.date)+" — "+getDU(ev.date)))));});}
+  if(feat("upcomingEvents")&&upcoming.length>0){body.appendChild(div({className:"sec-title"},"📅 أحداث قادمة"));upcoming.slice(0,4).forEach(ev=>{const et=EVENT_T[ev.type]||EVENT_T.activity;body.appendChild(div({className:"card",style:{display:"flex",gap:"10px",alignItems:"flex-start",borderRight:"4px solid "+et.c}},div({style:{width:"42px",height:"42px",borderRadius:"12px",background:et.c+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"20px",flexShrink:0}},et.i),div({style:{flex:1,minWidth:0}},div({style:{fontWeight:"700",fontSize:"14px"}},ev.title),ev.notes?div({style:{fontSize:"12px",color:"var(--text2)",marginTop:"2px"}},ev.notes):null,div({style:{fontSize:"12px",color:"var(--text3)",marginTop:"3px"}},"📅 "+fmt(ev.date)+" — "+getDU(ev.date)))));});}
 
   const hasUrgent=children.some(c=>(homework[c.id]||[]).some(h=>!h.done&&h.due<=todayStr));
-  if(hasUrgent){body.appendChild(div({className:"sec-title"},"⚠️ واجبات عاجلة اليوم"));children.forEach(c=>{const u=(homework[c.id]||[]).filter(h=>!h.done&&h.due<=todayStr);if(!u.length)return;const card=div({className:"card",style:{borderRight:"4px solid "+c.color}});card.appendChild(div({style:{fontWeight:"800",color:c.color,marginBottom:"6px",fontSize:"15px"}},c.emoji+" "+c.name));u.forEach(h=>card.appendChild(div({style:{fontSize:"13px",color:"var(--text2)",padding:"3px 0"}},"• "+h.subject+": "+h.task)));body.appendChild(card);});}
+  if(feat("urgentHw")&&hasUrgent){body.appendChild(div({className:"sec-title"},"⚠️ واجبات عاجلة اليوم"));children.forEach(c=>{const u=(homework[c.id]||[]).filter(h=>!h.done&&h.due<=todayStr);if(!u.length)return;const card=div({className:"card",style:{borderRight:"4px solid "+c.color}});card.appendChild(div({style:{fontWeight:"800",color:c.color,marginBottom:"6px",fontSize:"15px"}},c.emoji+" "+c.name));u.forEach(h=>card.appendChild(div({style:{fontSize:"13px",color:"var(--text2)",padding:"3px 0"}},"• "+h.subject+": "+h.task)));body.appendChild(card);});}
 
   page.appendChild(body);
   return page;
@@ -1683,7 +1695,7 @@ function screenReports(){
   [{v:Object.values(homework).flat().length,l:"إجمالي الواجبات",c:"#6C63FF",i:"📚"},{v:Object.values(homework).flat().filter(h=>h.done).length,l:"المنجزة",c:"#00B894",i:"✅"},{v:Object.values(exams).flat().length,l:"الاختبارات",c:"#0984E3",i:"📝"}].forEach(s=>sg.appendChild(div({className:"stat-card",style:{borderTopColor:s.c}},div({style:{fontSize:"24px"}},s.i),div({className:"stat-val",style:{color:s.c}},String(s.v)),div({className:"stat-lbl"},s.l))));
   body.appendChild(sg);
   const qlinks=div({style:{display:"flex",gap:"8px",marginBottom:"16px"}});
-  qlinks.appendChild(btn({className:"btn-sm",style:{flex:1,textAlign:"center"},onclick:()=>setState({screen:"compare"})},"📊 مقارنة"));
+  if(feat("compare"))qlinks.appendChild(btn({className:"btn-sm",style:{flex:1,textAlign:"center"},onclick:()=>setState({screen:"compare"})},"📊 مقارنة"));
   qlinks.appendChild(btn({className:"btn-sm",style:{flex:1,textAlign:"center"},onclick:()=>setState({screen:"calendar"})},"📅 التقويم"));
   qlinks.appendChild(btn({className:"btn-sm",style:{flex:1,textAlign:"center"},onclick:()=>setState({screen:"reminders"})},"⏰ تذكيرات"));
   body.appendChild(qlinks);
@@ -1720,11 +1732,13 @@ function screenSettings(){
     body.appendChild(div({className:"sec-title"},"🎛️ التبويبات والميزات"));
     body.appendChild(div({style:{fontSize:"12px",color:"var(--text3)",marginBottom:"8px",padding:"0 4px"}},"شغّل أو عطّل أي تبويب أو ميزة حسب احتياجك"));
     const FEATS=[
+      {sec:"التبويبات الرئيسية"},
       {k:"homeManage",i:"🏡",l:"بيتنا (الطلبات والخطط)"},
       {k:"generalChat",i:"💬",l:"شات الأسرة"},
       {k:"calendar",i:"📅",l:"التقويم"},
       {k:"reports",i:"📄",l:"التقارير"},
       {k:"reminders",i:"⏰",l:"التذكيرات"},
+      {sec:"صفحة الطفل"},
       {k:"childChat",i:"🗨️",l:"شات الطفل"},
       {k:"studySchedule",i:"📚",l:"جدول المذاكرة"},
       {k:"points",i:"⭐",l:"النقاط"},
@@ -1732,11 +1746,27 @@ function screenSettings(){
       {k:"goals",i:"🎯",l:"الأهداف"},
       {k:"supplies",i:"🛒",l:"المستلزمات"},
       {k:"teacherNotes",i:"💬",l:"ملاحظات المعلمين"},
+      {sec:"الشاشة الرئيسية"},
+      {k:"search",i:"🔍",l:"شريط البحث"},
+      {k:"quote",i:"💡",l:"اقتباس اليوم"},
+      {k:"upcomingEvents",i:"📆",l:"الأحداث القادمة"},
+      {k:"urgentHw",i:"⚠️",l:"الواجبات العاجلة"},
+      {sec:"أدوات إضافية"},
+      {k:"compare",i:"📊",l:"مقارنة الأطفال"},
+      {k:"gradeTrend",i:"📈",l:"رسم تطور الدرجات"},
+      {k:"vacationMode",i:"🌙",l:"وضع الإجازة"},
     ];
-    const featCard=div({className:"card",style:{padding:"6px 14px"}});
-    FEATS.forEach((ft,i)=>{
+    let featCard=null;
+    FEATS.forEach((ft)=>{
+      if(ft.sec){
+        body.appendChild(div({style:{fontSize:"12px",fontWeight:"800",color:"var(--primary)",margin:"14px 4px 6px"}},ft.sec));
+        featCard=div({className:"card",style:{padding:"6px 14px"}});
+        body.appendChild(featCard);
+        return;
+      }
+      if(!featCard){featCard=div({className:"card",style:{padding:"6px 14px"}});body.appendChild(featCard);}
       const on=feat(ft.k);
-      const row=div({style:{display:"flex",alignItems:"center",gap:"10px",padding:"10px 0",borderBottom:i<FEATS.length-1?"1px solid var(--border)":"none"}});
+      const row=div({style:{display:"flex",alignItems:"center",gap:"10px",padding:"10px 0",borderBottom:"1px solid var(--border)"}});
       row.appendChild(div({style:{fontSize:"20px",width:"28px",textAlign:"center"}},ft.i));
       row.appendChild(div({style:{flex:1,fontSize:"14px",fontWeight:"600"}},ft.l));
       const tg=btn({style:{width:"48px",height:"27px",borderRadius:"14px",background:on?"#00B894":"var(--border)",border:"none",cursor:"pointer",position:"relative",flexShrink:0,transition:"background .2s"},onclick:()=>{
@@ -1747,7 +1777,6 @@ function screenSettings(){
       row.appendChild(tg);
       featCard.appendChild(row);
     });
-    body.appendChild(featCard);
   }
 
   body.appendChild(div({className:"sec-title"},"الوالدان"));
@@ -1831,11 +1860,11 @@ function screenSettings(){
   exportCard.appendChild(btn({className:"btn-sm",onclick:()=>{const d=S().data;const json=JSON.stringify(d,null,2);const blob=new Blob([json],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="baytna-backup-"+todayStr+".json";a.click();showToast("✅ تم تصدير البيانات","ok");}},"📥 تحميل نسخة احتياطية JSON"));
   body.appendChild(exportCard);
 
-  body.appendChild(div({className:"sec-title"},"وضع الإجازة"));
+  if(feat("vacationMode")){body.appendChild(div({className:"sec-title"},"وضع الإجازة"));
   const vacCard=div({className:"card",style:{display:"flex",justifyContent:"space-between",alignItems:"center"}});
   vacCard.appendChild(div(null,div({style:{fontWeight:"700",fontSize:"15px"}},"🌙 وضع الإجازة"),div({style:{fontSize:"12px",color:"var(--text3)",marginTop:"2px"}},data.vacationMode?.active?"فعّال — العودة "+fmt(data.vacationMode.until):"غير فعّال")));
   vacCard.appendChild(btn({className:"btn-sm",style:{background:data.vacationMode?.active?"#FF6584":"var(--primary)",color:"#fff",border:"none"},onclick:()=>{if(data.vacationMode?.active)upd({vacationMode:{active:false,until:""}});else{const dt=prompt("تاريخ العودة (YYYY-MM-DD):");if(dt)upd({vacationMode:{active:true,until:dt}});}}},data.vacationMode?.active?"إلغاء":"تفعيل"));
-  body.appendChild(vacCard);
+  body.appendChild(vacCard);}
 
   body.appendChild(div({style:{marginTop:"20px"}}));
   body.appendChild(btn({style:{width:"100%",background:"#FEE2E2",color:"#EF4444",border:"1.5px solid #fecaca",borderRadius:"var(--radius)",padding:"13px",fontSize:"14px",fontWeight:"700",cursor:"pointer"},onclick:()=>{ST.currentUser=null;try{localStorage.removeItem("currentUserId");}catch(e){}setState({screen:"login"});}},"🚪 تسجيل الخروج"));
@@ -2087,6 +2116,14 @@ function screenReminders(){
   soon.sort((a,b)=>a.days-b.days);
   if(!soon.length)body.appendChild(div({style:{textAlign:"center",padding:"40px",color:"var(--text3)"}},div({style:{fontSize:"40px"}},"✅"),div({style:{marginTop:"8px",fontWeight:"600"}},"لا توجد تذكيرات خلال 7 أيام")));
   soon.forEach(item=>{const urgency=item.days===0?"#FF6584":item.days<=2?"#FA8231":"#00B894";body.appendChild(div({className:"card",style:{borderRight:"4px solid "+urgency}},div({style:{display:"flex",alignItems:"center",gap:"10px"}},div({style:{width:"42px",height:"42px",borderRadius:"12px",background:item.color+"20",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"20px",flexShrink:0}},item.type==="hw"?"📚":"📝"),div({style:{flex:1}},div({style:{fontWeight:"700",fontSize:"14px"}},item.title),div({style:{fontSize:"12px",color:"var(--text3)",marginTop:"2px"}},item.child.emoji+" "+item.child.name+" — 📅 "+fmt(item.date))),div({style:{textAlign:"center",flexShrink:0}},div({style:{fontSize:"16px",fontWeight:"900",color:urgency}},item.days===0?"اليوم!":item.days+"أيام")))));});
+  // Badge support status
+  const badgeCard=div({className:"card",style:{marginTop:"16px"}});
+  badgeCard.appendChild(div({style:{fontWeight:"700",fontSize:"15px",marginBottom:"6px"}},"🔴 شارة الأيقونة"));
+  const badgeSupported="setAppBadge" in navigator;
+  badgeCard.appendChild(div({style:{fontSize:"13px",color:badgeSupported?"#00B894":"#FF6584",fontWeight:"600",marginBottom:"6px"}},badgeSupported?"مدعومة ✅ — عدد الإشعارات يظهر على أيقونة التطبيق":"غير مدعومة على هذا الجهاز/المتصفح"));
+  badgeCard.appendChild(div({style:{fontSize:"12px",color:"var(--text3)",lineHeight:"1.6"}},"تظهر الشارة الحمراء على أيقونة بيتنا في الشاشة الرئيسية. تحتاج: تثبيت التطبيق على الشاشة الرئيسية + تفعيل إشعارات الجهاز."));
+  if(badgeSupported)badgeCard.appendChild(btn({className:"btn-sm",style:{marginTop:"8px"},onclick:()=>{updateAppBadge();showToast("✅ تم تحديث الشارة","ok");}},"🔄 تحديث الشارة الآن"));
+  body.appendChild(badgeCard);
   if("Notification" in window){const permCard=div({className:"card",style:{marginTop:"16px"}});permCard.appendChild(div({style:{fontWeight:"700",fontSize:"15px",marginBottom:"6px"}},"🔔 إشعارات الجهاز"));const perm=Notification.permission;const permColors={granted:"#00B894",denied:"#FF6584",default:"#FA8231"};const permLabels={granted:"مفعّلة ✅",denied:"محظورة ❌",default:"غير مفعّلة"};permCard.appendChild(div({style:{fontSize:"13px",color:permColors[perm],fontWeight:"600",marginBottom:"8px"}},permLabels[perm]));if(perm==="default")permCard.appendChild(btn({className:"btn-primary",onclick:()=>{Notification.requestPermission().then(()=>render());}},"🔔 تفعيل الإشعارات"));body.appendChild(permCard);}
   page.appendChild(body);
   return page;
@@ -2465,7 +2502,7 @@ function _render(){
   const {data,sync,toast,confirm,currentUser}=S();
   let screen=S().screen;
   // Block access to disabled features → redirect home
-  const featGuard={homeManage:"homeManage",generalChat:"generalChat",calendar:"calendar",reports:"reports",reminders:"reminders",compare:"reports"};
+  const featGuard={homeManage:"homeManage",generalChat:"generalChat",calendar:"calendar",reports:"reports",reminders:"reminders",compare:"compare",gradeTrend:"gradeTrend"};
   if(featGuard[screen]&&!feat(featGuard[screen])){screen="home";ST.screen="home";}
   const app=document.getElementById("app");
   if(!app){if(window.__showErr)window.__showErr("FATAL","#app not found","");return;}
@@ -2553,6 +2590,7 @@ function _render(){
     if(!noNav) wrap.appendChild(buildBottomNav(screen,data));
     app.appendChild(wrap);
   }
+  updateAppBadge();
 }
 
 // ═══════════════════════════════════════════════════════
