@@ -19,6 +19,7 @@
   --radius:16px;--radius-sm:10px;--radius-lg:24px;
   --hdr-h:56px;--nav-h:58px;
   --safe-bottom:env(safe-area-inset-bottom,0px);
+  --safe-top:env(safe-area-inset-top,0px);
 }
 [data-theme="dark"]{--chat-bg:#0b141a;
   --bg:#0f0f1a;--bg2:#1a1a2e;--bg3:#16213e;
@@ -58,8 +59,8 @@ input,select,textarea,button{font-family:inherit;direction:rtl;color:inherit}
 }
 
 /* ── Top Header ── */
-.hdr{display:flex;align-items:center;gap:10px;padding:0 14px;
-  height:var(--hdr-h);flex-shrink:0;position:relative}
+.hdr{display:flex;align-items:center;gap:10px;padding:var(--safe-top) 14px 0;
+  height:calc(var(--hdr-h) + var(--safe-top));flex-shrink:0;position:relative;box-sizing:content-box}
 .hdr-grad{background:linear-gradient(135deg,var(--primary),var(--primary2))}
 .hdr-dark{background:linear-gradient(135deg,#1a1a2e,#2d1b69)}
 .hdr-title{color:#fff;font-size:16px;font-weight:800;flex:1;text-align:center}
@@ -217,7 +218,7 @@ input,select,textarea,button{font-family:inherit;direction:rtl;color:inherit}
 /* ── Login ── */
 .login-screen{height:100%;display:flex;flex-direction:column;
   background:linear-gradient(135deg,#1a1a2e 0%,var(--primary) 100%);
-  align-items:center;justify-content:center;padding:24px}
+  align-items:center;justify-content:center;padding:24px;padding-top:var(--safe-top);padding-bottom:var(--safe-bottom)}
 .login-box{background:rgba(255,255,255,.08);backdrop-filter:blur(20px);
   border:1px solid rgba(255,255,255,.15);border-radius:var(--radius-lg);
   padding:32px 24px;width:100%;max-width:360px}
@@ -234,7 +235,7 @@ input,select,textarea,button{font-family:inherit;direction:rtl;color:inherit}
   margin-bottom:8px;margin-top:6px;letter-spacing:1.5px;text-transform:uppercase}
 
 /* ── Child Header ── */
-.child-hdr{display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 14px 14px;flex-shrink:0}
+.child-hdr{display:flex;flex-direction:column;align-items:center;gap:4px;padding-top:calc(12px + var(--safe-top));padding-left:14px;padding-right:14px;padding-bottom:14px;flex-shrink:0}
 .child-hdr-emoji{font-size:36px;margin-top:4px}
 .child-hdr-name{color:#fff;font-size:18px;font-weight:900}
 .child-hdr-grade{color:rgba(255,255,255,.75);font-size:12px}
@@ -502,6 +503,7 @@ const DEF={
     {id:1,type:"add",title:"New homework added",body:"Adam — Maths: Solve exercises p.45",time:"09:00",date:"2026-05-29",childId:1,screen:"child",tab:"homework",read:false},
   ],
   parentSettings:{father:"Kasim",fatherAvatar:"👨",mother:"Asmaa",motherAvatar:"👩",setupDone:true},
+  features:{homeManage:true,generalChat:true,calendar:true,reports:true,reminders:true,childChat:true,points:true,allowance:true,goals:true,supplies:true,studySchedule:true,teacherNotes:true},
   chatUsers:{name1:"Kasim",avatar1:"👨",name2:"Asmaa",avatar2:"👩"},
   users:[
     {id:"u1",name:"Kasim",avatar:"👨",role:"admin",pin:"1234",active:true},
@@ -750,6 +752,12 @@ function askDel(msg,fn){
 }
 
 // Permission check
+// Check if a feature/tab is enabled (default ON if undefined)
+function feat(key){
+  const f=S().data?.features||{};
+  return f[key]!==false;
+}
+
 function can(action){
   const u=S().currentUser;
   if(!u)return false;
@@ -967,8 +975,7 @@ function buildChat({msgs,allUsers,currentUserName,color,onSend,onEdit,onDelete,o
     const old=document.querySelector(".emoji-picker");
     if(old){old.remove();return;}
     const picker=div({className:"emoji-picker"});
-    "😀😂🥰😊😍🤗😎👍👏🙏❤️💪✅⭐🎉🔥💯📚✏️📝🏆🎯💡⏰📅🍕🎮⚽🌟😴🤔😅😘🥳🤩💐🙌🫶📢🔔⚠️🌙☀️🎂🎈👋".split("").forEach((em)=>{
-      if(!em.trim())return;
+    ["😀","😂","🥰","😊","😍","🤗","😎","👍","👏","🙏","❤️","💪","✅","⭐","🎉","🔥","💯","📚","✏️","📝","🏆","🎯","💡","⏰","📅","🍕","🎮","⚽","🌟","😴","🤔","😅","😘","🥳","🤩","💐","🙌","🫶","📢","🔔","⚠️","🌙","☀️","🎂","🎈","👋"].forEach((em)=>{
       picker.appendChild(btn({className:"e-btn",onclick:(e)=>{e.stopPropagation();tf.value+=em;tf.dispatchEvent(new Event("input"));tf.focus();}},em));
     });
     bar.appendChild(picker);
@@ -1306,7 +1313,10 @@ function screenChild(){
   const cGoals=goals[child.id]||[];
   const cSup=supplies[child.id]||[];
   const msgs=(data.chatMessages||[]).filter(m=>m.childId===child.id||!m.childId);
-  const TABS=[{k:"schedule",i:"📅",l:"الجدول"},{k:"study",i:"📚",l:"مذاكرة"},{k:"homework",i:"✅",l:"واجبات"},{k:"exams",i:"📝",l:"اختبارات"},{k:"grades",i:"📊",l:"درجات"},{k:"goals",i:"🎯",l:"أهداف"},{k:"points",i:"⭐",l:"نقاط"},{k:"allowance",i:"💰",l:"مصروف"},{k:"supplies",i:"🛒",l:"مستلزمات"},{k:"notes",i:"💬",l:"ملاحظات"},{k:"chat",i:"🗨️",l:"شات"}];
+  const ALL_TABS=[{k:"schedule",i:"📅",l:"الجدول",feat:null},{k:"study",i:"📚",l:"مذاكرة",feat:"studySchedule"},{k:"homework",i:"✅",l:"واجبات",feat:null},{k:"exams",i:"📝",l:"اختبارات",feat:null},{k:"grades",i:"📊",l:"درجات",feat:null},{k:"goals",i:"🎯",l:"أهداف",feat:"goals"},{k:"points",i:"⭐",l:"نقاط",feat:"points"},{k:"allowance",i:"💰",l:"مصروف",feat:"allowance"},{k:"supplies",i:"🛒",l:"مستلزمات",feat:"supplies"},{k:"notes",i:"💬",l:"ملاحظات",feat:"teacherNotes"},{k:"chat",i:"🗨️",l:"شات",feat:"childChat"}];
+  const TABS=ALL_TABS.filter(t=>!t.feat||feat(t.feat));
+  // If current tab got disabled, fall back to schedule
+  if(!TABS.find(t=>t.k===tab)){ST.tab="schedule";}
 
   const page=div({className:"screen"});
   const hdr=div({className:"child-hdr",style:{background:"linear-gradient(135deg,"+child.color+","+child.color+"bb)",flexShrink:0}});
@@ -1704,6 +1714,41 @@ function screenSettings(){
   toggle.appendChild(span({style:{position:"absolute",top:"3px",left:isDark?"26px":"3px",width:"22px",height:"22px",borderRadius:"50%",background:"#fff",boxShadow:"0 2px 6px rgba(0,0,0,.2)"}}));
   dmCard.appendChild(toggle);
   body.appendChild(dmCard);
+
+  // ── Feature toggles (admin only) ──
+  if(can("edit")){
+    body.appendChild(div({className:"sec-title"},"🎛️ التبويبات والميزات"));
+    body.appendChild(div({style:{fontSize:"12px",color:"var(--text3)",marginBottom:"8px",padding:"0 4px"}},"شغّل أو عطّل أي تبويب أو ميزة حسب احتياجك"));
+    const FEATS=[
+      {k:"homeManage",i:"🏡",l:"بيتنا (الطلبات والخطط)"},
+      {k:"generalChat",i:"💬",l:"شات الأسرة"},
+      {k:"calendar",i:"📅",l:"التقويم"},
+      {k:"reports",i:"📄",l:"التقارير"},
+      {k:"reminders",i:"⏰",l:"التذكيرات"},
+      {k:"childChat",i:"🗨️",l:"شات الطفل"},
+      {k:"studySchedule",i:"📚",l:"جدول المذاكرة"},
+      {k:"points",i:"⭐",l:"النقاط"},
+      {k:"allowance",i:"💰",l:"المصروف"},
+      {k:"goals",i:"🎯",l:"الأهداف"},
+      {k:"supplies",i:"🛒",l:"المستلزمات"},
+      {k:"teacherNotes",i:"💬",l:"ملاحظات المعلمين"},
+    ];
+    const featCard=div({className:"card",style:{padding:"6px 14px"}});
+    FEATS.forEach((ft,i)=>{
+      const on=feat(ft.k);
+      const row=div({style:{display:"flex",alignItems:"center",gap:"10px",padding:"10px 0",borderBottom:i<FEATS.length-1?"1px solid var(--border)":"none"}});
+      row.appendChild(div({style:{fontSize:"20px",width:"28px",textAlign:"center"}},ft.i));
+      row.appendChild(div({style:{flex:1,fontSize:"14px",fontWeight:"600"}},ft.l));
+      const tg=btn({style:{width:"48px",height:"27px",borderRadius:"14px",background:on?"#00B894":"var(--border)",border:"none",cursor:"pointer",position:"relative",flexShrink:0,transition:"background .2s"},onclick:()=>{
+        const cur=S().data.features||{};
+        upd({features:{...cur,[ft.k]:!on}});
+      }});
+      tg.appendChild(span({style:{position:"absolute",top:"3px",left:on?"24px":"3px",width:"21px",height:"21px",borderRadius:"50%",background:"#fff",boxShadow:"0 2px 5px rgba(0,0,0,.25)",transition:"left .2s"}}));
+      row.appendChild(tg);
+      featCard.appendChild(row);
+    });
+    body.appendChild(featCard);
+  }
 
   body.appendChild(div({className:"sec-title"},"الوالدان"));
   const parentCard=div({className:"card",style:{cursor:"pointer"},onclick:()=>setState({screen:"parentSetup"})},div({style:{display:"flex",alignItems:"center",gap:"12px"}},div({style:{fontSize:"32px"}},ps.fatherAvatar||"👨"),div({style:{flex:1}},div({style:{fontWeight:"700",fontSize:"15px"}},(ps.father||"Kasim")+" & "+(ps.mother||"Asmaa")),div({style:{fontSize:"12px",color:"var(--text3)",marginTop:"2px"}},"اضغط لتعديل الأسماء والأيقونات")),span({style:{color:"var(--primary)",fontSize:"20px"}},"✏️")));
@@ -2400,11 +2445,11 @@ function buildBottomNav(screen,data){
     return b;
   };
   nav.appendChild(mk("🏠","الرئيسية","home",0));
-  nav.appendChild(mk("🏡","بيتنا","homeManage",pr));
-  nav.appendChild(mk("💬","شات","generalChat",0));
-  nav.appendChild(mk("📅","تقويم","calendar",0));
-  nav.appendChild(mk("📄","تقارير","reports",0));
-  nav.appendChild(mk("⏰","تذكيرات","reminders",0));
+  if(feat("homeManage"))nav.appendChild(mk("🏡","بيتنا","homeManage",pr));
+  if(feat("generalChat"))nav.appendChild(mk("💬","شات","generalChat",0));
+  if(feat("calendar"))nav.appendChild(mk("📅","تقويم","calendar",0));
+  if(feat("reports"))nav.appendChild(mk("📄","تقارير","reports",0));
+  if(feat("reminders"))nav.appendChild(mk("⏰","تذكيرات","reminders",0));
   nav.appendChild(mk("🔔","إشعارات","notifications",uc));
   nav.appendChild(mk("⚙️","إعدادات","settings",0));
   return nav;
@@ -2417,7 +2462,11 @@ function render(){
   try{ _render(); }catch(e){ console.log("render error:",e&&e.message); }
 }
 function _render(){
-  const {data,sync,screen,toast,confirm,currentUser}=S();
+  const {data,sync,toast,confirm,currentUser}=S();
+  let screen=S().screen;
+  // Block access to disabled features → redirect home
+  const featGuard={homeManage:"homeManage",generalChat:"generalChat",calendar:"calendar",reports:"reports",reminders:"reminders",compare:"reports"};
+  if(featGuard[screen]&&!feat(featGuard[screen])){screen="home";ST.screen="home";}
   const app=document.getElementById("app");
   if(!app){if(window.__showErr)window.__showErr("FATAL","#app not found","");return;}
   app.innerHTML="";
