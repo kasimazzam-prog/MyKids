@@ -501,7 +501,11 @@ const DEF={
     {id:1,type:"add",title:"New homework added",body:"Adam — Maths: Solve exercises p.45",time:"09:00",date:"2026-05-29",childId:1,screen:"child",tab:"homework",read:false},
   ],
   parentSettings:{father:"Kasim",fatherAvatar:"👨",mother:"Asmaa",motherAvatar:"👩",setupDone:true},
-  features:{homeManage:true,generalChat:true,calendar:true,reports:true,reminders:true,childChat:true,points:true,allowance:true,goals:true,supplies:true,studySchedule:true,teacherNotes:true,search:true,quote:true,upcomingEvents:true,urgentHw:true,compare:true,gradeTrend:true,vacationMode:true},
+  parents:[
+    {id:"p1",name:"Kasim",grade:"الأب",color:"#6C63FF",emoji:"👨",isParent:true},
+    {id:"p2",name:"Asmaa",grade:"الأم",color:"#FF6584",emoji:"👩",isParent:true},
+  ],
+  features:{homeManage:true,generalChat:true,calendar:true,reports:true,reminders:true,childChat:true,points:true,allowance:true,goals:true,supplies:true,studySchedule:true,teacherNotes:true,search:true,quote:true,upcomingEvents:true,urgentHw:true,compare:true,gradeTrend:true,vacationMode:true,parentsSection:true},
   chatUsers:{name1:"Kasim",avatar1:"👨",name2:"Asmaa",avatar2:"👩"},
   users:[
     {id:"u1",name:"Kasim",avatar:"👨",role:"admin",pin:"1234",active:true},
@@ -783,6 +787,17 @@ function getSubjects(){
 
 // Sync indicator
 // Render child avatar: photo if available, else emoji. size in px.
+// Get any family member (child or parent) by id
+function getMember(id){
+  const d=S().data;
+  return (d.children||[]).find(c=>c.id===id)||(d.parents||[]).find(p=>p.id===id)||null;
+}
+// All members (children + parents) — for chat avatars etc.
+function allMembers(){
+  const d=S().data;
+  return [...(d.children||[]),...(d.parents||[])];
+}
+
 function childAvatar(child,size,extraStyle){
   const s=size||48;
   const wrap=div({style:Object.assign({width:s+"px",height:s+"px",borderRadius:"50%",overflow:"hidden",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:"0",background:(child.color||"#6C63FF")+"18",fontSize:Math.round(s*0.55)+"px"},extraStyle||{})});
@@ -1114,6 +1129,11 @@ function submitAddChild(){
 function submitEditChild(){
   const {childF,editingChild,data}=S();if(!childF.name)return;
   upd({children:data.children.map(c=>c.id===editingChild.id?{...c,...childF}:c)});
+  setState({screen:"settings"});
+}
+function submitEditParent(){
+  const {childF,editingChild,data}=S();if(!childF.name)return;
+  upd({parents:(data.parents||[]).map(p=>p.id===editingChild.id?{...p,...childF,isParent:true}:p)});
   setState({screen:"settings"});
 }
 function deleteChild(cid){
@@ -1538,9 +1558,8 @@ function screenHome(){
   page.appendChild(qEl);}
 
   const body=div({className:"scroll"});
-  body.appendChild(div({className:"sec-title"},"أطفالي 👨‍👧‍👦"));
-  const grid=div({className:"card-grid",style:{marginBottom:"16px"}});
-  children.forEach(c=>{
+  // Reusable member card builder (works for children AND parents)
+  function makeMemberCard(c){
     if(!canViewChild(c.id))return;
     const pending=(homework[c.id]||[]).filter(h=>!h.done).length;
     const pts=points[c.id]?.total||0;
@@ -1575,9 +1594,23 @@ function screenHome(){
     pbWrap.appendChild(pillRow);
     inner.appendChild(pbWrap);
     card.appendChild(inner);
-    grid.appendChild(card);
-  });
+    
+      return card;
+  }
+
+  body.appendChild(div({className:"sec-title"},"أطفالي 👨‍👧‍👦"));
+  const grid=div({className:"card-grid",style:{marginBottom:"16px"}});
+  children.forEach(c=>{ if(!canViewChild(c.id))return; grid.appendChild(makeMemberCard(c)); });
   body.appendChild(grid);
+
+  // Parents section
+  const parents=data.parents||[];
+  if(parents.length && feat("parentsSection")){
+    body.appendChild(div({className:"sec-title"},"الوالدان 👨‍👩‍👧"));
+    const pgrid=div({className:"card-grid",style:{marginBottom:"16px"}});
+    parents.forEach(p=>{ pgrid.appendChild(makeMemberCard(p)); });
+    body.appendChild(pgrid);
+  }
 
   const hReqs=(data.homeRequests||[]).filter(r=>r.status!=="done");
   if(hReqs.length>0){body.appendChild(div({className:"sec-title"},"🏡 طلبات بيتنا المعلقة"));const hCard=div({className:"card",style:{cursor:"pointer",borderRight:"4px solid #FA8231"},onclick:()=>setState({screen:"homeManage",homeTab:"requests"})});hReqs.slice(0,3).forEach(r=>hCard.appendChild(div({style:{display:"flex",alignItems:"center",gap:"8px",padding:"5px 0",borderBottom:"1px solid var(--border)"}},span({style:{fontSize:"18px"}},r.category.split(" ")[0]),div({style:{flex:1,fontSize:"13px",fontWeight:"600"}},r.title),span({style:{background:PRIOR[r.priority]?.c+"20",color:PRIOR[r.priority]?.c,padding:"2px 6px",borderRadius:"8px",fontSize:"10px",fontWeight:"700"}},PRIOR[r.priority]?.l||r.priority))));body.appendChild(hCard);}
@@ -1733,6 +1766,7 @@ function screenSettings(){
     body.appendChild(div({style:{fontSize:"12px",color:"var(--text3)",marginBottom:"8px",padding:"0 4px"}},"شغّل أو عطّل أي تبويب أو ميزة حسب احتياجك"));
     const FEATS=[
       {sec:"التبويبات الرئيسية"},
+      {k:"parentsSection",i:"👨‍👩‍👧",l:"قسم الوالدين بالرئيسية"},
       {k:"homeManage",i:"🏡",l:"بيتنا (الطلبات والخطط)"},
       {k:"generalChat",i:"💬",l:"شات الأسرة"},
       {k:"calendar",i:"📅",l:"التقويم"},
@@ -1786,6 +1820,10 @@ function screenSettings(){
   body.appendChild(div({className:"sec-title"},"الأطفال"));
   children.forEach(c=>body.appendChild(div({className:"card",style:{display:"flex",alignItems:"center",gap:"12px"}},(c.photo?childAvatar(c,48,{borderRadius:"14px"}):div({style:{width:"48px",height:"48px",borderRadius:"14px",background:"linear-gradient(135deg,"+c.color+","+c.color+"88)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"24px",flexShrink:0}},c.emoji)),div({style:{flex:1}},div({style:{fontWeight:"800",fontSize:"15px"}},c.name),div({style:{fontSize:"12px",color:"var(--text3)",marginTop:"2px"}},c.grade)),div({style:{display:"flex",gap:"6px"}},btn({className:"btn-edit",onclick:()=>setState({editingChild:c,childF:{name:c.name,grade:c.grade,color:c.color,emoji:c.emoji,photo:c.photo||null},screen:"editChild"})},"✏️"),btn({className:"btn-del",onclick:()=>deleteChild(c.id)},"🗑")))));
   body.appendChild(btn({className:"btn-primary",style:{marginBottom:"16px"},onclick:()=>setState({childF:{name:"",grade:"",color:PALETTE[0],emoji:EMOJIS[0],photo:null},screen:"addChild"})},"+ إضافة طفل جديد"));
+
+  // ── Parents management ──
+  body.appendChild(div({className:"sec-title"},"الوالدان (ملفاتهم) 👨‍👩‍👧"));
+  (data.parents||[]).forEach(p=>body.appendChild(div({className:"card",style:{display:"flex",alignItems:"center",gap:"12px"}},(p.photo?childAvatar(p,48,{borderRadius:"14px"}):div({style:{width:"48px",height:"48px",borderRadius:"14px",background:"linear-gradient(135deg,"+p.color+","+p.color+"88)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"24px",flexShrink:0}},p.emoji)),div({style:{flex:1}},div({style:{fontWeight:"800",fontSize:"15px"}},p.name),div({style:{fontSize:"12px",color:"var(--text3)",marginTop:"2px"}},p.grade)),btn({className:"btn-edit",onclick:()=>setState({editingChild:p,childF:{name:p.name,grade:p.grade,color:p.color,emoji:p.emoji,photo:p.photo||null},screen:"editParent"})},"✏️"))));
 
   body.appendChild(div({className:"sec-title"},"المواد الدراسية"));
   const subjCard=div({className:"card"});
@@ -1993,8 +2031,9 @@ function screenCropPhoto(){
 function screenChildForm(){
   const {childF,screen}=S();
   const isAdd=screen==="addChild";
+  const isParentEdit=screen==="editParent";
   const page=div({className:"screen"});
-  page.appendChild(makeHdr(childF.color,isAdd?"إضافة طفل":"تعديل بيانات",backBtn(()=>setState({screen:"settings"}))));
+  page.appendChild(makeHdr(childF.color,isAdd?"إضافة طفل":isParentEdit?"تعديل ولي الأمر":"تعديل بيانات",backBtn(()=>setState({screen:"settings"}))));
   const body=div({className:"scroll"});
   const nameInp=inp({className:"field-input",type:"text",placeholder:"اسم الطفل...",value:childF.name});
   nameInp.oninput=e=>ST.childF={...ST.childF,name:e.target.value};
@@ -2019,7 +2058,7 @@ function screenChildForm(){
     rdr.onload=()=>{
       // Open crop screen with the raw image
       ST.cropSrc=rdr.result;
-      ST.cropReturn=isAdd?"addChild":"editChild";
+      ST.cropReturn=isAdd?"addChild":isParentEdit?"editParent":"editChild";
       ST.cropZoom=1;ST.cropX=0;ST.cropY=0;
       setState({screen:"cropPhoto"});
     };
@@ -2041,7 +2080,7 @@ function screenChildForm(){
   body.appendChild(cRow);
   const cardPic=childF.photo?el("img",{src:childF.photo,style:{width:"72px",height:"72px",borderRadius:"50%",objectFit:"cover",border:"3px solid rgba(255,255,255,.6)"}}):div({style:{fontSize:"48px"}},childF.emoji);
   body.appendChild(div({style:{background:"linear-gradient(135deg,"+childF.color+","+childF.color+"88)",borderRadius:"20px",padding:"20px",textAlign:"center",color:"#fff",marginBottom:"16px",display:"flex",flexDirection:"column",alignItems:"center"}},cardPic,div({style:{fontSize:"20px",fontWeight:"900",marginTop:"8px"}},childF.name||"الاسم"),div({style:{fontSize:"13px",opacity:".8",marginTop:"4px"}},childF.grade||"الصف")));
-  body.appendChild(btn({className:"btn-primary",style:{boxShadow:"0 6px 20px "+childF.color+"40"},onclick:isAdd?submitAddChild:submitEditChild},"✓ حفظ"));
+  body.appendChild(btn({className:"btn-primary",style:{boxShadow:"0 6px 20px "+childF.color+"40"},onclick:isAdd?submitAddChild:isParentEdit?submitEditParent:submitEditChild},"✓ حفظ"));
   page.appendChild(body);
   return page;
 }
@@ -2562,7 +2601,7 @@ function _render(){
   const screens={
     home:screenHome,settings:screenSettings,reports:screenReports,child:screenChild,
     parentSetup:screenParentSetup,generalChat:screenGeneralChat,notifications:screenNotifications,
-    homeManage:screenHomeManage,addChild:screenChildForm,editChild:screenChildForm,cropPhoto:screenCropPhoto,
+    homeManage:screenHomeManage,addChild:screenChildForm,editChild:screenChildForm,editParent:screenChildForm,cropPhoto:screenCropPhoto,
     calendar:screenCalendar,compare:screenCompare,reminders:screenReminders,gradeTrend:screenGradeTrend,allowanceChart:screenAllowanceChart,
     fHw:screenFHw,fExam:screenFExam,fGrade:screenFGrade,fNote:screenFNote,
     fStudy:screenFStudy,fGoal:screenFGoal,fSupply:screenFSupply,
