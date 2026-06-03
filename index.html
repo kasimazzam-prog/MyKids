@@ -1331,8 +1331,25 @@ function submitHw(){
   const {F,child,data}=S();if(!F.task||!F.due)return;
   const isEdit=!!S().editItem;
   const l=data.homework[child.id]||[];
-  const u=isEdit?l.map(h=>h.id===S().editItem.id?{...h,...F}:h):[...l,{id:Date.now(),...F,done:false}];
-  upd({homework:{...data.homework,[child.id]:u}},{type:isEdit?"edit":"add",title:isEdit?"تم تعديل واجب":"واجب جديد",body:child.emoji+" "+child.name+" — "+F.subject,childId:child.id,screen:"child",tab:"homework"});
+  if(isEdit){
+    const u=l.map(h=>h.id===S().editItem.id?{...h,...F}:h);
+    upd({homework:{...data.homework,[child.id]:u}},{type:"edit",title:"تم تعديل واجب",body:child.emoji+" "+child.name+" — "+F.subject,childId:child.id,screen:"child",tab:"homework"});
+  }else if(F.repeat==="weekly"){
+    // Create one independent homework per week, each with its own points
+    const weeks=Number(F.weeks||4);
+    const base=new Date(F.due);
+    const newHws=[];
+    for(let i=0;i<weeks;i++){
+      const d=new Date(base);
+      d.setDate(d.getDate()+i*7);
+      const ds=d.toISOString().split("T")[0];
+      newHws.push({id:Date.now()+i,subject:F.subject,task:F.task+" (أسبوع "+(i+1)+")",due:ds,points:Number(F.points||0),done:false,recurGroup:Date.now()});
+    }
+    upd({homework:{...data.homework,[child.id]:[...l,...newHws]}},{type:"add",title:"واجبات أسبوعية متكررة",body:child.emoji+" "+child.name+" — "+F.subject+" ("+weeks+" أسابيع)",childId:child.id,screen:"child",tab:"homework"});
+  }else{
+    const u=[...l,{id:Date.now(),...F,done:false}];
+    upd({homework:{...data.homework,[child.id]:u}},{type:"add",title:"واجب جديد",body:child.emoji+" "+child.name+" — "+F.subject,childId:child.id,screen:"child",tab:"homework"});
+  }
   back();
 }
 function submitExam(){
@@ -1510,12 +1527,28 @@ function screenLogin(){
 // ═══════════════════════════════════════════════════════
 function screenFHw(){
   const {F,child}=S();const c=child?.color||"#6C63FF";const SUBJ=getSubjects();
-  return buildForm(S().editItem?"تعديل واجب":"واجب جديد 📚",c,back,submitHw,[
+  const isEdit=!!S().editItem;
+  const repeat=F.repeat||"once";
+  const fields=[
     fieldGroup("المادة",sel({className:"field-select",value:F.subject||SUBJ[0],onchange:e=>sf("subject",e.target.value)},...SUBJ)),
     fieldGroup("الواجب",textarea({className:"field-textarea",style:{height:"80px"},placeholder:"اكتب تفاصيل الواجب...",oninput:e=>sf("task",e.target.value)},F.task||"")),
-    fieldGroup("تاريخ التسليم",inp({className:"field-input",type:"date",value:F.due||"",onchange:e=>sf("due",e.target.value)})),
-    fieldGroup("⭐ نقاط عند الإتمام (اختياري)",div({className:"chips"},...[0,5,10,15,20,30].map(n=>chip(n===0?"بدون":n+" ⭐",Number(F.points||0)===n,c,()=>sfr("points",n))))),
-  ]);
+  ];
+  // Recurrence type (only when adding new)
+  if(!isEdit){
+    fields.push(fieldGroup("نوع الواجب",div({className:"chips"},
+      chip("📅 ليوم واحد",repeat==="once",c,()=>sfr("repeat","once")),
+      chip("🔁 متكرر أسبوعياً",repeat==="weekly",c,()=>sfr("repeat","weekly"))
+    )));
+  }
+  if(repeat==="weekly"&&!isEdit){
+    fields.push(fieldGroup("تاريخ أول واجب",inp({className:"field-input",type:"date",value:F.due||"",onchange:e=>sf("due",e.target.value)})));
+    fields.push(fieldGroup("عدد الأسابيع",div({className:"chips"},...[2,3,4,6,8,12].map(n=>chip(n+" أسابيع",Number(F.weeks||4)===n,c,()=>sfr("weeks",n))))));
+    fields.push(div({style:{fontSize:"12px",color:"var(--text2)",background:c+"12",padding:"8px 12px",borderRadius:"10px",marginTop:"-4px"}},"💡 سيُنشأ واجب منفصل لكل أسبوع، ولكل واحد نقاطه عند إتمامه."));
+  }else{
+    fields.push(fieldGroup("تاريخ التسليم",inp({className:"field-input",type:"date",value:F.due||"",onchange:e=>sf("due",e.target.value)})));
+  }
+  fields.push(fieldGroup("⭐ نقاط عند الإتمام (لكل واجب)",div({className:"chips"},...[0,5,10,15,20,30].map(n=>chip(n===0?"بدون":n+" ⭐",Number(F.points||0)===n,c,()=>sfr("points",n))))));
+  return buildForm(isEdit?"تعديل واجب":"واجب جديد 📚",c,back,submitHw,fields);
 }
 function screenFExam(){
   const {F,child}=S();const c=child?.color||"#6C63FF";const SUBJ=getSubjects();
@@ -1743,7 +1776,7 @@ function screenChild(){
 
   if(tab==="homework"){
     const topBar=div({style:{display:"flex",gap:"8px",marginBottom:"12px"}});
-    if(can("edit"))topBar.appendChild(btn({className:"btn-primary",style:{flex:1,boxShadow:"0 4px 14px "+child.color+"40"},onclick:()=>setState({screen:"fHw",editItem:null,F:{subject:SUBJ[0],task:"",due:""}})},"+ إضافة واجب"));
+    if(can("edit"))topBar.appendChild(btn({className:"btn-primary",style:{flex:1,boxShadow:"0 4px 14px "+child.color+"40"},onclick:()=>setState({screen:"fHw",editItem:null,F:{subject:SUBJ[0],task:"",due:"",repeat:"once",weeks:4,points:0}})},"+ إضافة واجب"));
     topBar.appendChild(btn({className:"btn-sm",style:hwArchive?{background:child.color,color:"#fff",borderColor:child.color}:{},onclick:()=>setState({hwArchive:!hwArchive})},hwArchive?"📂 نشطة":"🗂️ أرشيف"));
     body.appendChild(topBar);
     const list=cHw.filter(h=>hwArchive?h.done:!h.done);
@@ -1758,7 +1791,7 @@ function screenChild(){
       info.appendChild(div({style:{fontSize:"12px",color:new Date(hw.due)<new Date()&&!hw.done?"#FF6584":"var(--text3)",marginTop:"3px"}},"📅 "+fmt(hw.due)+" — "+getDU(hw.due)));
       if(Number(hw.points||0)>0)info.appendChild(div({style:{display:"inline-block",fontSize:"11px",color:child.color,fontWeight:"700",marginTop:"3px",background:child.color+"15",padding:"1px 8px",borderRadius:"10px"}},(hw.done?"✓ ":"")+hw.points+" ⭐"+(hw.done?" مُنحت":" عند الإتمام")));
       row.appendChild(info);
-      if(can("edit"))row.appendChild(editDel(()=>setState({screen:"fHw",editItem:hw,F:{subject:hw.subject,task:hw.task,due:hw.due}}),()=>{const l=data.homework[child.id]||[];upd({homework:{...data.homework,[child.id]:l.filter(h=>h.id!==hw.id)}},{type:"delete",title:"تم حذف واجب",body:child.emoji+" "+child.name+" — "+hw.subject,childId:child.id,screen:"child",tab:"homework"});},"حذف واجب "+hw.subject+"؟"));
+      if(can("edit"))row.appendChild(editDel(()=>setState({screen:"fHw",editItem:hw,F:{subject:hw.subject,task:hw.task,due:hw.due,points:hw.points||0}}),()=>{const l=data.homework[child.id]||[];upd({homework:{...data.homework,[child.id]:l.filter(h=>h.id!==hw.id)}},{type:"delete",title:"تم حذف واجب",body:child.emoji+" "+child.name+" — "+hw.subject,childId:child.id,screen:"child",tab:"homework"});},"حذف واجب "+hw.subject+"؟"));
       card.appendChild(row);body.appendChild(card);
     });
   }
