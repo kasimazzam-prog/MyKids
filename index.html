@@ -30,9 +30,9 @@
 /* ── Reset ── */
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;width:100%;overflow:hidden}
-body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;direction:rtl;
+body{font-family:'Segoe UI',Tahoma,Arial,'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif;direction:rtl;
   background:var(--bg);color:var(--text);transition:background .3s,color .3s}
-input,select,textarea,button{font-family:inherit;direction:rtl;color:inherit}
+input,select,textarea,button{font-family:'Segoe UI',Tahoma,Arial,'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif;direction:rtl;color:inherit}
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
 
@@ -807,11 +807,21 @@ function feat(key){
 function can(action){
   const u=S().currentUser;
   if(!u)return false;
+  // Per-user override: if editData explicitly disabled, block edits
+  if(action==="edit"&&u.perms&&u.perms.editData===false)return false;
   if(u.role==="admin")return true;
   if(action==="view")return true;
   if(u.role==="parent")return["edit","chat","manage"].includes(action);
   if(u.role==="child")return action==="chat";
   return false;
+}
+// Check if current user is allowed to access a screen (per-user perms)
+function userCanAccess(screenKey){
+  const u=S().currentUser;
+  if(!u)return false;
+  if(u.role==="admin")return true; // admin always full access
+  if(u.perms&&u.perms[screenKey]===false)return false;
+  return true;
 }
 function isSelf(childId){
   const u=S().currentUser;
@@ -1909,7 +1919,7 @@ function screenSettings(){
   if(can("edit")){
     body.appendChild(div({className:"sec-title"},"المستخدمون والصلاحيات"));
     const usersCard=div({className:"card"});
-    users.forEach(u=>{const row=div({style:{display:"flex",alignItems:"center",gap:"10px",padding:"8px 0",borderBottom:"1px solid var(--border)"}});row.appendChild(div({style:{width:"36px",height:"36px",borderRadius:"50%",background:"var(--bg3)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"20px",flexShrink:0}},u.avatar||"👤"));const info=div({style:{flex:1}});info.appendChild(div({style:{fontWeight:"700",fontSize:"14px"}},u.name));info.appendChild(div({style:{fontSize:"11px",color:"var(--text3)"}},(ROLES[u.role]?.l||u.role)+" — رمز: "+(u.pin||"0000")));row.appendChild(info);const actBtns=div({style:{display:"flex",gap:"5px",alignItems:"center",flexShrink:0}});actBtns.appendChild(btn({style:{background:"rgba(108,99,255,.12)",color:"var(--primary)",border:"none",borderRadius:"8px",padding:"5px 9px",cursor:"pointer",fontSize:"13px"},onclick:()=>{ST.editPinUser=u;ST.pinDraft="";render();}},"🔑"));actBtns.appendChild(btn({style:{background:u.active!==false?"#D1FAE5":"#FEE2E2",color:u.active!==false?"#00B894":"#FF6584",border:"none",borderRadius:"8px",padding:"5px 10px",cursor:"pointer",fontSize:"11px",fontWeight:"700"},onclick:()=>{const nu=users.map(x=>x.id===u.id?{...x,active:!(x.active!==false)}:x);upd({users:nu});}},u.active!==false?"نشط":"معطّل"));row.appendChild(actBtns);usersCard.appendChild(row);});
+    users.forEach(u=>{const row=div({style:{display:"flex",alignItems:"center",gap:"10px",padding:"8px 0",borderBottom:"1px solid var(--border)"}});row.appendChild(div({style:{width:"36px",height:"36px",borderRadius:"50%",background:"var(--bg3)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"20px",flexShrink:0}},u.avatar||"👤"));const info=div({style:{flex:1}});info.appendChild(div({style:{fontWeight:"700",fontSize:"14px"}},u.name));info.appendChild(div({style:{fontSize:"11px",color:"var(--text3)"}},(ROLES[u.role]?.l||u.role)+" — رمز: "+(u.pin||"0000")));row.appendChild(info);const actBtns=div({style:{display:"flex",gap:"5px",alignItems:"center",flexShrink:0}});actBtns.appendChild(btn({style:{background:"rgba(108,99,255,.12)",color:"var(--primary)",border:"none",borderRadius:"8px",padding:"5px 9px",cursor:"pointer",fontSize:"13px"},onclick:()=>{ST.editPinUser=u;ST.pinDraft="";render();}},"🔑"));actBtns.appendChild(btn({style:{background:"rgba(250,130,49,.12)",color:"#FA8231",border:"none",borderRadius:"8px",padding:"5px 9px",cursor:"pointer",fontSize:"13px"},onclick:()=>{ST.editPermsUser=u;render();}},"🔒"));actBtns.appendChild(btn({style:{background:u.active!==false?"#D1FAE5":"#FEE2E2",color:u.active!==false?"#00B894":"#FF6584",border:"none",borderRadius:"8px",padding:"5px 10px",cursor:"pointer",fontSize:"11px",fontWeight:"700"},onclick:()=>{const nu=users.map(x=>x.id===u.id?{...x,active:!(x.active!==false)}:x);upd({users:nu});}},u.active!==false?"نشط":"معطّل"));row.appendChild(actBtns);usersCard.appendChild(row);});
     body.appendChild(usersCard);
     // ── Inline PIN editor (works in PWA/iOS, no prompt) ──
     if(S().editPinUser){
@@ -1941,6 +1951,43 @@ function screenSettings(){
       });
       sheet.appendChild(pad);
       sheet.appendChild(btn({style:{width:"calc(100% - 40px)",margin:"14px 20px 0",background:"none",border:"none",color:"var(--text3)",fontSize:"14px",fontWeight:"700",cursor:"pointer",padding:"10px"},onclick:()=>{ST.editPinUser=null;ST.pinDraft="";render();}},"إلغاء"));
+      ov.appendChild(sheet);
+      body.appendChild(ov);
+    }
+    // ── Per-user permissions editor ──
+    if(S().editPermsUser){
+      const pu=S().editPermsUser;
+      const perms=pu.perms||{};
+      const SCREENS=[
+        {k:"homeManage",i:"🏡",l:"بيتنا (الطلبات والخطط)"},
+        {k:"generalChat",i:"💬",l:"شات الأسرة"},
+        {k:"calendar",i:"📅",l:"التقويم"},
+        {k:"reports",i:"📄",l:"التقارير"},
+        {k:"reminders",i:"⏰",l:"التذكيرات"},
+        {k:"settings",i:"⚙️",l:"الإعدادات"},
+        {k:"editData",i:"✏️",l:"تعديل البيانات (إضافة/حذف)"},
+      ];
+      const ov=div({className:"msg-menu-overlay",onclick:function(e){if(e.target===ov){ST.editPermsUser=null;render();}}});
+      const sheet=div({className:"msg-menu-sheet",style:{maxWidth:"380px",borderRadius:"20px",margin:"auto",alignSelf:"center",maxHeight:"80vh",overflowY:"auto"}});
+      sheet.appendChild(div({style:{textAlign:"center",fontSize:"28px"}},pu.avatar||"👤"));
+      sheet.appendChild(div({style:{textAlign:"center",fontWeight:"800",fontSize:"16px",marginBottom:"2px"}},"صلاحيات "+pu.name));
+      sheet.appendChild(div({style:{textAlign:"center",fontSize:"12px",color:"var(--text3)",marginBottom:"14px"}},"تحكّم بما يمكن لـ "+pu.name+" الوصول إليه"));
+      SCREENS.forEach((s,i)=>{
+        const allowed=perms[s.k]!==false; // default allowed
+        const row=div({style:{display:"flex",alignItems:"center",gap:"10px",padding:"11px 16px",borderBottom:i<SCREENS.length-1?"1px solid var(--border)":"none"}});
+        row.appendChild(div({style:{fontSize:"20px",width:"28px",textAlign:"center"}},s.i));
+        row.appendChild(div({style:{flex:1,fontSize:"14px",fontWeight:"600"}},s.l));
+        const tg=btn({style:{width:"48px",height:"27px",borderRadius:"14px",background:allowed?"#00B894":"var(--border)",border:"none",cursor:"pointer",position:"relative",flexShrink:0,transition:"background .2s"},onclick:()=>{
+          const np={...(pu.perms||{}),[s.k]:!allowed};
+          const nu=users.map(x=>x.id===pu.id?{...x,perms:np}:x);
+          ST.editPermsUser={...pu,perms:np};
+          upd({users:nu});
+        }});
+        tg.appendChild(span({style:{position:"absolute",top:"3px",left:allowed?"24px":"3px",width:"21px",height:"21px",borderRadius:"50%",background:"#fff",boxShadow:"0 2px 5px rgba(0,0,0,.25)",transition:"left .2s"}}));
+        row.appendChild(tg);
+        sheet.appendChild(row);
+      });
+      sheet.appendChild(btn({style:{width:"calc(100% - 40px)",margin:"14px 20px 0",background:"var(--primary)",border:"none",color:"#fff",fontSize:"14px",fontWeight:"700",cursor:"pointer",padding:"12px",borderRadius:"12px"},onclick:()=>{ST.editPermsUser=null;render();}},"✓ تم"));
       ov.appendChild(sheet);
       body.appendChild(ov);
     }
@@ -2712,13 +2759,13 @@ function buildBottomNav(screen,data){
     return b;
   };
   nav.appendChild(mk("🏠","الرئيسية","home",0));
-  if(feat("homeManage"))nav.appendChild(mk("🏡","بيتنا","homeManage",pr));
-  if(feat("generalChat"))nav.appendChild(mk("💬","شات","generalChat",0));
-  if(feat("calendar"))nav.appendChild(mk("📅","تقويم","calendar",0));
-  if(feat("reports"))nav.appendChild(mk("📄","تقارير","reports",0));
-  if(feat("reminders"))nav.appendChild(mk("⏰","تذكيرات","reminders",0));
+  if(feat("homeManage")&&userCanAccess("homeManage"))nav.appendChild(mk("🏡","بيتنا","homeManage",pr));
+  if(feat("generalChat")&&userCanAccess("generalChat"))nav.appendChild(mk("💬","شات","generalChat",0));
+  if(feat("calendar")&&userCanAccess("calendar"))nav.appendChild(mk("📅","تقويم","calendar",0));
+  if(feat("reports")&&userCanAccess("reports"))nav.appendChild(mk("📄","تقارير","reports",0));
+  if(feat("reminders")&&userCanAccess("reminders"))nav.appendChild(mk("⏰","تذكيرات","reminders",0));
   nav.appendChild(mk("🔔","إشعارات","notifications",uc));
-  nav.appendChild(mk("⚙️","إعدادات","settings",0));
+  if(userCanAccess("settings"))nav.appendChild(mk("⚙️","إعدادات","settings",0));
   return nav;
 }
 
@@ -2734,6 +2781,9 @@ function _render(){
   // Block access to disabled features → redirect home
   const featGuard={homeManage:"homeManage",generalChat:"generalChat",calendar:"calendar",reports:"reports",reminders:"reminders",compare:"compare",gradeTrend:"gradeTrend"};
   if(featGuard[screen]&&!feat(featGuard[screen])){screen="home";ST.screen="home";}
+  // Per-user access control
+  const accessGuard={homeManage:"homeManage",generalChat:"generalChat",calendar:"calendar",reports:"reports",reminders:"reminders",settings:"settings"};
+  if(accessGuard[screen]&&!userCanAccess(accessGuard[screen])){screen="home";ST.screen="home";showToast&&showToast("ليس لديك صلاحية الوصول","error");}
   const app=document.getElementById("app");
   if(!app){if(window.__showErr)window.__showErr("FATAL","#app not found","");return;}
   app.innerHTML="";
