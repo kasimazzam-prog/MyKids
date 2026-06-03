@@ -1302,6 +1302,26 @@ function buildChat({msgs,allUsers,currentUserName,color,onSend,onEdit,onDelete,o
 const back=()=>setState({screen:"child",editItem:null});
 const backHome=()=>setState({screen:"home",editItem:null});
 
+// Toggle homework done; award/remove points automatically if the task has a points reward
+function toggleHwDone(child,hw){
+  const data=S().data;
+  const l=data.homework[child.id]||[];
+  const nowDone=!hw.done;
+  const pts=Number(hw.points||0);
+  let patch={homework:{...data.homework,[child.id]:l.map(h=>h.id===hw.id?{...h,done:nowDone,pointsAwarded:nowDone&&pts>0?true:false}:h)}};
+  // Award points when completing, remove when un-completing (only if a reward was set)
+  if(pts>0){
+    const p=data.points[child.id]||{total:0,history:[]};
+    if(nowDone && !hw.pointsAwarded){
+      patch.points={...data.points,[child.id]:{total:p.total+pts,history:[{id:Date.now(),date:todayStr,reason:"إتمام واجب: "+hw.subject,amount:pts},...p.history]}};
+      showToast("🎉 +"+pts+" نقطة لإتمام الواجب!","ok");
+    }else if(!nowDone && hw.pointsAwarded){
+      patch.points={...data.points,[child.id]:{total:Math.max(0,p.total-pts),history:[{id:Date.now(),date:todayStr,reason:"إلغاء إتمام: "+hw.subject,amount:-pts},...p.history]}};
+    }
+  }
+  save({...data,...patch});
+}
+
 function submitHw(){
   const {F,child,data}=S();if(!F.task||!F.due)return;
   const isEdit=!!S().editItem;
@@ -1362,6 +1382,7 @@ function submitAllowance(){
 }
 function submitPoints(){
   const {F,child,data}=S();if(!F.reason||!F.amount)return;
+  if(!can("edit")){showToast("النقاط يمنحها الوالدان فقط","error");return;}
   const p=data.points[child.id]||{total:0,history:[]};
   upd({points:{...data.points,[child.id]:{total:p.total+Number(F.amount),history:[{id:Date.now(),date:todayStr,reason:F.reason,amount:Number(F.amount)},...p.history]}}},{type:"add",title:"نقاط ⭐ "+child.name,body:F.reason+" +"+F.amount,childId:child.id,screen:"child",tab:"points"});
   back();
@@ -1484,6 +1505,7 @@ function screenFHw(){
     fieldGroup("المادة",sel({className:"field-select",value:F.subject||SUBJ[0],onchange:e=>sf("subject",e.target.value)},...SUBJ)),
     fieldGroup("الواجب",textarea({className:"field-textarea",style:{height:"80px"},placeholder:"اكتب تفاصيل الواجب...",oninput:e=>sf("task",e.target.value)},F.task||"")),
     fieldGroup("تاريخ التسليم",inp({className:"field-input",type:"date",value:F.due||"",onchange:e=>sf("due",e.target.value)})),
+    fieldGroup("⭐ نقاط عند الإتمام (اختياري)",div({className:"chips"},...[0,5,10,15,20,30].map(n=>chip(n===0?"بدون":n+" ⭐",Number(F.points||0)===n,c,()=>sfr("points",n))))),
   ]);
 }
 function screenFExam(){
@@ -1492,6 +1514,7 @@ function screenFExam(){
     fieldGroup("المادة",sel({className:"field-select",value:F.subject||SUBJ[0],onchange:e=>sf("subject",e.target.value)},...SUBJ)),
     fieldGroup("التاريخ",inp({className:"field-input",type:"date",value:F.date||"",onchange:e=>sf("date",e.target.value)})),
     fieldGroup("ملاحظات",inp({className:"field-input",type:"text",placeholder:"الفصل / الوحدة...",value:F.notes||"",oninput:e=>sf("notes",e.target.value)})),
+    fieldGroup("⭐ نقاط عند الإتمام (اختياري)",div({className:"chips"},...[0,5,10,15,20,30].map(n=>chip(n===0?"بدون":n+" ⭐",Number(F.points||0)===n,c,()=>sfr("points",n))))),
   ]);
 }
 function screenFGrade(){
@@ -1718,11 +1741,12 @@ function screenChild(){
     list.forEach(hw=>{
       const card=div({className:"card",style:{opacity:hw.done?.72:1,borderRight:"4px solid "+(hw.done?"var(--border)":child.color)}});
       const row=div({style:{display:"flex",gap:"10px",alignItems:"flex-start"}});
-      row.appendChild(btn({style:{width:"26px",height:"26px",borderRadius:"8px",border:"2px solid "+(hw.done?child.color:"var(--border)"),background:hw.done?child.color:"var(--bg2)",color:"#fff",fontWeight:"900",fontSize:"14px",cursor:"pointer",flexShrink:0,marginTop:"2px"},onclick:()=>{const l=data.homework[child.id]||[];save({...data,homework:{...data.homework,[child.id]:l.map(h=>h.id===hw.id?{...h,done:!h.done}:h)}});}},hw.done?"✓":""));
+      row.appendChild(btn({style:{width:"26px",height:"26px",borderRadius:"8px",border:"2px solid "+(hw.done?child.color:"var(--border)"),background:hw.done?child.color:"var(--bg2)",color:"#fff",fontWeight:"900",fontSize:"14px",cursor:"pointer",flexShrink:0,marginTop:"2px"},onclick:()=>toggleHwDone(child,hw)},hw.done?"✓":""));
       const info=div({style:{flex:1}});
       info.appendChild(pill(hw.subject,child.color));
       info.appendChild(div({style:{fontSize:"15px",fontWeight:"600",marginTop:"4px",textDecoration:hw.done?"line-through":"none"}},hw.task));
       info.appendChild(div({style:{fontSize:"12px",color:new Date(hw.due)<new Date()&&!hw.done?"#FF6584":"var(--text3)",marginTop:"3px"}},"📅 "+fmt(hw.due)+" — "+getDU(hw.due)));
+      if(Number(hw.points||0)>0)info.appendChild(div({style:{display:"inline-block",fontSize:"11px",color:child.color,fontWeight:"700",marginTop:"3px",background:child.color+"15",padding:"1px 8px",borderRadius:"10px"}},(hw.done?"✓ ":"")+hw.points+" ⭐"+(hw.done?" مُنحت":" عند الإتمام")));
       row.appendChild(info);
       if(can("edit"))row.appendChild(editDel(()=>setState({screen:"fHw",editItem:hw,F:{subject:hw.subject,task:hw.task,due:hw.due}}),()=>{const l=data.homework[child.id]||[];upd({homework:{...data.homework,[child.id]:l.filter(h=>h.id!==hw.id)}});},"حذف واجب "+hw.subject+"؟"));
       card.appendChild(row);body.appendChild(card);
