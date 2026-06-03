@@ -753,37 +753,43 @@ function resetDailyChores(){
 }
 
 // ── Auto-cleanup old messages/notifications ──
+// Default cleanup scope (all on)
+function cleanScope(cu){
+  return Object.assign({chat:true,notifications:true,activityLog:true,routineLog:true,homework:true},(cu&&cu.scope)||{});
+}
 function runCleanup(manual){
   const d=S().data;
   if(!d)return;
   const cu=d.cleanup||{days:90,enabled:true};
   if(!manual && cu.enabled===false)return;
+  const sc=cleanScope(cu);
   const cutoff=Date.now()-(cu.days||90)*86400000;
   const cutoffStr=new Date(cutoff).toISOString().split("T")[0];
   let removed=0;
   const patch={};
-  // Clean general chat
-  if(Array.isArray(d.generalChat)){
-    const kept=d.generalChat.filter(m=>!m.date||m.date>=cutoffStr);
-    if(kept.length<d.generalChat.length){removed+=d.generalChat.length-kept.length;patch.generalChat=kept;}
+  // Chat (general + child) — controlled by sc.chat
+  if(sc.chat){
+    if(Array.isArray(d.generalChat)){
+      const kept=d.generalChat.filter(m=>!m.date||m.date>=cutoffStr);
+      if(kept.length<d.generalChat.length){removed+=d.generalChat.length-kept.length;patch.generalChat=kept;}
+    }
+    if(Array.isArray(d.chatMessages)){
+      const kept=d.chatMessages.filter(m=>!m.date||m.date>=cutoffStr);
+      if(kept.length<d.chatMessages.length){removed+=d.chatMessages.length-kept.length;patch.chatMessages=kept;}
+    }
   }
-  // Clean child chat
-  if(Array.isArray(d.chatMessages)){
-    const kept=d.chatMessages.filter(m=>!m.date||m.date>=cutoffStr);
-    if(kept.length<d.chatMessages.length){removed+=d.chatMessages.length-kept.length;patch.chatMessages=kept;}
-  }
-  // Clean notifications
-  if(Array.isArray(d.notifications)){
+  // Notifications
+  if(sc.notifications && Array.isArray(d.notifications)){
     const kept=d.notifications.filter(n=>!n.date||n.date>=cutoffStr);
     if(kept.length<d.notifications.length){removed+=d.notifications.length-kept.length;patch.notifications=kept;}
   }
-  // Clean activity log
-  if(Array.isArray(d.activityLog)){
+  // Activity log
+  if(sc.activityLog && Array.isArray(d.activityLog)){
     const kept=d.activityLog.filter(e=>!e.date||e.date>=cutoffStr);
     if(kept.length<d.activityLog.length){removed+=d.activityLog.length-kept.length;patch.activityLog=kept;}
   }
-  // Clean old routine logs (keyed by childId_date)
-  if(d.routineLog){
+  // Routine logs
+  if(sc.routineLog && d.routineLog){
     const nrl={};let rlChanged=false;
     Object.keys(d.routineLog).forEach(k=>{
       const datePart=k.split("_")[1];
@@ -792,8 +798,8 @@ function runCleanup(manual){
     });
     if(rlChanged)patch.routineLog=nrl;
   }
-  // Auto-archive: remove completed homework older than cutoff
-  if(d.homework){
+  // Completed homework
+  if(sc.homework && d.homework){
     const nh={};let hwChanged=false;
     Object.keys(d.homework).forEach(cid=>{
       const list=d.homework[cid]||[];
@@ -815,6 +821,38 @@ function runCleanup(manual){
 function migrateData(d){
   if(!d)return d;
   let _migrated=false;
+  // Dedupe children (merge from multiple devices can create duplicates with different ids)
+  if(Array.isArray(d.children)){
+    const seen={};const uniq=[];
+    d.children.forEach(c=>{
+      const key=(c.name||"").trim().toLowerCase();
+      if(key && seen[key]){
+        _migrated=true;
+        // Keep the first; copy over a photo if the duplicate has one and original doesn't
+        const existing=uniq.find(x=>(x.name||"").trim().toLowerCase()===key);
+        if(existing && !existing.photo && c.photo)existing.photo=c.photo;
+      }else{ seen[key]=true; uniq.push(c); }
+    });
+    if(uniq.length<d.children.length)d.children=uniq;
+  }
+  // Dedupe users by name+role
+  if(Array.isArray(d.users)){
+    const seenU={};const uu=[];
+    d.users.forEach(u=>{
+      const key=(u.name||"").trim().toLowerCase()+"|"+(u.role||"");
+      if(seenU[key]){_migrated=true;}else{seenU[key]=true;uu.push(u);}
+    });
+    if(uu.length<d.users.length)d.users=uu;
+  }
+  // Dedupe parents by name
+  if(Array.isArray(d.parents)){
+    const seenP={};const pp=[];
+    d.parents.forEach(p=>{
+      const key=(p.name||"").trim().toLowerCase();
+      if(seenP[key]){_migrated=true;}else{seenP[key]=true;pp.push(p);}
+    });
+    if(pp.length<d.parents.length)d.parents=pp;
+  }
   // Add parents if missing
   if(!d.parents||!Array.isArray(d.parents)||d.parents.length===0){
     _migrated=true;
@@ -1377,7 +1415,7 @@ function toggleChore(child,ch){
       patch.points={...data.points,[child.id]:{total:Math.max(0,p.total-pts),history:[{id:Date.now(),date:todayStr,reason:"إلغاء مهمة: "+ch.name,amount:-pts},...p.history]}};
     }
   }
-  upd(patch,{type:nowDone?"done":"edit",title:nowDone?"🧹 تم إنجاز مهمة منزلية":"↩️ تم إلغاء مهمة منزلية",body:child.emoji+" "+child.name+" — "+ch.name+(nowDone&&pts>0?" (+"+pts+" ⭐)":""),childId:child.id,screen:"child",tab:"chores"});
+  upd(patch,{type:nowDone?"done":"edit",title:nowDone?"🧹 تم إنجاز مهمة منزلية":"↩️ تم إلغاء مهمة منزلية",body:child.emoji+" "+child.name+" — "+ch.name+(nowDone&&pts>0?" (+"+pts+" ⭐)":""),childId:child.id,screen:"child",tab:"tasks"});
 }
 // Toggle a routine item done for today (stored per day, resets daily automatically)
 function toggleRoutine(child,r){
@@ -1686,13 +1724,13 @@ function submitChore(){
   const list=(data.chores&&data.chores[child.id])||[];
   const isEdit=!!S().editItem;
   const u=isEdit?list.map(c=>c.id===S().editItem.id?{...c,...it}:c):[...list,{id:Date.now(),...it,done:false}];
-  upd({chores:{...data.chores,[child.id]:u}},{type:isEdit?"edit":"add",title:isEdit?"تم تعديل مهمة منزلية":"مهمة منزلية جديدة",body:child.emoji+" "+child.name+" — "+it.name,childId:child.id,screen:"child",tab:"chores"});
-  setState({screen:"child",tab:"chores",editItem:null});
+  upd({chores:{...data.chores,[child.id]:u}},{type:isEdit?"edit":"add",title:isEdit?"تم تعديل مهمة منزلية":"مهمة منزلية جديدة",body:child.emoji+" "+child.name+" — "+it.name,childId:child.id,screen:"child",tab:"tasks"});
+  setState({screen:"child",tab:"tasks",editItem:null});
 }
 function screenFChore(){
   const {F,child}=S();const c=child?.color||"#6C63FF";
   const CEMOJIS=["🧹","🛏️","🍽️","🧺","🗑️","🐕","🪴","📚","👕","🧼","🚿","🧸"];
-  return buildForm(S().editItem?"تعديل مهمة":"مهمة منزلية جديدة 🧹",c,()=>setState({screen:"child",tab:"chores"}),submitChore,[
+  return buildForm(S().editItem?"تعديل مهمة":"مهمة منزلية جديدة 🧹",c,()=>setState({screen:"child",tab:"tasks"}),submitChore,[
     fieldGroup("اسم المهمة",inp({className:"field-input",type:"text",placeholder:"مثال: ترتيب السرير...",value:F.name||"",oninput:e=>sf("name",e.target.value)})),
     fieldGroup("الأيقونة",div({className:"chips"},...CEMOJIS.map(em=>chip(em,F.emoji===em,c,()=>sfr("emoji",em))))),
     fieldGroup("⭐ النقاط عند الإنجاز",div({className:"chips"},...[0,3,5,10,15,20].map(n=>chip(n===0?"بدون":n+" ⭐",Number(F.points||0)===n,c,()=>sfr("points",n))))),
@@ -1705,13 +1743,13 @@ function submitRoutine(){
   const list=(data.routines&&data.routines[child.id])||[];
   const isEdit=!!S().editItem;
   const u=isEdit?list.map(r=>r.id===S().editItem.id?{...r,...it}:r):[...list,{id:Date.now(),...it}];
-  upd({routines:{...data.routines,[child.id]:u}},{type:isEdit?"edit":"add",title:isEdit?"تم تعديل روتين":"عنصر روتين جديد",body:child.emoji+" "+child.name+" — "+it.name,childId:child.id,screen:"child",tab:"routine"});
-  setState({screen:"child",tab:"routine",editItem:null});
+  upd({routines:{...data.routines,[child.id]:u}},{type:isEdit?"edit":"add",title:isEdit?"تم تعديل روتين":"عنصر روتين جديد",body:child.emoji+" "+child.name+" — "+it.name,childId:child.id,screen:"child",tab:"tasks"});
+  setState({screen:"child",tab:"tasks",editItem:null});
 }
 function screenFRoutine(){
   const {F,child}=S();const c=child?.color||"#6C63FF";
   const REMOJIS=["☀️","🦷","🎒","📖","🛏️","🍳","👕","🚿","🧴","🌙","🥛","🙏","🏃","🧹"];
-  return buildForm("عنصر روتين جديد ☀️",c,()=>setState({screen:"child",tab:"routine"}),submitRoutine,[
+  return buildForm("عنصر روتين جديد ☀️",c,()=>setState({screen:"child",tab:"tasks"}),submitRoutine,[
     fieldGroup("العنصر",inp({className:"field-input",type:"text",placeholder:"مثال: تنظيف الأسنان...",value:F.name||"",oninput:e=>sf("name",e.target.value)})),
     fieldGroup("الأيقونة",div({className:"chips"},...REMOJIS.map(em=>chip(em,F.emoji===em,c,()=>sfr("emoji",em))))),
     fieldGroup("الوقت",div({className:"chips"},chip("🌅 صباحاً",F.period==="morning"||!F.period,c,()=>sfr("period","morning")),chip("🌙 مساءً",F.period==="evening",c,()=>sfr("period","evening")))),
@@ -1802,7 +1840,7 @@ function screenChild(){
   const cGoals=goals[child.id]||[];
   const cSup=supplies[child.id]||[];
   const msgs=(data.chatMessages||[]).filter(m=>m.childId===child.id||!m.childId);
-  const ALL_TABS=[{k:"schedule",i:"📅",l:"الجدول",feat:null},{k:"study",i:"📚",l:"مذاكرة",feat:"studySchedule"},{k:"homework",i:"✅",l:"واجبات",feat:null},{k:"exams",i:"📝",l:"اختبارات",feat:null},{k:"grades",i:"📊",l:"درجات",feat:null},{k:"goals",i:"🎯",l:"أهداف",feat:"goals"},{k:"chores",i:"🧹",l:"مهام منزلية",feat:"chores"},{k:"routine",i:"☀️",l:"روتين يومي",feat:"routine"},{k:"points",i:"⭐",l:"نقاط",feat:"points"},{k:"rewards",i:"🎁",l:"جوائز",feat:"rewards"},{k:"allowance",i:"💰",l:"مصروف",feat:"allowance"},{k:"supplies",i:"🛒",l:"مستلزمات",feat:"supplies"},{k:"notes",i:"💬",l:"ملاحظات",feat:"teacherNotes"},{k:"chat",i:"🗨️",l:"شات",feat:"childChat"}];
+  const ALL_TABS=[{k:"schedule",i:"📅",l:"الجدول",feat:null},{k:"study",i:"📚",l:"مذاكرة",feat:"studySchedule"},{k:"homework",i:"✅",l:"واجبات",feat:null},{k:"exams",i:"📝",l:"اختبارات",feat:null},{k:"grades",i:"📊",l:"درجات",feat:null},{k:"goals",i:"🎯",l:"أهداف",feat:"goals"},{k:"tasks",i:"🧹",l:"مهام وروتين",feat:"chores"},{k:"points",i:"⭐",l:"نقاط",feat:"points"},{k:"rewards",i:"🎁",l:"جوائز",feat:"rewards"},{k:"allowance",i:"💰",l:"مصروف",feat:"allowance"},{k:"supplies",i:"🛒",l:"مستلزمات",feat:"supplies"},{k:"notes",i:"💬",l:"ملاحظات",feat:"teacherNotes"},{k:"chat",i:"🗨️",l:"شات",feat:"childChat"}];
   const TABS=ALL_TABS.filter(t=>!t.feat||feat(t.feat));
   // If current tab got disabled, fall back to schedule
   if(!TABS.find(t=>t.k===tab)){ST.tab="schedule";}
@@ -1978,48 +2016,59 @@ function screenChild(){
     }
   }
 
-  if(tab==="chores"){
+  if(tab==="tasks"){
     const chores=(data.chores&&data.chores[child.id])||[];
     const todayChores=chores.filter(c=>!c.date||c.date===todayStr||c.recurring);
-    // Header with total points available today
-    const pendingPts=todayChores.filter(c=>!c.done).reduce((s,c)=>s+Number(c.points||0),0);
-    body.appendChild(div({style:{background:"linear-gradient(135deg,"+child.color+","+child.color+"77)",borderRadius:"18px",padding:"16px",marginBottom:"14px",textAlign:"center",color:"#fff"}},div({style:{fontSize:"13px",opacity:".85"}},"مهام اليوم المتبقية"),div({style:{fontSize:"32px",fontWeight:"900"}},todayChores.filter(c=>!c.done).length+" مهمة"),pendingPts>0?div({style:{fontSize:"13px",opacity:".9",marginTop:"2px"}},"💰 "+pendingPts+" نقطة بانتظارك!"):null));
-    if(can("edit"))body.appendChild(btn({className:"btn-primary",style:{boxShadow:"0 4px 14px "+child.color+"40"},onclick:()=>setState({screen:"fChore",editItem:null,F:{name:"",points:5,emoji:"🧹",recurring:true}})},"+ إضافة مهمة منزلية"));
-    if(!todayChores.length)body.appendChild(div({style:{textAlign:"center",padding:"30px",color:"var(--text3)"}},div({style:{fontSize:"40px"}},"🧹"),div({style:{marginTop:"8px"}},"لا توجد مهام منزلية")));
-    todayChores.forEach(ch=>{
-      const card=div({className:"card",style:{display:"flex",alignItems:"center",gap:"12px",opacity:ch.done?.6:1}});
-      card.appendChild(btn({style:{width:"28px",height:"28px",borderRadius:"8px",border:"2px solid "+(ch.done?child.color:"var(--border)"),background:ch.done?child.color:"var(--bg2)",color:"#fff",fontWeight:"900",fontSize:"15px",cursor:"pointer",flexShrink:0},onclick:()=>toggleChore(child,ch)},ch.done?"✓":""));
-      card.appendChild(div({style:{fontSize:"26px",flexShrink:0}},ch.emoji||"🧹"));
-      card.appendChild(div({style:{flex:1,minWidth:0}},div({style:{fontWeight:"700",fontSize:"15px",textDecoration:ch.done?"line-through":"none"}},ch.name),div({style:{fontSize:"12px",color:child.color,fontWeight:"700",marginTop:"2px"}},(ch.points>0?ch.points+" ⭐":"")+(ch.recurring?"  🔁 يومياً":""))));
-      if(can("edit"))card.appendChild(btn({className:"btn-del",style:{padding:"6px 9px"},onclick:()=>askDel("حذف مهمة "+ch.name+"؟",()=>upd({chores:{...data.chores,[child.id]:chores.filter(x=>x.id!==ch.id)}},{type:"delete",title:"تم حذف مهمة منزلية",body:child.emoji+" "+child.name+" — "+ch.name,childId:child.id,screen:"child",tab:"chores"}))},"🗑"));
-      body.appendChild(card);
-    });
-  }
-
-  if(tab==="routine"){
     const routines=(data.routines&&data.routines[child.id])||[];
     const logKey=child.id+"_"+todayStr;
     const doneToday=(data.routineLog&&data.routineLog[logKey])||[];
-    const morning=routines.filter(r=>r.period==="morning");
-    const evening=routines.filter(r=>r.period==="evening");
-    const total=routines.length;const doneCount=routines.filter(r=>doneToday.includes(r.id)).length;
-    // Progress banner
-    body.appendChild(div({style:{background:"linear-gradient(135deg,"+child.color+","+child.color+"77)",borderRadius:"18px",padding:"16px",marginBottom:"14px",textAlign:"center",color:"#fff"}},div({style:{fontSize:"13px",opacity:".85"}},"روتين اليوم"),div({style:{fontSize:"32px",fontWeight:"900"}},doneCount+" / "+total),total>0&&doneCount===total?div({style:{fontSize:"14px",marginTop:"2px"}},"🎉 أكملت روتينك كاملاً!"):null));
-    if(can("edit"))body.appendChild(btn({className:"btn-primary",style:{boxShadow:"0 4px 14px "+child.color+"40"},onclick:()=>setState({screen:"fRoutine",editItem:null,F:{name:"",period:"morning",emoji:"☀️"}})},"+ إضافة عنصر روتين"));
-    [["morning","🌅 روتين الصباح",morning],["evening","🌙 روتين المساء",evening]].forEach(([per,title,items])=>{
+    // ── Combined summary banner ──
+    const choresLeft=todayChores.filter(c=>!c.done).length;
+    const routineDone=routines.filter(r=>doneToday.includes(r.id)).length;
+    body.appendChild(div({style:{background:"linear-gradient(135deg,"+child.color+","+child.color+"77)",borderRadius:"18px",padding:"16px",marginBottom:"14px",textAlign:"center",color:"#fff"}},
+      div({style:{display:"flex",justifyContent:"space-around"}},
+        div(null,div({style:{fontSize:"26px",fontWeight:"900"}},choresLeft+""),div({style:{fontSize:"12px",opacity:".85"}},"🧹 مهام متبقية")),
+        div({style:{width:"1px",background:"rgba(255,255,255,.3)"}}),
+        div(null,div({style:{fontSize:"26px",fontWeight:"900"}},routineDone+"/"+routines.length),div({style:{fontSize:"12px",opacity:".85"}},"☀️ روتين اليوم"))
+      )
+    ));
+
+    // ── المهام المنزلية ──
+    const choresHdr=div({style:{display:"flex",alignItems:"center",justifyContent:"space-between",margin:"4px 2px 8px"}});
+    choresHdr.appendChild(div({style:{fontSize:"15px",fontWeight:"800"}},"🧹 المهام المنزلية"));
+    if(can("edit"))choresHdr.appendChild(btn({style:{background:child.color,color:"#fff",border:"none",borderRadius:"10px",padding:"5px 12px",cursor:"pointer",fontSize:"13px",fontWeight:"700"},onclick:()=>setState({screen:"fChore",editItem:null,F:{name:"",points:5,emoji:"🧹",recurring:true}})},"+ مهمة"));
+    body.appendChild(choresHdr);
+    if(!todayChores.length)body.appendChild(div({style:{textAlign:"center",padding:"18px",color:"var(--text3)",fontSize:"13px"}},"لا توجد مهام منزلية بعد"));
+    todayChores.forEach(ch=>{
+      const card=div({className:"card",style:{display:"flex",alignItems:"center",gap:"12px",opacity:ch.done?.6:1}});
+      card.appendChild(btn({style:{width:"28px",height:"28px",borderRadius:"8px",border:"2px solid "+(ch.done?child.color:"var(--border)"),background:ch.done?child.color:"var(--bg2)",color:"#fff",fontWeight:"900",fontSize:"15px",cursor:"pointer",flexShrink:0},onclick:()=>toggleChore(child,ch)},ch.done?"✓":""));
+      card.appendChild(div({style:{fontSize:"24px",flexShrink:0}},ch.emoji||"🧹"));
+      card.appendChild(div({style:{flex:1,minWidth:0}},div({style:{fontWeight:"700",fontSize:"14px",textDecoration:ch.done?"line-through":"none"}},ch.name),div({style:{fontSize:"12px",color:child.color,fontWeight:"700",marginTop:"2px"}},(ch.points>0?ch.points+" ⭐":"")+(ch.recurring?"  🔁 يومياً":""))));
+      if(can("edit"))card.appendChild(btn({className:"btn-del",style:{padding:"6px 9px"},onclick:()=>askDel("حذف مهمة "+ch.name+"؟",()=>upd({chores:{...data.chores,[child.id]:chores.filter(x=>x.id!==ch.id)}},{type:"delete",title:"تم حذف مهمة منزلية",body:child.emoji+" "+child.name+" — "+ch.name,childId:child.id,screen:"child",tab:"tasks"}))},"🗑"));
+      body.appendChild(card);
+    });
+
+    // ── الروتين اليومي ──
+    const routHdr=div({style:{display:"flex",alignItems:"center",justifyContent:"space-between",margin:"16px 2px 8px"}});
+    routHdr.appendChild(div({style:{fontSize:"15px",fontWeight:"800"}},"☀️ الروتين اليومي"));
+    if(can("edit"))routHdr.appendChild(btn({style:{background:child.color,color:"#fff",border:"none",borderRadius:"10px",padding:"5px 12px",cursor:"pointer",fontSize:"13px",fontWeight:"700"},onclick:()=>setState({screen:"fRoutine",editItem:null,F:{name:"",period:"morning",emoji:"☀️"}})},"+ عنصر"));
+    body.appendChild(routHdr);
+    if(routines.length&&routines.filter(r=>doneToday.includes(r.id)).length===routines.length)body.appendChild(div({style:{textAlign:"center",fontSize:"13px",color:"#00B894",fontWeight:"700",marginBottom:"8px"}},"🎉 أكملت روتينك كاملاً اليوم!"));
+    [["morning","🌅 الصباح"],["evening","🌙 المساء"]].forEach(([per,title])=>{
+      const items=routines.filter(r=>r.period===per);
       if(!items.length)return;
-      body.appendChild(div({className:"sec-title"},title));
+      body.appendChild(div({style:{fontSize:"12px",fontWeight:"700",color:"var(--text3)",margin:"8px 4px 4px"}},title));
       items.forEach(r=>{
         const isDone=doneToday.includes(r.id);
         const card=div({className:"card",style:{display:"flex",alignItems:"center",gap:"12px",opacity:isDone?.55:1}});
         card.appendChild(btn({style:{width:"28px",height:"28px",borderRadius:"50%",border:"2px solid "+(isDone?child.color:"var(--border)"),background:isDone?child.color:"var(--bg2)",color:"#fff",fontWeight:"900",fontSize:"14px",cursor:"pointer",flexShrink:0},onclick:()=>toggleRoutine(child,r)},isDone?"✓":""));
-        card.appendChild(div({style:{fontSize:"24px",flexShrink:0}},r.emoji||"•"));
-        card.appendChild(div({style:{flex:1,fontWeight:"600",fontSize:"15px",textDecoration:isDone?"line-through":"none"}},r.name));
-        if(can("edit"))card.appendChild(btn({className:"btn-del",style:{padding:"6px 9px"},onclick:()=>askDel("حذف "+r.name+"؟",()=>upd({routines:{...data.routines,[child.id]:routines.filter(x=>x.id!==r.id)}},{type:"delete",title:"تم حذف عنصر روتين",body:child.emoji+" "+child.name+" — "+r.name,childId:child.id,screen:"child",tab:"routine"}))},"🗑"));
+        card.appendChild(div({style:{fontSize:"22px",flexShrink:0}},r.emoji||"•"));
+        card.appendChild(div({style:{flex:1,fontWeight:"600",fontSize:"14px",textDecoration:isDone?"line-through":"none"}},r.name));
+        if(can("edit"))card.appendChild(btn({className:"btn-del",style:{padding:"6px 9px"},onclick:()=>askDel("حذف "+r.name+"؟",()=>upd({routines:{...data.routines,[child.id]:routines.filter(x=>x.id!==r.id)}},{type:"delete",title:"تم حذف عنصر روتين",body:child.emoji+" "+child.name+" — "+r.name,childId:child.id,screen:"child",tab:"tasks"}))},"🗑"));
         body.appendChild(card);
       });
     });
-    if(!total)body.appendChild(div({style:{textAlign:"center",padding:"30px",color:"var(--text3)"}},div({style:{fontSize:"40px"}},"☀️"),div({style:{marginTop:"8px"}},"لا يوجد روتين بعد"),div({style:{fontSize:"12px",marginTop:"4px"}},"أضف عناصر صباحية ومسائية تتكرر يومياً")));
+    if(!routines.length)body.appendChild(div({style:{textAlign:"center",padding:"18px",color:"var(--text3)",fontSize:"13px"}},"لا يوجد روتين بعد — أضف عناصر صباحية ومسائية تتكرر يومياً"));
   }
 
   if(tab==="allowance"){
@@ -2332,8 +2381,7 @@ function screenSettings(){
       {k:"childChat",i:"🗨️",l:"شات الطفل"},
       {k:"studySchedule",i:"📚",l:"جدول المذاكرة"},
       {k:"points",i:"⭐",l:"النقاط"},
-      {k:"chores",i:"🧹",l:"المهام المنزلية"},
-      {k:"routine",i:"☀️",l:"الروتين اليومي"},
+      {k:"chores",i:"🧹",l:"المهام والروتين اليومي"},
       {k:"rewards",i:"🎁",l:"متجر الجوائز"},
       {k:"allowance",i:"💰",l:"المصروف"},
       {k:"goals",i:"🎯",l:"الأهداف"},
@@ -2504,7 +2552,7 @@ function screenSettings(){
     const cu=data.cleanup||{days:90,enabled:true};
     const cleanCard=div({className:"card"});
     cleanCard.appendChild(div({style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"10px"}},
-      div(null,div({style:{fontWeight:"700",fontSize:"15px"}},"🧹 تنظيف تلقائي"),div({style:{fontSize:"12px",color:"var(--text3)",marginTop:"2px"}},"حذف الرسائل والإشعارات القديمة")),
+      div(null,div({style:{fontWeight:"700",fontSize:"15px"}},"🧹 تنظيف تلقائي"),div({style:{fontSize:"12px",color:"var(--text3)",marginTop:"2px"}},"احذف ما تختاره من البيانات القديمة")),
       (function(){const on=cu.enabled!==false;const tg=btn({style:{width:"48px",height:"27px",borderRadius:"14px",background:on?"#00B894":"var(--border)",border:"none",cursor:"pointer",position:"relative",flexShrink:0},onclick:()=>upd({cleanup:{...cu,enabled:!on}})});tg.appendChild(span({style:{position:"absolute",top:"3px",left:on?"24px":"3px",width:"21px",height:"21px",borderRadius:"50%",background:"#fff",transition:"left .2s"}}));return tg;})()
     ));
     if(cu.enabled!==false){
@@ -2512,7 +2560,20 @@ function screenSettings(){
       const daysRow=div({className:"chips"});
       [[30,"شهر"],[60,"شهرين"],[90,"3 أشهر"],[180,"6 أشهر"],[365,"سنة"]].forEach(([d,l])=>daysRow.appendChild(chip(l,cu.days===d,"#00B894",()=>upd({cleanup:{...cu,days:d}}))));
       cleanCard.appendChild(daysRow);
-      cleanCard.appendChild(btn({className:"btn-sm",style:{marginTop:"8px"},onclick:()=>{runCleanup(true);}},"🧹 تنظيف الآن"));
+      // Per-category scope toggles
+      const sc=cleanScope(cu);
+      cleanCard.appendChild(div({style:{fontSize:"12px",color:"var(--text2)",margin:"14px 0 6px",fontWeight:"700"}},"ماذا يُنظَّف؟"));
+      const cats=[["chat","💬 الشات (العائلة والأطفال)"],["notifications","🔔 الإشعارات"],["activityLog","📜 سجل النشاط"],["homework","✅ الواجبات المكتملة"],["routineLog","☀️ سجل الروتين اليومي"]];
+      cats.forEach(([k,l])=>{
+        const on=sc[k]!==false;
+        const row=div({style:{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 2px"}});
+        row.appendChild(div({style:{fontSize:"13px",fontWeight:"600"}},l));
+        const tg=btn({style:{width:"44px",height:"25px",borderRadius:"13px",background:on?"#00B894":"var(--border)",border:"none",cursor:"pointer",position:"relative",flexShrink:0},onclick:()=>upd({cleanup:{...cu,scope:{...sc,[k]:!on}}})});
+        tg.appendChild(span({style:{position:"absolute",top:"3px",left:on?"22px":"3px",width:"19px",height:"19px",borderRadius:"50%",background:"#fff",transition:"left .2s"}}));
+        row.appendChild(tg);
+        cleanCard.appendChild(row);
+      });
+      cleanCard.appendChild(btn({className:"btn-sm",style:{marginTop:"10px"},onclick:()=>{runCleanup(true);}},"🧹 تنظيف الآن"));
     }
     body.appendChild(cleanCard);
   }
@@ -3646,4 +3707,3 @@ document.addEventListener("touchend",e=>{
 </script>
 </body>
 </html>
- عن
