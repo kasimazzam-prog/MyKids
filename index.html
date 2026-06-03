@@ -17,15 +17,21 @@
   --text:#2d3436;--text2:#636e72;--text3:#b2bec3;
   --border:#eef0f5;--card-shadow:0 2px 16px rgba(0,0,0,.06);
   --radius:16px;--radius-sm:10px;--radius-lg:24px;
+  --sp1:4px;--sp2:8px;--sp3:12px;--sp4:16px;--sp5:24px;
   --hdr-h:56px;--nav-h:58px;
   --safe-bottom:env(safe-area-inset-bottom,0px);
   --safe-top:env(safe-area-inset-top,0px);
 }
 [data-theme="dark"]{--chat-bg:#0b141a;
-  --bg:#0f0f1a;--bg2:#1a1a2e;--bg3:#16213e;
-  --text:#e8e8f0;--text2:#a8a8c0;--text3:#606080;
-  --border:#2a2a40;--card-shadow:0 2px 16px rgba(0,0,0,.3);
+  --bg:#12121f;--bg2:#1e1e34;--bg3:#272745;
+  --text:#f2f2f8;--text2:#b8b8d0;--text3:#8585a8;
+  --border:#34344f;--card-shadow:0 2px 18px rgba(0,0,0,.45);
 }
+/* Dark mode contrast refinements */
+[data-theme="dark"] .field-input,[data-theme="dark"] .field-select,[data-theme="dark"] .field-textarea{background:var(--bg3);border-color:#3d3d5c}
+[data-theme="dark"] .card{border-color:#2e2e48}
+[data-theme="dark"] .pill{filter:brightness(1.15)}
+[data-theme="dark"] .sec-title{color:var(--text2)}
 
 /* ── Reset ── */
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -86,9 +92,9 @@ input,select,textarea,button{font-family:'Segoe UI',Tahoma,Arial,'Apple Color Em
   padding:1px 5px;font-size:9px;font-weight:900;border:1.5px solid var(--bg2)}
 
 /* ── Cards ── */
-.card{background:var(--bg2);border-radius:var(--radius);padding:14px;
-  margin-bottom:10px;box-shadow:var(--card-shadow);border:1px solid var(--border)}
-.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.card{background:var(--bg2);border-radius:var(--radius);padding:var(--sp4);
+  margin-bottom:var(--sp3);box-shadow:var(--card-shadow);border:1px solid var(--border)}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:var(--sp3)}
 
 /* ── Buttons ── */
 .btn-primary{background:linear-gradient(135deg,var(--primary),var(--primary2));
@@ -229,8 +235,12 @@ input,select,textarea,button{font-family:'Segoe UI',Tahoma,Arial,'Apple Color Em
 .stat-lbl{font-size:10px;color:var(--text3);margin-top:3px}
 
 /* ── Section Title ── */
-.sec-title{font-size:11px;font-weight:800;color:var(--text3);
-  margin-bottom:8px;margin-top:6px;letter-spacing:1.5px;text-transform:uppercase}
+.sec-title{font-size:13px;font-weight:800;color:var(--text2);
+  margin:var(--sp5) var(--sp1) var(--sp3);letter-spacing:.3px;
+  display:flex;align-items:center;gap:8px;position:relative}
+.sec-title::before{content:"";width:4px;height:16px;border-radius:3px;
+  background:var(--primary);display:inline-block;flex-shrink:0}
+.sec-title:first-child{margin-top:var(--sp2)}
 
 /* ── Child Header ── */
 .child-hdr{display:flex;flex-direction:column;align-items:center;gap:4px;padding-top:calc(12px + var(--safe-top));padding-left:14px;padding-right:14px;padding-bottom:14px;flex-shrink:0}
@@ -2175,35 +2185,40 @@ function screenHome(){
     const hwDone=(homework[c.id]||[]).filter(h=>h.done).length;
     const hwTot=(homework[c.id]||[]).length;
     const needSup=(supplies[c.id]||[]).filter(s=>!s.done).length;
-    const card=div({style:{background:"var(--bg2)",borderRadius:"var(--radius-lg)",overflow:"hidden",boxShadow:"var(--card-shadow)",cursor:"pointer",border:"1px solid var(--border)"},onclick:()=>setState({child:c,tab:"schedule",screen:"child"})});
-    card.appendChild(div({style:{height:"5px",background:"linear-gradient(90deg,"+c.color+","+c.color+"55)"}}));
-    const inner=div({style:{padding:"14px 16px"}});
-    const topRow=div({style:{display:"flex",alignItems:"center",gap:"12px"}});
-    topRow.appendChild(c.photo?childAvatar(c,52,{borderRadius:"16px",boxShadow:"0 4px 14px "+c.color+"40"}):div({style:{width:"52px",height:"52px",borderRadius:"16px",background:"linear-gradient(135deg,"+c.color+","+c.color+"77)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"26px",flexShrink:0,boxShadow:"0 4px 14px "+c.color+"40"}},c.emoji));
-    const info=div({style:{flex:1,minWidth:0}},div({style:{fontSize:"17px",fontWeight:"900"}},c.name),div({style:{fontSize:"12px",color:"var(--text3)",marginTop:"1px"}},c.grade));
-    if(todaySubs.length)info.appendChild(div({style:{fontSize:"11px",color:"var(--text3)",marginTop:"3px",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}},"📅 "+todaySubs.join(" • ")));
-    if(todaySt.length)info.appendChild(div({style:{fontSize:"11px",color:c.color,marginTop:"2px",fontWeight:"600"}},"📚 "+todaySt.map(s=>s.subject).join(" • ")));
-    const right=div({style:{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:"4px",flexShrink:0}});
-    if(pending>0)right.appendChild(pill(pending+" 📚",c.color));
-    if(needSup>0)right.appendChild(pill("🛒 "+needSup,"#FF6584"));
-    right.appendChild(div({style:{width:"30px",height:"30px",borderRadius:"50%",background:c.color,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:"16px",fontWeight:"900",boxShadow:"0 3px 10px "+c.color+"50",marginTop:"4px"}},"←"));
-    topRow.append(info,right);
+    // Compact card: avatar + name + key badges in one row; progress bar thin at bottom
+    const card=div({style:{background:"var(--bg2)",borderRadius:"var(--radius)",overflow:"hidden",boxShadow:"var(--card-shadow)",cursor:"pointer",border:"1px solid var(--border)",borderRight:"4px solid "+c.color},onclick:()=>setState({child:c,tab:"schedule",screen:"child"})});
+    const inner=div({style:{padding:"var(--sp3) var(--sp4)"}});
+    const topRow=div({style:{display:"flex",alignItems:"center",gap:"var(--sp3)"}});
+    topRow.appendChild(c.photo?childAvatar(c,46,{borderRadius:"13px",boxShadow:"0 3px 10px "+c.color+"40"}):div({style:{width:"46px",height:"46px",borderRadius:"13px",background:"linear-gradient(135deg,"+c.color+","+c.color+"77)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"23px",flexShrink:0,boxShadow:"0 3px 10px "+c.color+"40"}},c.emoji));
+    const info=div({style:{flex:1,minWidth:0}});
+    const nameRow=div({style:{display:"flex",alignItems:"baseline",gap:"6px"}},div({style:{fontSize:"16px",fontWeight:"900"}},c.name),div({style:{fontSize:"11px",color:"var(--text3)"}},c.grade));
+    info.appendChild(nameRow);
+    // Inline mini-badges
+    const badges=div({style:{display:"flex",gap:"5px",marginTop:"4px",flexWrap:"wrap"}});
+    if(avg)badges.appendChild(pill(avg+"%",sc(avg)));
+    badges.appendChild(pill(pts+" ⭐",c.color));
+    badges.appendChild(pill(bal+" 💰","#00B894"));
+    if(pending>0)badges.appendChild(pill(pending+" 📚","#FA8231"));
+    if(needSup>0)badges.appendChild(pill(needSup+" 🛒","#FF6584"));
+    info.appendChild(badges);
+    topRow.appendChild(info);
+    topRow.appendChild(div({style:{width:"28px",height:"28px",borderRadius:"50%",background:c.color+"18",display:"flex",alignItems:"center",justifyContent:"center",color:c.color,fontSize:"15px",fontWeight:"900",flexShrink:0}},"←"));
     inner.appendChild(topRow);
-    const pbWrap=div({style:{marginTop:"10px"}});
-    pbWrap.appendChild(pbar(hwDone,hwTot||1,c.color,6));
-    const pillRow=div({style:{display:"flex",gap:"5px",marginTop:"8px",flexWrap:"wrap"}});
-    if(avg)pillRow.appendChild(pill(avg+"% 📊",sc(avg)));
-    pillRow.appendChild(pill(pts+" ⭐",c.color));
-    pillRow.appendChild(pill(bal+" ج.م 💰","#00B894"));
-    pbWrap.appendChild(pillRow);
-    inner.appendChild(pbWrap);
+    // Today's schedule (compact, only if exists)
+    if(todaySubs.length||todaySt.length){
+      const todayLine=[];
+      if(todaySubs.length)todayLine.push("📅 "+todaySubs.slice(0,3).join(" • "));
+      if(todaySt.length)todayLine.push("📚 "+todaySt.map(s=>s.subject).slice(0,2).join(" • "));
+      inner.appendChild(div({style:{fontSize:"11px",color:"var(--text3)",marginTop:"8px",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}},todayLine.join("   ")));
+    }
+    // Thin progress bar
+    if(hwTot>0){const pbWrap=div({style:{marginTop:"8px"}});pbWrap.appendChild(pbar(hwDone,hwTot,c.color,4));inner.appendChild(pbWrap);}
     card.appendChild(inner);
-    
-      return card;
+    return card;
   }
 
-  body.appendChild(div({className:"sec-title"},"أطفالي 👨‍👧‍👦"));
-  const grid=div({className:"card-grid",style:{marginBottom:"16px"}});
+  body.appendChild(div({className:"sec-title"},"👨‍👧‍👦 أطفالي"));
+  const grid=div({className:"card-grid",style:{marginBottom:"var(--sp4)"}});
   children.forEach(c=>{ if(!canViewChild(c.id))return; grid.appendChild(makeMemberCard(c)); });
   body.appendChild(grid);
 
@@ -2211,8 +2226,8 @@ function screenHome(){
   const parents=data.parents||[];
   const canSeeParents=S().currentUser?.role==="admin"||S().currentUser?.role==="parent";
   if(parents.length && feat("parentsSection") && canSeeParents){
-    body.appendChild(div({className:"sec-title"},"الوالدان 👨‍👩‍👧"));
-    const pgrid=div({className:"card-grid",style:{marginBottom:"16px"}});
+    body.appendChild(div({className:"sec-title"},"👨‍👩‍👧 الوالدان"));
+    const pgrid=div({className:"card-grid",style:{marginBottom:"var(--sp4)"}});
     parents.forEach(p=>{ pgrid.appendChild(makeMemberCard(p)); });
     body.appendChild(pgrid);
   }
