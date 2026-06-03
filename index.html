@@ -44,8 +44,8 @@ input,select,textarea,button{font-family:'Segoe UI',Tahoma,Arial,'Apple Color Em
   background:var(--bg2);border-left:1px solid var(--border);
   box-shadow:-2px 0 12px rgba(0,0,0,.08)}
 .main{flex:1;display:flex;flex-direction:column;height:100%;overflow:hidden;min-width:0}
-.screen{flex:1;display:flex;flex-direction:column;overflow:hidden;height:100%}
-.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 14px 16px}
+.screen{flex:1 1 0%;display:flex;flex-direction:column;overflow:hidden;min-height:0}
+.scroll{flex:1 1 0%;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 14px 16px}
 
 /* ── Desktop ── */
 @media(min-width:900px){
@@ -77,7 +77,7 @@ input,select,textarea,button{font-family:'Segoe UI',Tahoma,Arial,'Apple Color Em
 .desk-bar .actions{display:flex;gap:8px;align-items:center}
 
 /* ── Bottom Nav ── */
-.bottom-nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--bg2);border-top:1px solid var(--border);padding:5px 0 var(--safe-bottom);z-index:100;box-shadow:0 -4px 20px rgba(0,0,0,.08)}
+.bottom-nav{flex-shrink:0;display:flex;background:var(--bg2);border-top:1px solid var(--border);padding:5px 0 var(--safe-bottom);z-index:100;box-shadow:0 -4px 20px rgba(0,0,0,.08)}
 .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;background:none;border:none;cursor:pointer;padding:5px 1px;color:var(--text3);font-size:8.5px;font-weight:600;position:relative;transition:color .2s;min-width:0}
 .nav-item.active{color:var(--primary)}
 .nav-item .nav-icon{font-size:18px;line-height:1}
@@ -3275,7 +3275,7 @@ function _render(){
     app.appendChild(shell);
   } else {
     const noNav = screen==="login" || screen==="cropPhoto";
-    const wrap=div({style:{display:"flex",flexDirection:"column",height:"100%",height:"100dvh",overflow:"hidden",position:"relative",paddingBottom:noNav?"0":"calc(var(--nav-h) + var(--safe-bottom))"}});
+    const wrap=div({style:{display:"flex",flexDirection:"column",height:"100%",height:"100dvh",overflow:"hidden",position:"relative",paddingBottom:"0"}});
     wrap.appendChild(screenEl);
     if(!noNav) wrap.appendChild(buildBottomNav(screen,data));
     app.appendChild(wrap);
