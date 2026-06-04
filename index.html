@@ -810,6 +810,16 @@ function runCleanup(manual){
       else{rlChanged=true;removed++;}
     });
     if(rlChanged)patch.routineLog=nrl;
+    // Also clean old finalized routine records
+    if(d.routineFinalized){
+      const nrf={};let rfChanged=false;
+      Object.keys(d.routineFinalized).forEach(k=>{
+        const dp=k.split("_")[1];
+        if(!dp||dp>=cutoffStr)nrf[k]=d.routineFinalized[k];
+        else{rfChanged=true;}
+      });
+      if(rfChanged)patch.routineFinalized=nrf;
+    }
   }
   // Completed homework
   if(sc.homework && d.homework){
@@ -1452,10 +1462,13 @@ function finalizeRoutine(child){
   const alreadyFinalized=(data.routineFinalized&&data.routineFinalized[finKey]);
   const doneCount=routines.filter(r=>doneArr.includes(r.id)).length;
   const missed=total-doneCount;
-  // Score: +1 per completed, -0.5 per missed, floor at 0, rounded to nearest integer
-  let score=doneCount - missed*0.5;
-  if(score<0)score=0;
-  score=Math.round(score);
+  // Score: +points per completed item, -half its points per missed item; floor 0, rounded
+  let raw=0;
+  routines.forEach(r=>{
+    const pts=Number(r.points||1);
+    if(doneArr.includes(r.id))raw+=pts; else raw-=pts*0.5;
+  });
+  let score=raw<0?0:Math.round(raw);
   const p=data.points[child.id]||{total:0,history:[]};
   // If re-finalizing same day, reverse previous award first
   let baseTotal=p.total;let hist=p.history;
@@ -1815,7 +1828,7 @@ function screenFChore(){
 }
 function submitRoutine(){
   const {F,child,data}=S();if(!F.name)return;
-  const it={name:F.name,period:F.period||"morning",emoji:F.emoji||"•"};
+  const it={name:F.name,period:F.period||"morning",emoji:F.emoji||"•",points:Number(F.points||1)};
   const list=(data.routines&&data.routines[child.id])||[];
   const isEdit=!!S().editItem;
   const u=isEdit?list.map(r=>r.id===S().editItem.id?{...r,...it}:r):[...list,{id:Date.now(),...it}];
@@ -1825,10 +1838,11 @@ function submitRoutine(){
 function screenFRoutine(){
   const {F,child}=S();const c=child?.color||"#6C63FF";
   const REMOJIS=["☀️","🦷","🎒","📖","🛏️","🍳","👕","🚿","🧴","🌙","🥛","🙏","🏃","🧹"];
-  return buildForm("عنصر روتين جديد ☀️",c,()=>setState({screen:"child",tab:"tasks"}),submitRoutine,[
+  return buildForm(S().editItem?"تعديل عنصر روتين ☀️":"عنصر روتين جديد ☀️",c,()=>setState({screen:"child",tab:"tasks"}),submitRoutine,[
     fieldGroup("العنصر",inp({className:"field-input",type:"text",placeholder:"مثال: تنظيف الأسنان...",value:F.name||"",oninput:e=>sf("name",e.target.value)})),
     fieldGroup("الأيقونة",div({className:"chips"},...REMOJIS.map(em=>chip(em,F.emoji===em,c,()=>sfr("emoji",em))))),
     fieldGroup("الوقت",div({className:"chips"},chip("🌅 صباحاً",F.period==="morning"||!F.period,c,()=>sfr("period","morning")),chip("🌙 مساءً",F.period==="evening",c,()=>sfr("period","evening")))),
+    fieldGroup("⭐ النقاط لهذا العنصر",div({className:"chips"},...[1,2,3,5,10].map(n=>chip(n+" ⭐",Number(F.points||1)===n,c,()=>sfr("points",n))))),
   ]);
 }
 function submitReward(){
@@ -2044,7 +2058,7 @@ function screenChild(){
     const bySubj=SUBJ.map(s=>{const gs=cGr.filter(g=>g.subject===s);const avg=gs.length?Math.round(gs.reduce((a,g)=>a+g.score/g.max*100,0)/gs.length):null;return{s,avg};}).filter(x=>x.avg!==null);
     if(bySubj.length>0){const avgCard=div({className:"card"});avgCard.appendChild(div({style:{fontWeight:"700",fontSize:"13px",color:"var(--text2)",marginBottom:"10px"}},"متوسط الدرجات"));bySubj.forEach(({s,avg})=>{const row=div({style:{marginBottom:"8px"}});row.appendChild(div({style:{display:"flex",justifyContent:"space-between",fontSize:"13px",marginBottom:"4px"}},span(null,s),span({style:{color:sc(avg),fontWeight:"700"}},avg+"%")));row.appendChild(pbar(avg,100,sc(avg),8));avgCard.appendChild(row);});body.appendChild(avgCard);}
     if(!cGr.length)body.appendChild(div({style:{textAlign:"center",padding:"40px",color:"var(--text3)"}},div({style:{fontSize:"40px"}},"📊"),div({style:{marginTop:"8px"}},"لا توجد درجات")));
-    [...cGr].sort((a,b)=>new Date(b.date)-new Date(a.date)).forEach(gr=>{const pct=Math.round(gr.score/gr.max*100);body.appendChild(div({className:"card",style:{display:"flex",alignItems:"center",gap:"12px"}},div({style:{width:"50px",height:"50px",borderRadius:"14px",background:sc(pct)+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}},div({style:{fontSize:"16px",fontWeight:"900",color:sc(pct)}},pct+"%")),div({style:{flex:1}},div({style:{fontWeight:"800",fontSize:"15px"}},gr.subject),div({style:{fontSize:"12px",color:"var(--text2)"}},gr.type+" — "+gr.score+"/"+gr.max),div({style:{fontSize:"11px",color:"var(--text3)"}},fmt(gr.date))),can("edit")?editDel(()=>setState({screen:"fGrade",editItem:gr,F:{subject:gr.subject,score:gr.score,max:gr.max,date:gr.date,type:gr.type}}),()=>upd({grades:{...data.grades,[child.id]:cGr.filter(g=>g.id!==gr.id)}},{type:"delete",title:"تم حذف درجة",body:child.emoji+" "+child.name+" — "+gr.subject,childId:child.id,screen:"child",tab:"academic"}),"حذف درجة "+gr.subject+"؟"):null));});
+    [...cGr].sort((a,b)=>new Date(b.date)-new Date(a.date)).forEach(gr=>{const pct=Math.round(gr.score/gr.max*100);body.appendChild(div({className:"card",style:{display:"flex",alignItems:"center",gap:"12px"}},div({style:{width:"50px",height:"50px",borderRadius:"14px",background:sc(pct)+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}},div({style:{fontSize:"16px",fontWeight:"900",color:sc(pct)}},pct+"%")),div({style:{flex:1}},div({style:{fontWeight:"800",fontSize:"15px"}},gr.subject),div({style:{fontSize:"12px",color:"var(--text2)"}},gr.type+" — "+gr.score+"/"+gr.max),div({style:{fontSize:"11px",color:"var(--text3)"}},fmt(gr.date))),gr.examId?pill("من اختبار",child.color):(can("edit")?editDel(()=>setState({screen:"fGrade",editItem:gr,F:{subject:gr.subject,score:gr.score,max:gr.max,date:gr.date,type:gr.type}}),()=>upd({grades:{...data.grades,[child.id]:cGr.filter(g=>g.id!==gr.id)}},{type:"delete",title:"تم حذف درجة",body:child.emoji+" "+child.name+" — "+gr.subject,childId:child.id,screen:"child",tab:"academic"}),"حذف درجة "+gr.subject+"؟"):null)));});
   }
 
   if(tab==="goals"){
@@ -2081,7 +2095,7 @@ function screenChild(){
     cPt.history.forEach(h=>body.appendChild(div({className:"card",style:{display:"flex",alignItems:"center",gap:"12px"}},div({style:{width:"44px",height:"44px",borderRadius:"12px",background:"linear-gradient(135deg,"+child.color+","+child.color+"77)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:"900",fontSize:"15px",flexShrink:0}},"+"+h.amount),div({style:{flex:1}},div({style:{fontSize:"14px",fontWeight:"600"}},h.reason),div({style:{fontSize:"12px",color:"var(--text3)"}},fmt(h.date))))));
   }
 
-  if(tab==="motivation"){
+  if(tab==="motivation"&&feat("rewards")){
     body.appendChild(div({className:"sec-title"},"🎁 متجر الجوائز"));
     const rewards=data.rewards||[];
     const redemptions=(data.rewardRedemptions||[]).filter(r=>r.childId===child.id);
@@ -2167,13 +2181,14 @@ function screenChild(){
     // ── الروتين اليومي ──
     const routHdr=div({style:{display:"flex",alignItems:"center",justifyContent:"space-between",margin:"16px 2px 8px"}});
     routHdr.appendChild(div({style:{fontSize:"15px",fontWeight:"800"}},"☀️ الروتين اليومي"));
-    if(can("edit"))routHdr.appendChild(btn({style:{background:child.color,color:"#fff",border:"none",borderRadius:"10px",padding:"5px 12px",cursor:"pointer",fontSize:"13px",fontWeight:"700"},onclick:()=>setState({screen:"fRoutine",editItem:null,F:{name:"",period:"morning",emoji:"☀️"}})},"+ عنصر"));
+    if(can("edit"))routHdr.appendChild(btn({style:{background:child.color,color:"#fff",border:"none",borderRadius:"10px",padding:"5px 12px",cursor:"pointer",fontSize:"13px",fontWeight:"700"},onclick:()=>setState({screen:"fRoutine",editItem:null,F:{name:"",period:"morning",emoji:"☀️",points:1}})},"+ عنصر"));
     body.appendChild(routHdr);
     // Live score preview + finalize button
     if(routines.length){
       const dCount=routines.filter(r=>doneToday.includes(r.id)).length;
       const missed=routines.length-dCount;
-      let liveScore=dCount-missed*0.5;if(liveScore<0)liveScore=0;liveScore=Math.round(liveScore);
+      let liveRaw=0;routines.forEach(r=>{const pts=Number(r.points||1);if(doneToday.includes(r.id))liveRaw+=pts;else liveRaw-=pts*0.5;});
+      let liveScore=liveRaw<0?0:Math.round(liveRaw);
       const finKey=child.id+"_"+todayStr+"_fin";
       const fin=(data.routineFinalized||{})[finKey];
       const scoreCard=div({style:{background:child.color+"12",borderRadius:"12px",padding:"10px 14px",marginBottom:"10px",display:"flex",alignItems:"center",justifyContent:"space-between"}});
@@ -2195,8 +2210,8 @@ function screenChild(){
         const card=div({className:"card",style:{display:"flex",alignItems:"center",gap:"12px",opacity:isDone?.55:1}});
         card.appendChild(btn({style:{width:"28px",height:"28px",borderRadius:"50%",border:"2px solid "+(isDone?child.color:"var(--border)"),background:isDone?child.color:"var(--bg2)",color:"#fff",fontWeight:"900",fontSize:"14px",cursor:"pointer",flexShrink:0},onclick:()=>toggleRoutine(child,r)},isDone?"✓":""));
         card.appendChild(div({style:{fontSize:"22px",flexShrink:0}},r.emoji||"•"));
-        card.appendChild(div({style:{flex:1,fontWeight:"600",fontSize:"14px",textDecoration:isDone?"line-through":"none"}},r.name));
-        if(can("edit"))card.appendChild(btn({className:"btn-del",style:{padding:"6px 9px"},onclick:()=>askDel("حذف "+r.name+"؟",()=>upd({routines:{...data.routines,[child.id]:routines.filter(x=>x.id!==r.id)}},{type:"delete",title:"تم حذف عنصر روتين",body:child.emoji+" "+child.name+" — "+r.name,childId:child.id,screen:"child",tab:"tasks"}))},"🗑"));
+        card.appendChild(div({style:{flex:1,minWidth:0}},div({style:{fontWeight:"600",fontSize:"14px",textDecoration:isDone?"line-through":"none"}},r.name),div({style:{fontSize:"11px",color:child.color,fontWeight:"700",marginTop:"2px"}},(Number(r.points||1))+" ⭐")));
+        if(can("edit"))card.appendChild(editDel(()=>setState({screen:"fRoutine",editItem:r,F:{name:r.name,period:r.period||"morning",emoji:r.emoji||"•",points:Number(r.points||1)}}),()=>upd({routines:{...data.routines,[child.id]:routines.filter(x=>x.id!==r.id)}},{type:"delete",title:"تم حذف عنصر روتين",body:child.emoji+" "+child.name+" — "+r.name,childId:child.id,screen:"child",tab:"tasks"}),"حذف "+r.name+"؟"));
         body.appendChild(card);
       });
     });
@@ -2322,7 +2337,6 @@ function screenHome(){
     badges.appendChild(pill(pts+" ⭐",c.color));
     badges.appendChild(pill(bal+" 💰","#00B894"));
     if(pending>0)badges.appendChild(pill(pending+" 📚","#FA8231"));
-    if(needSup>0)badges.appendChild(pill(needSup+" 🛒","#FF6584"));
     info.appendChild(badges);
     topRow.appendChild(info);
     topRow.appendChild(div({style:{width:"28px",height:"28px",borderRadius:"50%",background:c.color+"18",display:"flex",alignItems:"center",justifyContent:"center",color:c.color,fontSize:"15px",fontWeight:"900",flexShrink:0}},"←"));
@@ -2534,7 +2548,8 @@ function screenSettings(){
       {k:"reminders",i:"⏰",l:"التذكيرات"},
       {sec:"تبويبات صفحة الطفل"},
       {k:"studySchedule",i:"📚",l:"المذاكرة"},
-      {k:"points",i:"⭐",l:"النقاط والجوائز"},
+      {k:"points",i:"⭐",l:"النقاط"},
+      {k:"rewards",i:"🎁",l:"متجر الجوائز"},
       {k:"chores",i:"🧹",l:"المهام والروتين اليومي"},
       {k:"allowance",i:"💰",l:"المصروف"},
       {k:"goals",i:"🎯",l:"الأهداف"},
