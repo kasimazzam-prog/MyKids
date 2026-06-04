@@ -241,6 +241,8 @@ input,select,textarea,button{font-family:'Segoe UI',Tahoma,Arial,'Apple Color Em
 .sec-title::before{content:"";width:4px;height:16px;border-radius:3px;
   background:var(--primary);display:inline-block;flex-shrink:0}
 .sec-title:first-child{margin-top:var(--sp2)}
+.group-hdr{font-size:16px;font-weight:900;color:var(--text);margin:var(--sp5) 0 var(--sp2);padding-bottom:6px;border-bottom:2px solid var(--border);display:flex;align-items:center;gap:8px}
+.group-hdr:first-child{margin-top:0}
 
 /* ── Child Header ── */
 .child-hdr{display:flex;flex-direction:column;align-items:center;gap:4px;padding-top:calc(12px + var(--safe-top));padding-left:14px;padding-right:14px;padding-bottom:14px;flex-shrink:0}
@@ -1467,7 +1469,7 @@ function submitExam(){
   const isEdit=!!S().editItem;
   const l=data.exams[child.id]||[];
   const u=isEdit?l.map(e=>e.id===S().editItem.id?{...e,...F}:e):[...l,{id:Date.now(),...F}];
-  upd({exams:{...data.exams,[child.id]:u}},{type:isEdit?"edit":"add",title:isEdit?"تم تعديل اختبار":"اختبار جديد",body:child.emoji+" "+child.name+" — "+F.subject+" "+F.date,childId:child.id,screen:"child",tab:"exams"});
+  upd({exams:{...data.exams,[child.id]:u}},{type:isEdit?"edit":"add",title:isEdit?"تم تعديل اختبار":"اختبار جديد",body:child.emoji+" "+child.name+" — "+F.subject+" "+F.date,childId:child.id,screen:"child",tab:"academics"});
   back();
 }
 function submitGrade(){
@@ -1475,7 +1477,7 @@ function submitGrade(){
   const it={...F,score:Number(F.score),max:Number(F.max||100)};
   const l=data.grades[child.id]||[];
   const u=S().editItem?l.map(g=>g.id===S().editItem.id?{...g,...it}:g):[...l,{id:Date.now(),...it}];
-  upd({grades:{...data.grades,[child.id]:u}},{type:S().editItem?"edit":"add",title:"درجة — "+it.subject,body:child.name+": "+it.score+"/"+it.max,childId:child.id,screen:"child",tab:"grades"});
+  upd({grades:{...data.grades,[child.id]:u}},{type:S().editItem?"edit":"add",title:"درجة — "+it.subject,body:child.name+": "+it.score+"/"+it.max,childId:child.id,screen:"child",tab:"academics"});
   back();
 }
 function submitNote(){
@@ -1519,7 +1521,7 @@ function submitPoints(){
   const {F,child,data}=S();if(!F.reason||!F.amount)return;
   if(!can("edit")){showToast("النقاط يمنحها الوالدان فقط","error");return;}
   const p=data.points[child.id]||{total:0,history:[]};
-  upd({points:{...data.points,[child.id]:{total:p.total+Number(F.amount),history:[{id:Date.now(),date:todayStr,reason:F.reason,amount:Number(F.amount)},...p.history]}}},{type:"add",title:"نقاط ⭐ "+child.name,body:F.reason+" +"+F.amount,childId:child.id,screen:"child",tab:"points"});
+  upd({points:{...data.points,[child.id]:{total:p.total+Number(F.amount),history:[{id:Date.now(),date:todayStr,reason:F.reason,amount:Number(F.amount)},...p.history]}}},{type:"add",title:"نقاط ⭐ "+child.name,body:F.reason+" +"+F.amount,childId:child.id,screen:"child",tab:"motivation"});
   back();
 }
 function submitEvent(){
@@ -1771,13 +1773,13 @@ function submitReward(){
   const rewards=data.rewards||[];
   const isEdit=!!S().editItem;
   const u=isEdit?rewards.map(r=>r.id===S().editItem.id?{...r,...it}:r):[...rewards,{id:Date.now(),...it}];
-  upd({rewards:u},{type:isEdit?"edit":"add",title:isEdit?"تم تعديل جائزة":"جائزة جديدة",body:it.emoji+" "+it.name+" ("+it.cost+" ⭐)",screen:"child",tab:"rewards"});
-  setState({screen:"child",tab:"rewards",editItem:null});
+  upd({rewards:u},{type:isEdit?"edit":"add",title:isEdit?"تم تعديل جائزة":"جائزة جديدة",body:it.emoji+" "+it.name+" ("+it.cost+" ⭐)",screen:"child",tab:"motivation"});
+  setState({screen:"child",tab:"motivation",editItem:null});
 }
 function screenFReward(){
   const {F,child}=S();const c=child?.color||"#6C63FF";
   const REMOJIS=["🎁","🎮","🍫","🏞️","🍕","🎬","⚽","🧸","📱","🚲","🎨","🎢","🍦","💰","⏰","📚"];
-  return buildForm(S().editItem?"تعديل جائزة":"جائزة جديدة 🎁",c,()=>setState({screen:"child",tab:"rewards"}),submitReward,[
+  return buildForm(S().editItem?"تعديل جائزة":"جائزة جديدة 🎁",c,()=>setState({screen:"child",tab:"motivation"}),submitReward,[
     fieldGroup("اسم الجائزة",inp({className:"field-input",type:"text",placeholder:"مثال: ساعة لعب...",value:F.name||"",oninput:e=>sf("name",e.target.value)})),
     fieldGroup("التكلفة (نقاط)",div({className:"chips"},...[20,30,50,75,100,150,200].map(n=>chip(n+" ⭐",Number(F.cost)===n,c,()=>sfr("cost",n))))),
     fieldGroup("الأيقونة",div({className:"chips"},...REMOJIS.map(em=>chip(em,F.emoji===em,c,()=>sfr("emoji",em))))),
@@ -1850,7 +1852,7 @@ function screenChild(){
   const cGoals=goals[child.id]||[];
   const cSup=supplies[child.id]||[];
   const msgs=(data.chatMessages||[]).filter(m=>m.childId===child.id||!m.childId);
-  const ALL_TABS=[{k:"schedule",i:"📅",l:"الجدول",feat:null},{k:"study",i:"📚",l:"مذاكرة",feat:"studySchedule"},{k:"homework",i:"✅",l:"واجبات",feat:null},{k:"exams",i:"📝",l:"اختبارات",feat:null},{k:"grades",i:"📊",l:"درجات",feat:null},{k:"goals",i:"🎯",l:"أهداف",feat:"goals"},{k:"tasks",i:"🧹",l:"مهام وروتين",feat:"chores"},{k:"points",i:"⭐",l:"نقاط",feat:"points"},{k:"rewards",i:"🎁",l:"جوائز",feat:"rewards"},{k:"allowance",i:"💰",l:"مصروف",feat:"allowance"},{k:"supplies",i:"🛒",l:"مستلزمات",feat:"supplies"},{k:"notes",i:"💬",l:"ملاحظات",feat:"teacherNotes"},{k:"chat",i:"🗨️",l:"شات",feat:"childChat"}];
+  const ALL_TABS=[{k:"schedule",i:"📅",l:"الجدول",feat:null},{k:"study",i:"📚",l:"مذاكرة",feat:"studySchedule"},{k:"homework",i:"✅",l:"واجبات",feat:null},{k:"academics",i:"📊",l:"التقييم",feat:null},{k:"goals",i:"🎯",l:"أهداف",feat:"goals"},{k:"tasks",i:"🧹",l:"مهام وروتين",feat:"chores"},{k:"motivation",i:"⭐",l:"نقاط وجوائز",feat:"points"},{k:"allowance",i:"💰",l:"مصروف",feat:"allowance"}];
   const TABS=ALL_TABS.filter(t=>!t.feat||feat(t.feat));
   // If current tab got disabled, fall back to schedule
   if(!TABS.find(t=>t.k===tab)){ST.tab="schedule";}
@@ -1943,13 +1945,15 @@ function screenChild(){
     });
   }
 
-  if(tab==="exams"){
+  if(tab==="academics"){
+    body.appendChild(div({className:"sec-title"},"📝 الاختبارات"));
     if(can("edit"))body.appendChild(btn({className:"btn-primary",style:{boxShadow:"0 4px 14px "+child.color+"40"},onclick:()=>setState({screen:"fExam",editItem:null,F:{subject:SUBJ[0],date:"",notes:""}})},"+ إضافة اختبار"));
     if(!cEx.length)body.appendChild(div({style:{textAlign:"center",padding:"40px",color:"var(--text3)"}},div({style:{fontSize:"40px"}},"📭"),div({style:{marginTop:"8px"}},"لا توجد اختبارات")));
-    cEx.forEach(ex=>body.appendChild(div({className:"card",style:{borderRight:"4px solid "+child.color}},div({style:{display:"flex",justifyContent:"space-between",alignItems:"center"}},div(null,div({style:{fontWeight:"800",fontSize:"16px"}},ex.subject),ex.notes?div({style:{fontSize:"13px",color:"var(--text2)",marginTop:"2px"}},ex.notes):null,div({style:{fontSize:"12px",color:"var(--text3)",marginTop:"4px"}},"📅 "+new Date(ex.date).toLocaleDateString("ar",{weekday:"long",month:"long",day:"numeric"}))),div({style:{display:"flex",flexDirection:"column",gap:"6px",alignItems:"flex-end"}},pill(getDU(ex.date),child.color),can("edit")?editDel(()=>setState({screen:"fExam",editItem:ex,F:{subject:ex.subject,date:ex.date,notes:ex.notes||""}}),()=>{upd({exams:{...data.exams,[child.id]:cEx.filter(e=>e.id!==ex.id)}},{type:"delete",title:"تم حذف اختبار",body:child.emoji+" "+child.name+" — "+ex.subject,childId:child.id,screen:"child",tab:"exams"});},"حذف اختبار "+ex.subject+"؟"):null)))));
+    cEx.forEach(ex=>body.appendChild(div({className:"card",style:{borderRight:"4px solid "+child.color}},div({style:{display:"flex",justifyContent:"space-between",alignItems:"center"}},div(null,div({style:{fontWeight:"800",fontSize:"16px"}},ex.subject),ex.notes?div({style:{fontSize:"13px",color:"var(--text2)",marginTop:"2px"}},ex.notes):null,div({style:{fontSize:"12px",color:"var(--text3)",marginTop:"4px"}},"📅 "+new Date(ex.date).toLocaleDateString("ar",{weekday:"long",month:"long",day:"numeric"}))),div({style:{display:"flex",flexDirection:"column",gap:"6px",alignItems:"flex-end"}},pill(getDU(ex.date),child.color),can("edit")?editDel(()=>setState({screen:"fExam",editItem:ex,F:{subject:ex.subject,date:ex.date,notes:ex.notes||""}}),()=>{upd({exams:{...data.exams,[child.id]:cEx.filter(e=>e.id!==ex.id)}},{type:"delete",title:"تم حذف اختبار",body:child.emoji+" "+child.name+" — "+ex.subject,childId:child.id,screen:"child",tab:"academics"});},"حذف اختبار "+ex.subject+"؟"):null)))));
   }
 
-  if(tab==="grades"){
+  if(tab==="academics"){
+    body.appendChild(div({className:"sec-title"},"📊 الدرجات"));
     const gradesTopRow=div({style:{display:"flex",gap:"8px",marginBottom:"12px"}});
     if(can("edit"))gradesTopRow.appendChild(btn({className:"btn-primary",style:{flex:1,boxShadow:"0 4px 14px "+child.color+"40"},onclick:()=>setState({screen:"fGrade",editItem:null,F:{subject:SUBJ[0],score:"",max:100,date:"",type:"اختبار"}})},"+ إضافة درجة"));
     if(feat("gradeTrend")&&cGr.length>=2)gradesTopRow.appendChild(btn({className:"btn-sm",onclick:()=>setState({screen:"gradeTrend"})},"📈 التطور"));
@@ -1957,7 +1961,7 @@ function screenChild(){
     const bySubj=SUBJ.map(s=>{const gs=cGr.filter(g=>g.subject===s);const avg=gs.length?Math.round(gs.reduce((a,g)=>a+g.score/g.max*100,0)/gs.length):null;return{s,avg};}).filter(x=>x.avg!==null);
     if(bySubj.length>0){const avgCard=div({className:"card"});avgCard.appendChild(div({style:{fontWeight:"700",fontSize:"13px",color:"var(--text2)",marginBottom:"10px"}},"متوسط الدرجات"));bySubj.forEach(({s,avg})=>{const row=div({style:{marginBottom:"8px"}});row.appendChild(div({style:{display:"flex",justifyContent:"space-between",fontSize:"13px",marginBottom:"4px"}},span(null,s),span({style:{color:sc(avg),fontWeight:"700"}},avg+"%")));row.appendChild(pbar(avg,100,sc(avg),8));avgCard.appendChild(row);});body.appendChild(avgCard);}
     if(!cGr.length)body.appendChild(div({style:{textAlign:"center",padding:"40px",color:"var(--text3)"}},div({style:{fontSize:"40px"}},"📊"),div({style:{marginTop:"8px"}},"لا توجد درجات")));
-    [...cGr].sort((a,b)=>new Date(b.date)-new Date(a.date)).forEach(gr=>{const pct=Math.round(gr.score/gr.max*100);body.appendChild(div({className:"card",style:{display:"flex",alignItems:"center",gap:"12px"}},div({style:{width:"50px",height:"50px",borderRadius:"14px",background:sc(pct)+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}},div({style:{fontSize:"16px",fontWeight:"900",color:sc(pct)}},pct+"%")),div({style:{flex:1}},div({style:{fontWeight:"800",fontSize:"15px"}},gr.subject),div({style:{fontSize:"12px",color:"var(--text2)"}},gr.type+" — "+gr.score+"/"+gr.max),div({style:{fontSize:"11px",color:"var(--text3)"}},fmt(gr.date))),can("edit")?editDel(()=>setState({screen:"fGrade",editItem:gr,F:{subject:gr.subject,score:gr.score,max:gr.max,date:gr.date,type:gr.type}}),()=>upd({grades:{...data.grades,[child.id]:cGr.filter(g=>g.id!==gr.id)}},{type:"delete",title:"تم حذف درجة",body:child.emoji+" "+child.name+" — "+gr.subject,childId:child.id,screen:"child",tab:"grades"}),"حذف درجة "+gr.subject+"؟"):null));});
+    [...cGr].sort((a,b)=>new Date(b.date)-new Date(a.date)).forEach(gr=>{const pct=Math.round(gr.score/gr.max*100);body.appendChild(div({className:"card",style:{display:"flex",alignItems:"center",gap:"12px"}},div({style:{width:"50px",height:"50px",borderRadius:"14px",background:sc(pct)+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}},div({style:{fontSize:"16px",fontWeight:"900",color:sc(pct)}},pct+"%")),div({style:{flex:1}},div({style:{fontWeight:"800",fontSize:"15px"}},gr.subject),div({style:{fontSize:"12px",color:"var(--text2)"}},gr.type+" — "+gr.score+"/"+gr.max),div({style:{fontSize:"11px",color:"var(--text3)"}},fmt(gr.date))),can("edit")?editDel(()=>setState({screen:"fGrade",editItem:gr,F:{subject:gr.subject,score:gr.score,max:gr.max,date:gr.date,type:gr.type}}),()=>upd({grades:{...data.grades,[child.id]:cGr.filter(g=>g.id!==gr.id)}},{type:"delete",title:"تم حذف درجة",body:child.emoji+" "+child.name+" — "+gr.subject,childId:child.id,screen:"child",tab:"academics"}),"حذف درجة "+gr.subject+"؟"):null));});
   }
 
   if(tab==="goals"){
@@ -1966,7 +1970,8 @@ function screenChild(){
     cGoals.forEach(g=>{const gs=cGr.filter(x=>x.subject===g.subject);const cur=gs.length?Math.round(gs.reduce((a,x)=>a+x.score/x.max*100,0)/gs.length):0;const ok=cur>=g.targetPct;const card=div({className:"card",style:{borderRight:"4px solid "+(ok?"#00B894":child.color)}});const row=div({style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}});const info=div({style:{flex:1}});const titleRow=div({style:{display:"flex",gap:"8px",alignItems:"center",marginBottom:"6px"}},span({style:{fontWeight:"800",fontSize:"15px"}},g.subject));if(ok)titleRow.appendChild(pill("✓ تحقق!","#00B894"));info.appendChild(titleRow);if(g.note)info.appendChild(div({style:{fontSize:"13px",color:"var(--text2)",marginBottom:"6px"}},g.note));info.appendChild(div({style:{display:"flex",justifyContent:"space-between",fontSize:"12px",color:"var(--text3)",marginBottom:"4px"}},span(null,"الحالي: "+cur+"%"),span(null,"الهدف: "+g.targetPct+"%")));info.appendChild(pbar(cur,g.targetPct,ok?"#00B894":child.color,10));info.appendChild(div({style:{fontSize:"11px",color:"var(--text3)",marginTop:"4px"}},"📅 "+fmt(g.deadline)+" — "+getDU(g.deadline)));row.appendChild(info);if(can("edit"))row.appendChild(editDel(()=>setState({screen:"fGoal",editItem:g,F:{subject:g.subject,targetPct:g.targetPct,deadline:g.deadline,note:g.note||""}}),()=>upd({goals:{...data.goals,[child.id]:cGoals.filter(x=>x.id!==g.id)}},{type:"delete",title:"تم حذف هدف",body:child.emoji+" "+child.name,childId:child.id,screen:"child",tab:"goals"}),"حذف هدف "+g.subject+"؟"));card.appendChild(row);body.appendChild(card);});
   }
 
-  if(tab==="points"){
+  if(tab==="motivation"){
+    body.appendChild(div({className:"sec-title"},"⭐ النقاط"));
     body.appendChild(div({style:{background:"linear-gradient(135deg,"+child.color+","+child.color+"77)",borderRadius:"20px",padding:"20px",marginBottom:"14px",textAlign:"center",color:"#fff",boxShadow:"0 8px 30px "+child.color+"40"}},div({style:{fontSize:"13px",opacity:".85"}},"مجموع النقاط"),div({style:{fontSize:"54px",fontWeight:"900",lineHeight:"1"}},String(cPt.total)),div({style:{fontSize:"24px",marginTop:"4px"}},"⭐")));
     const badges=[{i:"⭐",l:"نجم",r:50},{i:"🔥",l:"متميز",r:100},{i:"👑",l:"الأول",r:200},{i:"🚀",l:"تفوق",r:300}];
     const badgeRow=div({style:{display:"flex",gap:"8px",marginBottom:"14px"}});
@@ -1976,7 +1981,8 @@ function screenChild(){
     cPt.history.forEach(h=>body.appendChild(div({className:"card",style:{display:"flex",alignItems:"center",gap:"12px"}},div({style:{width:"44px",height:"44px",borderRadius:"12px",background:"linear-gradient(135deg,"+child.color+","+child.color+"77)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:"900",fontSize:"15px",flexShrink:0}},"+"+h.amount),div({style:{flex:1}},div({style:{fontSize:"14px",fontWeight:"600"}},h.reason),div({style:{fontSize:"12px",color:"var(--text3)"}},fmt(h.date))))));
   }
 
-  if(tab==="rewards"){
+  if(tab==="motivation"){
+    body.appendChild(div({className:"sec-title"},"🎁 متجر الجوائز"));
     const rewards=data.rewards||[];
     const redemptions=(data.rewardRedemptions||[]).filter(r=>r.childId===child.id);
     // Balance banner
@@ -2000,11 +2006,11 @@ function screenChild(){
           upd({
             points:{...data.points,[child.id]:{total:p.total-rw.cost,history:[{id:Date.now(),date:todayStr,reason:"استبدال: "+rw.name,amount:-rw.cost},...p.history]}},
             rewardRedemptions:[newRedemption,...(data.rewardRedemptions||[])]
-          },{type:"add",title:"🎁 استبدال جائزة",body:child.name+" استبدل "+rw.name,childId:child.id,screen:"child",tab:"rewards"});
+          },{type:"add",title:"🎁 استبدال جائزة",body:child.name+" استبدل "+rw.name,childId:child.id,screen:"child",tab:"motivation"});
           showToast("🎉 تم استبدال "+rw.name+"!","ok");
         });
       }},affordable?"استبدال":"🔒"));
-      if(can("edit"))acts.appendChild(btn({className:"btn-del",style:{padding:"6px 9px"},onclick:()=>askDel("حذف جائزة "+rw.name+"؟",()=>upd({rewards:rewards.filter(x=>x.id!==rw.id)},{type:"delete",title:"تم حذف جائزة",body:"🎁 "+rw.name,screen:"child",tab:"rewards"}))},"🗑"));
+      if(can("edit"))acts.appendChild(btn({className:"btn-del",style:{padding:"6px 9px"},onclick:()=>askDel("حذف جائزة "+rw.name+"؟",()=>upd({rewards:rewards.filter(x=>x.id!==rw.id)},{type:"delete",title:"تم حذف جائزة",body:"🎁 "+rw.name,screen:"child",tab:"motivation"}))},"🗑"));
       card.appendChild(acts);
       body.appendChild(card);
     });
@@ -2098,10 +2104,11 @@ function screenChild(){
     if(!cSup.length)body.appendChild(div({style:{textAlign:"center",padding:"40px",color:"var(--text3)"}},"🛒 القائمة فارغة"));
   }
 
-  if(tab==="notes"){
+  if(tab==="academics"){
+    body.appendChild(div({className:"sec-title"},"💬 ملاحظات المعلم"));
     if(can("edit"))body.appendChild(btn({className:"btn-primary",style:{boxShadow:"0 4px 14px "+child.color+"40"},onclick:()=>setState({screen:"fNote",editItem:null,F:{teacher:"",subject:SUBJ[0],note:"",type:"positive",date:""}})},"+ إضافة ملاحظة"));
     if(!cNt.length)body.appendChild(div({style:{textAlign:"center",padding:"40px",color:"var(--text3)"}},"💬 لا توجد ملاحظات"));
-    [...cNt].sort((a,b)=>new Date(b.date)-new Date(a.date)).forEach(nt=>{const ni=NOTE_T[nt.type]||NOTE_T.academic;body.appendChild(div({className:"card",style:{borderRight:"4px solid "+ni.c}},div({style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}},div({style:{flex:1}},div({style:{display:"flex",gap:"6px",alignItems:"center",marginBottom:"6px"}},pill(ni.i+" "+ni.l,ni.c),span({style:{fontSize:"12px",color:"var(--text3)"}},nt.subject)),div({style:{fontSize:"14px",lineHeight:"1.6"}},nt.note),div({style:{fontSize:"12px",color:"var(--text3)",marginTop:"4px"}},nt.teacher+" — "+fmt(nt.date))),can("edit")?editDel(()=>setState({screen:"fNote",editItem:nt,F:{teacher:nt.teacher,subject:nt.subject,note:nt.note,type:nt.type,date:nt.date}}),()=>upd({teacherNotes:{...data.teacherNotes,[child.id]:cNt.filter(n=>n.id!==nt.id)}},{type:"delete",title:"تم حذف ملاحظة معلم",body:child.emoji+" "+child.name,childId:child.id,screen:"child",tab:"notes"}),"حذف هذه الملاحظة؟"):null)));});
+    [...cNt].sort((a,b)=>new Date(b.date)-new Date(a.date)).forEach(nt=>{const ni=NOTE_T[nt.type]||NOTE_T.academic;body.appendChild(div({className:"card",style:{borderRight:"4px solid "+ni.c}},div({style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}},div({style:{flex:1}},div({style:{display:"flex",gap:"6px",alignItems:"center",marginBottom:"6px"}},pill(ni.i+" "+ni.l,ni.c),span({style:{fontSize:"12px",color:"var(--text3)"}},nt.subject)),div({style:{fontSize:"14px",lineHeight:"1.6"}},nt.note),div({style:{fontSize:"12px",color:"var(--text3)",marginTop:"4px"}},nt.teacher+" — "+fmt(nt.date))),can("edit")?editDel(()=>setState({screen:"fNote",editItem:nt,F:{teacher:nt.teacher,subject:nt.subject,note:nt.note,type:nt.type,date:nt.date}}),()=>upd({teacherNotes:{...data.teacherNotes,[child.id]:cNt.filter(n=>n.id!==nt.id)}},{type:"delete",title:"تم حذف ملاحظة معلم",body:child.emoji+" "+child.name,childId:child.id,screen:"child",tab:"academics"}),"حذف هذه الملاحظة؟"):null)));});
   }
 
   if(tab==="chat"){
@@ -2371,7 +2378,7 @@ function screenSettings(){
   page.appendChild(makeHdr("#1e3a5f","⚙️ الإعدادات",backBtn(()=>setState({screen:"home"})),printBtn()));
   const body=div({className:"scroll"});
 
-  body.appendChild(div({className:"sec-title"},"المظهر"));
+  body.appendChild(div({className:"group-hdr"},"🎨 المظهر والميزات"));body.appendChild(div({className:"sec-title"},"الوضع الليلي واللغة"));
   const dmCard=div({className:"card",style:{display:"flex",justifyContent:"space-between",alignItems:"center"}});
   dmCard.appendChild(div(null,div({style:{fontWeight:"700",fontSize:"15px"}},"🌙 الوضع الليلي"),div({style:{fontSize:"12px",color:"var(--text3)",marginTop:"2px"}},"Dark Mode")));
   const isDark=document.body.getAttribute("data-theme")==="dark";
@@ -2382,7 +2389,7 @@ function screenSettings(){
 
   // ── Feature toggles (admin only) ──
   if(can("edit")){
-    body.appendChild(div({className:"sec-title"},"🎛️ التبويبات والميزات"));
+    body.appendChild(div({className:"sec-title"},"التبويبات والميزات"));
     body.appendChild(div({style:{fontSize:"12px",color:"var(--text3)",marginBottom:"8px",padding:"0 4px"}},"شغّل أو عطّل أي تبويب أو ميزة حسب احتياجك"));
     const FEATS=[
       {sec:"التبويبات الرئيسية"},
@@ -2435,7 +2442,7 @@ function screenSettings(){
     });
   }
 
-  body.appendChild(div({className:"sec-title"},"الوالدان"));
+  body.appendChild(div({className:"group-hdr"},"👥 الأعضاء"));body.appendChild(div({className:"sec-title"},"أسماء الوالدين"));
   const parentCard=div({className:"card",style:{cursor:"pointer"},onclick:()=>setState({screen:"parentSetup"})},div({style:{display:"flex",alignItems:"center",gap:"12px"}},div({style:{fontSize:"32px"}},ps.fatherAvatar||"👨"),div({style:{flex:1}},div({style:{fontWeight:"700",fontSize:"15px"}},(ps.father||"Kasim")+" & "+(ps.mother||"Asmaa")),div({style:{fontSize:"12px",color:"var(--text3)",marginTop:"2px"}},"اضغط لتعديل الأسماء والأيقونات")),span({style:{color:"var(--primary)",fontSize:"20px"}},"✏️")));
   body.appendChild(parentCard);
 
@@ -2444,7 +2451,7 @@ function screenSettings(){
   body.appendChild(btn({className:"btn-primary",style:{marginBottom:"16px"},onclick:()=>setState({childF:{name:"",grade:"",color:PALETTE[0],emoji:EMOJIS[0],photo:null},screen:"addChild"})},"+ إضافة طفل جديد"));
 
   // ── Parents management ──
-  body.appendChild(div({className:"sec-title"},"الوالدان (ملفاتهم) 👨‍👩‍👧"));
+  body.appendChild(div({className:"sec-title"},"ملفات الوالدين"));
   (data.parents||[]).forEach(p=>body.appendChild(div({className:"card",style:{display:"flex",alignItems:"center",gap:"12px"}},(p.photo?childAvatar(p,48,{borderRadius:"14px"}):div({style:{width:"48px",height:"48px",borderRadius:"14px",background:"linear-gradient(135deg,"+p.color+","+p.color+"88)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"24px",flexShrink:0}},p.emoji)),div({style:{flex:1}},div({style:{fontWeight:"800",fontSize:"15px"}},p.name),div({style:{fontSize:"12px",color:"var(--text3)",marginTop:"2px"}},p.grade)),btn({className:"btn-edit",onclick:()=>setState({editingChild:p,childF:{name:p.name,grade:p.grade,color:p.color,emoji:p.emoji,photo:p.photo||null},screen:"editParent"})},"✏️"))));
 
   body.appendChild(div({className:"sec-title"},"المواد الدراسية"));
@@ -2542,19 +2549,31 @@ function screenSettings(){
     body.appendChild(newUserCard);
   }
 
-  body.appendChild(div({className:"sec-title"},"📱 مشاركة واتساب"));
+  body.appendChild(div({className:"group-hdr"},"🔗 المشاركة والتصدير"));body.appendChild(div({className:"sec-title"},"مشاركة واتساب"));
   const waCard=div({className:"card"});
   waCard.appendChild(div({style:{fontWeight:"700",fontSize:"15px",marginBottom:"6px"}},"💬 ملخص أسبوعي على واتساب"));
   waCard.appendChild(btn({className:"btn-primary",style:{background:"#25D366"},onclick:()=>{const d=S().data;if(!d)return;let msg="🏠 *ملخص بيتنا الأسبوعي*\n";msg+="📅 "+new Date().toLocaleDateString("ar-SA",{weekday:"long",year:"numeric",month:"long",day:"numeric"})+"\n\n";d.children.forEach(c=>{const hw=d.homework[c.id]||[];const gr=d.grades[c.id]||[];const pt=d.points[c.id]||{total:0};const pending=hw.filter(h=>!h.done).length;const avg=gr.length?Math.round(gr.reduce((a,g)=>a+g.score/g.max*100,0)/gr.length):null;msg+=c.emoji+" *"+c.name+"* ("+c.grade+")\n";if(avg)msg+="   📊 متوسط الدرجات: "+avg+"%\n";msg+="   📚 واجبات متبقية: "+pending+"\n";msg+="   ⭐ النقاط: "+pt.total+"\n\n";});msg+="━━━━━━━━━━\n🏠 تطبيق بيتنا";window.open("https://wa.me/?text="+encodeURIComponent(msg),"_blank");}},"📤 إرسال على واتساب"));
   body.appendChild(waCard);
 
-  body.appendChild(div({className:"sec-title"},"📅 تصدير التقويم"));
+  body.appendChild(div({className:"sec-title"},"تصدير التقويم"));
   const icsCard=div({className:"card",style:{cursor:"pointer"},onclick:()=>setState({screen:"calExport"})});
   icsCard.appendChild(div({style:{display:"flex",alignItems:"center",gap:"12px"}},div({style:{fontSize:"28px"}},"📲"),div({style:{flex:1}},div({style:{fontWeight:"700",fontSize:"15px"}},"تصدير للتقويم (iPhone/Android)"),div({style:{fontSize:"12px",color:"var(--text3)",marginTop:"2px"}},"اختر الأشخاص والتذكيرات — يعمل كمنبّه على جوالك")),span({style:{color:"var(--primary)",fontSize:"20px"}},"←")));
   body.appendChild(icsCard);
 
   // ── Data management ──
-  body.appendChild(div({className:"sec-title"},"🗂️ إدارة البيانات"));
+  body.appendChild(div({className:"group-hdr"},"🗂️ البيانات والصيانة"));body.appendChild(div({className:"sec-title"},"إدارة البيانات"));
+  // Manual fix duplicates button
+  if(can("edit")){
+    const dupCard=div({className:"card",style:{cursor:"pointer",display:"flex",alignItems:"center",gap:"12px"},onclick:()=>{
+      const dd=S().data;const seen={};const uniq=[];let removed=0;
+      (dd.children||[]).forEach(c=>{const k=(c.name||"").trim().toLowerCase();if(k&&seen[k]){removed++;const ex=uniq.find(x=>(x.name||"").trim().toLowerCase()===k);if(ex&&!ex.photo&&c.photo)ex.photo=c.photo;}else{seen[k]=true;uniq.push(c);}});
+      if(removed>0){save({...dd,children:uniq});showToast("🧹 تم حذف "+removed+" تكرار","ok");}else showToast("لا يوجد تكرار","ok");
+    }});
+    dupCard.appendChild(div({style:{fontSize:"24px"}},"🧹"));
+    dupCard.appendChild(div({style:{flex:1}},div({style:{fontWeight:"700",fontSize:"15px"}},"إصلاح الأطفال المكررين"),div({style:{fontSize:"12px",color:"var(--text3)",marginTop:"2px"}},"حذف أي طفل مكرر بنفس الاسم")));
+    dupCard.appendChild(span({style:{color:"var(--primary)",fontSize:"18px"}},"🔧"));
+    body.appendChild(dupCard);
+  }
   // Activity log link
   const logCard=div({className:"card",style:{cursor:"pointer",display:"flex",alignItems:"center",gap:"12px"},onclick:()=>setState({screen:"activityLog"})});
   logCard.appendChild(div({style:{fontSize:"24px"}},"📜"));
@@ -2593,7 +2612,7 @@ function screenSettings(){
     body.appendChild(cleanCard);
   }
 
-  body.appendChild(div({className:"sec-title"},"💾 تصدير واستيراد البيانات"));
+  body.appendChild(div({className:"sec-title"},"النسخ الاحتياطي"));
   const exportCard=div({className:"card"});
   exportCard.appendChild(btn({className:"btn-sm",style:{width:"100%",marginBottom:"8px"},onclick:()=>{const d=S().data;const json=JSON.stringify(d,null,2);const blob=new Blob([json],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="baytna-backup-"+todayStr+".json";a.click();showToast("✅ تم تصدير البيانات","ok");}},"📥 تصدير نسخة احتياطية (JSON)"));
   // Import
@@ -3159,7 +3178,7 @@ function screenGradeTrend(){
   if(!child)return screenHome();
   const cGr=(data.grades[child.id]||[]).sort((a,b)=>new Date(a.date)-new Date(b.date));
   const page=div({className:"screen"});
-  page.appendChild(makeHdr(child.color,"📈 تطور درجات "+child.name,backBtn(()=>setState({screen:"child",tab:"grades"})),printBtn()));
+  page.appendChild(makeHdr(child.color,"📈 تطور درجات "+child.name,backBtn(()=>setState({screen:"child",tab:"academics"})),printBtn()));
   const body=div({className:"scroll"});
 
   if(cGr.length<2){
@@ -3722,3 +3741,4 @@ document.addEventListener("touchend",e=>{
 </script>
 </body>
 </html>
+ioi
