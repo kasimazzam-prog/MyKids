@@ -623,13 +623,37 @@ async function apiLoad(){
 function mergeArraysById(localArr,cloudArr){
   if(!Array.isArray(localArr))return localArr;
   if(!Array.isArray(cloudArr))return localArr;
+  const cloudById={};
+  cloudArr.forEach(it=>{ if(it&&it.id!=null)cloudById[it.id]=it; });
   const byId={};
-  // Cloud first, then local overrides (local is our latest intent)
+  // Cloud first
   cloudArr.forEach(it=>{ if(it&&it.id!=null)byId[it.id]=it; else byId["_"+JSON.stringify(it)]=it; });
-  localArr.forEach(it=>{ if(it&&it.id!=null)byId[it.id]=it; else byId["_"+JSON.stringify(it)]=it; });
-  // Deletions: if an id exists in cloud but local explicitly removed it, we can't tell here.
-  // To respect local deletes, only keep ids that are in local OR were added to cloud after our base.
-  // Simpler safe rule: keep union (favors not losing data). Deletes reconcile on next explicit save.
+  // Local overrides — but MERGE fields per item so important data (e.g. photo) isn't stripped
+  localArr.forEach(it=>{
+    if(it&&it.id!=null){
+      const cloudItem=cloudById[it.id];
+      if(cloudItem&&typeof it==="object"&&typeof cloudItem==="object"&&!Array.isArray(it)){
+        // If both carry a _mod timestamp, the NEWER one's fields take precedence (newest-wins)
+        const lm=it._mod||0, cm=cloudItem._mod||0;
+        let merged;
+        if(cm>lm){
+          // Cloud is newer → cloud fields win, but keep local-only fields
+          merged={...it,...cloudItem};
+        }else{
+          // Local is newer (or equal) → local fields win, but keep cloud-only fields
+          merged={...cloudItem,...it};
+        }
+        // Preserve media fields if the winner accidentally lost them but the other has them
+        ["photo","headerBg"].forEach(k=>{ if(!merged[k]){ if(it[k])merged[k]=it[k]; else if(cloudItem[k])merged[k]=cloudItem[k]; } });
+        merged._mod=Math.max(lm,cm);
+        byId[it.id]=merged;
+      }else{
+        byId[it.id]=it;
+      }
+    }else{
+      byId["_"+JSON.stringify(it)]=it;
+    }
+  });
   return Object.values(byId);
 }
 function deepMerge(local,cloud){
@@ -1676,14 +1700,14 @@ function submitAddChild(){
   const existingUsers=data.users||[];
   const newUser={id:"u"+id,name:childF.name,avatar:childF.emoji||"🧒",role:"child",childId:id,pin:"0000",active:true};
   const usersWithChild=existingUsers.some(u=>u.childId===id)?existingUsers:[...existingUsers,newUser];
-  upd({children:[...data.children,{id,...childF}],users:usersWithChild,homework:mk(data.homework),exams:mk(data.exams),grades:mk(data.grades),teacherNotes:mk(data.teacherNotes),supplies:mk(data.supplies),goals:mk(data.goals),points:{...data.points,[id]:{total:0,history:[]}},schedule:{...data.schedule,[id]:{}},studySchedule:{...data.studySchedule,[id]:{}},allowance:{...data.allowance,[id]:{daily:0,balance:0,history:[]}}},{type:"add",title:"تمت إضافة طفل",body:(childF.emoji||"🧒")+" "+childF.name+" (رمز الدخول: 0000)",screen:"settings"});
+  upd({children:[...data.children,{id,...childF,_mod:Date.now()}],users:usersWithChild,homework:mk(data.homework),exams:mk(data.exams),grades:mk(data.grades),teacherNotes:mk(data.teacherNotes),supplies:mk(data.supplies),goals:mk(data.goals),points:{...data.points,[id]:{total:0,history:[]}},schedule:{...data.schedule,[id]:{}},studySchedule:{...data.studySchedule,[id]:{}},allowance:{...data.allowance,[id]:{daily:0,balance:0,history:[]}}},{type:"add",title:"تمت إضافة طفل",body:(childF.emoji||"🧒")+" "+childF.name+" (رمز الدخول: 0000)",screen:"settings"});
   setState({screen:"settings"});
 }
 function submitEditChild(){
   const {childF,editingChild,data}=S();if(!childF.name)return;
   // Sync linked login user (name + avatar) so login screen stays consistent
   const syncedUsers=(data.users||[]).map(u=>u.childId===editingChild.id?{...u,name:childF.name,avatar:childF.emoji||u.avatar}:u);
-  upd({children:data.children.map(c=>c.id===editingChild.id?{...c,...childF}:c),users:syncedUsers},{type:"edit",title:"تم تعديل بيانات طفل",body:(childF.emoji||"🧒")+" "+childF.name,screen:"settings"});
+  upd({children:data.children.map(c=>c.id===editingChild.id?{...c,...childF,_mod:Date.now()}:c),users:syncedUsers},{type:"edit",title:"تم تعديل بيانات طفل",body:(childF.emoji||"🧒")+" "+childF.name,screen:"settings"});
   setState({screen:"settings"});
 }
 function submitEditParent(){
