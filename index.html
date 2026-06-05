@@ -2101,11 +2101,21 @@ function screenChild(){
     : "linear-gradient(135deg,"+child.color+","+child.color+"bb)";
   const hdrStyle={flexShrink:0,gap:"10px",background:hdrBg,backgroundSize:child.headerBg?hdrFit:"cover",backgroundPosition:"center center",backgroundRepeat:"no-repeat"};
   if(child.headerBg&&hdrFit==="contain")hdrStyle.backgroundColor=child.color;
-  // When there's a photo bg, ALWAYS add text shadow so white text stays readable on any image
+  // Auto text color based on image brightness (only meaningful when overlay is light/none)
+  // With strong overlay, the child color dominates so white stays best.
+  let hdrTextColor="#fff";
+  if(child.headerBg&&(hdrOverlay==="none"||hdrOverlay==="light")){
+    const br=(typeof child.headerBright==="number")?child.headerBright:128;
+    // Bright image → dark text; dark image → white text. Light overlay shifts threshold a bit.
+    const threshold=(hdrOverlay==="light")?170:150;
+    hdrTextColor = br>threshold ? "#1a1a1a" : "#fff";
+  }
+  // Subtle shadow opposite to text color keeps it legible on busy images
   if(child.headerBg){
-    hdrStyle.textShadow = (hdrOverlay==="none") ? "0 1px 6px rgba(0,0,0,.85), 0 0 3px rgba(0,0,0,.7)"
-                        : (hdrOverlay==="light") ? "0 1px 4px rgba(0,0,0,.7), 0 0 2px rgba(0,0,0,.5)"
-                        : "0 1px 3px rgba(0,0,0,.4)";
+    hdrStyle.textShadow = (hdrTextColor==="#fff")
+      ? ((hdrOverlay==="none")?"0 1px 6px rgba(0,0,0,.85), 0 0 3px rgba(0,0,0,.7)":"0 1px 4px rgba(0,0,0,.6)")
+      : "0 1px 4px rgba(255,255,255,.8), 0 0 3px rgba(255,255,255,.6)";
+    hdrStyle.color=hdrTextColor;
   }
   const hdr=div({className:"child-hdr",style:hdrStyle});
   // Top row: back button + sync/print
@@ -2116,7 +2126,7 @@ function screenChild(){
   // Framed bar 1: photo + name + grade (horizontal, with colored frame)
   const idBar=div({style:{display:"flex",alignItems:"center",gap:"14px",width:"100%",padding:"10px 16px",borderRadius:"18px",background:"linear-gradient(135deg,rgba(255,215,0,.12),rgba(255,193,7,.06))",border:"2px solid #FFD70099",boxShadow:"0 6px 18px rgba(255,215,0,.18)"}});
   idBar.appendChild(child.photo?childAvatar(child,58,{flexShrink:0,border:"3px solid "+child.color}):div({style:{width:"58px",height:"58px",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"30px",background:child.color+"55",border:"3px solid "+child.color,flexShrink:0}},child.emoji));
-  idBar.appendChild(div({style:{display:"flex",alignItems:"baseline",gap:"8px",flexWrap:"wrap"}},span({style:{color:"#fff",fontSize:"20px",fontWeight:"900",textShadow:"0 1px 4px rgba(0,0,0,.4)"}},child.name),span({style:{color:"rgba(255,255,255,.6)",fontSize:"15px",fontWeight:"700"}},"| "+child.grade)));
+  idBar.appendChild(div({style:{display:"flex",alignItems:"baseline",gap:"8px",flexWrap:"wrap"}},span({style:{color:hdrTextColor,fontSize:"20px",fontWeight:"900"}},child.name),span({style:{color:(hdrTextColor==="#fff"?"rgba(255,255,255,.6)":"rgba(0,0,0,.55)"),fontSize:"15px",fontWeight:"700"}},"| "+child.grade)));
   hdr.appendChild(idBar);
   // Framed bar 2: configurable stats with GOLD frame
   // All available stats — parent chooses which show via child.headerStats
@@ -2136,7 +2146,7 @@ function screenChild(){
   // Default selection if not set
   const selectedStats=(child.headerStats&&child.headerStats.length)?child.headerStats:["homework","points","allowance"];
   const statBar=div({style:{display:"flex",alignItems:"center",justifyContent:"space-around",width:"100%",padding:"10px 14px",borderRadius:"16px",background:"linear-gradient(135deg,rgba(255,215,0,.12),rgba(255,193,7,.06))",border:"2px solid #FFD70099",boxShadow:"0 4px 14px rgba(255,215,0,.18)",gap:"8px"}});
-  const statItem=(val,lbl,emoji)=>div({style:{display:"flex",flexDirection:"column",alignItems:"center",gap:"2px",flex:"1"}},span({style:{fontSize:"18px"}},emoji),span({style:{color:"#fff",fontSize:"16px",fontWeight:"900"}},String(val)),span({style:{color:"rgba(255,255,255,.7)",fontSize:"10px",fontWeight:"600"}},lbl));
+  const statItem=(val,lbl,emoji)=>div({style:{display:"flex",flexDirection:"column",alignItems:"center",gap:"2px",flex:"1"}},span({style:{fontSize:"18px"}},emoji),span({style:{color:"#fff",fontSize:"16px",fontWeight:"900",color:hdrTextColor}},String(val)),span({style:{color:(hdrTextColor==="#fff"?"rgba(255,255,255,.7)":"rgba(0,0,0,.6)"),fontSize:"10px",fontWeight:"600"}},lbl));
   selectedStats.forEach((sk,i)=>{
     const st=ALL_STATS[sk];if(!st)return;
     if(i>0)statBar.appendChild(div({style:{width:"1px",alignSelf:"stretch",background:"rgba(255,215,0,.3)"}}));
@@ -2706,11 +2716,13 @@ function screenReports(){
   const points=data.points||{};
   const exams=data.exams||{};
   const allowance=data.allowance||{};
+  // Safe flatten: only valid arrays, drop null/undefined items (prevents crashes)
+  const safeFlat=(obj)=>{ try{ return Object.values(obj||{}).filter(Array.isArray).flat().filter(x=>x&&typeof x==="object"); }catch(e){ return []; } };
   const page=div({className:"screen"});
   page.appendChild(makeHdr("#1e3a5f","📄 التقارير",backBtn(()=>setState({screen:"home"})),printBtn()));
   const body=div({className:"scroll"});
   const sg=div({className:"stats-grid"});
-  [{v:Object.values(homework).flat().length,l:"إجمالي الواجبات",c:"#6C63FF",i:"📚"},{v:Object.values(homework).flat().filter(h=>h.done).length,l:"المنجزة",c:"#00B894",i:"✅"},{v:Object.values(exams).flat().length,l:"الاختبارات",c:"#0984E3",i:"📝"}].forEach(s=>sg.appendChild(div({className:"stat-card",style:{borderTopColor:s.c}},div({style:{fontSize:"24px"}},s.i),div({className:"stat-val",style:{color:s.c}},String(s.v)),div({className:"stat-lbl"},s.l))));
+  [{v:safeFlat(homework).length,l:"إجمالي الواجبات",c:"#6C63FF",i:"📚"},{v:safeFlat(homework).filter(h=>h.done).length,l:"المنجزة",c:"#00B894",i:"✅"},{v:safeFlat(exams).length,l:"الاختبارات",c:"#0984E3",i:"📝"}].forEach(s=>sg.appendChild(div({className:"stat-card",style:{borderTopColor:s.c}},div({style:{fontSize:"24px"}},s.i),div({className:"stat-val",style:{color:s.c}},String(s.v)),div({className:"stat-lbl"},s.l))));
   body.appendChild(sg);
   const qlinks=div({style:{display:"flex",gap:"8px",marginBottom:"16px"}});
   if(feat("compare"))qlinks.appendChild(btn({className:"btn-sm",style:{flex:1,textAlign:"center"},onclick:()=>setState({screen:"compare"})},"📊 مقارنة"));
@@ -2718,7 +2730,7 @@ function screenReports(){
   qlinks.appendChild(btn({className:"btn-sm",style:{flex:1,textAlign:"center"},onclick:()=>setState({screen:"reminders"})},"⏰ تذكيرات"));
   body.appendChild(qlinks);
   body.appendChild(div({className:"sec-title"},"🤖 تحليل ذكي"));
-  children.forEach(c=>{const gr=grades[c.id]||[];const hw=homework[c.id]||[];const suggestions=[];if(gr.length>=2){const bySubj={};gr.forEach(g=>{if(!bySubj[g.subject])bySubj[g.subject]=[];bySubj[g.subject].push(g.score/g.max*100);});Object.entries(bySubj).forEach(([subj,scores])=>{const avg=scores.reduce((a,b)=>a+b,0)/scores.length;if(avg<70)suggestions.push("⚠️ "+c.name+" يحتاج دعماً في "+subj+" (متوسط "+Math.round(avg)+"%)");if(avg>=90)suggestions.push("🌟 "+c.name+" متفوق في "+subj+" ("+Math.round(avg)+"%)");});}const pending=hw.filter(h=>!h.done);if(pending.length>3)suggestions.push("📚 "+c.name+" لديه "+pending.length+" واجبات متراكمة");const overdue=hw.filter(h=>!h.done&&h.due<todayStr);if(overdue.length>0)suggestions.push("⏰ "+overdue.length+" واجبات متأخرة لـ "+c.name);if(suggestions.length>0){const aiCard=div({className:"ai-card"});aiCard.appendChild(div({className:"ai-badge"},"🤖 AI — "+c.emoji+" "+c.name));suggestions.forEach(s=>aiCard.appendChild(div({style:{fontSize:"13px",color:"rgba(255,255,255,.85)",marginBottom:"4px",lineHeight:"1.5"}},s)));body.appendChild(aiCard);}});
+  children.forEach(c=>{const gr=Array.isArray(grades[c.id])?grades[c.id]:[];const hw=Array.isArray(homework[c.id])?homework[c.id]:[];const suggestions=[];if(gr.length>=2){const bySubj={};gr.forEach(g=>{if(!bySubj[g.subject])bySubj[g.subject]=[];bySubj[g.subject].push(g.score/g.max*100);});Object.entries(bySubj).forEach(([subj,scores])=>{const avg=scores.reduce((a,b)=>a+b,0)/scores.length;if(avg<70)suggestions.push("⚠️ "+c.name+" يحتاج دعماً في "+subj+" (متوسط "+Math.round(avg)+"%)");if(avg>=90)suggestions.push("🌟 "+c.name+" متفوق في "+subj+" ("+Math.round(avg)+"%)");});}const pending=hw.filter(h=>!h.done);if(pending.length>3)suggestions.push("📚 "+c.name+" لديه "+pending.length+" واجبات متراكمة");const overdue=hw.filter(h=>!h.done&&h.due<todayStr);if(overdue.length>0)suggestions.push("⏰ "+overdue.length+" واجبات متأخرة لـ "+c.name);if(suggestions.length>0){const aiCard=div({className:"ai-card"});aiCard.appendChild(div({className:"ai-badge"},"🤖 AI — "+c.emoji+" "+c.name));suggestions.forEach(s=>aiCard.appendChild(div({style:{fontSize:"13px",color:"rgba(255,255,255,.85)",marginBottom:"4px",lineHeight:"1.5"}},s)));body.appendChild(aiCard);}});
   body.appendChild(div({className:"sec-title"},"تقارير الأطفال"));
   children.forEach(c=>{if(!canViewChild(c.id))return;const hw=homework[c.id]||[];const gr=grades[c.id]||[];const pt=points[c.id]||{total:0};const al=allowance[c.id]||{balance:0};const done=hw.filter(h=>h.done).length;const tot=hw.length;const pct=tot?Math.round(done/tot*100):0;const avg=gr.length?Math.round(gr.reduce((a,g)=>a+g.score/g.max*100,0)/gr.length):null;const card=div({className:"card",style:{position:"relative",overflow:"hidden"}});card.appendChild(div({style:{position:"absolute",top:0,left:0,right:0,height:"4px",background:"linear-gradient(90deg,"+c.color+","+c.color+"55)"}}));const hdr2=div({style:{display:"flex",gap:"12px",alignItems:"center",marginBottom:"14px",marginTop:"4px"}});hdr2.appendChild(c.photo?childAvatar(c,48,{borderRadius:"14px"}):div({style:{width:"48px",height:"48px",borderRadius:"14px",background:"linear-gradient(135deg,"+c.color+","+c.color+"88)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"24px"}},c.emoji));hdr2.appendChild(div(null,div({style:{fontWeight:"900",fontSize:"16px"}},c.name),div({style:{fontSize:"12px",color:"var(--text3)"}},c.grade)));card.appendChild(hdr2);const sg2=div({style:{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:"6px",marginBottom:"12px"}});[{v:pct+"%",l:"الواجبات",c:c.color},{v:avg?avg+"%":"—",l:"الدرجات",c:avg?sc(avg):"var(--text3)"},{v:pt.total+"⭐",l:"النقاط",c:"#FDCB6E"},{v:al.balance+" ج.م",l:"الرصيد",c:"#00B894"}].forEach(x=>sg2.appendChild(div({style:{background:x.c+"10",borderRadius:"10px",padding:"8px 4px",textAlign:"center"}},div({style:{fontSize:"13px",fontWeight:"900",color:x.c}},x.v),div({style:{fontSize:"9px",color:"var(--text3)",marginTop:"2px"}},x.l))));card.appendChild(sg2);card.appendChild(div({style:{marginBottom:"8px"}},div({style:{display:"flex",justifyContent:"space-between",fontSize:"11px",color:"var(--text3)",marginBottom:"3px"}},span(null,"إنجاز الواجبات"),span(null,done+"/"+tot)),pbar(done,tot||1,c.color,8)));const byS={};gr.forEach(g=>{if(!byS[g.subject])byS[g.subject]=[];byS[g.subject].push(g.score/g.max*100);});const chartDataR=Object.entries(byS).map(([s,vs])=>({name:s.slice(0,6),avg:Math.round(vs.reduce((a,b)=>a+b,0)/vs.length)}));if(chartDataR.length>=2)card.appendChild(makeBarChart(chartDataR,"avg",c.color,80));body.appendChild(card);});
   page.appendChild(body);
@@ -2742,6 +2754,35 @@ function compressImage(file,maxDim,quality,cb){
       cb(canvas.toDataURL("image/jpeg",quality||0.8));
     };
     img.onerror=()=>cb(e.target.result);
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+// Compress + compute average brightness (0=dark, 255=bright) so text color can auto-adapt
+function compressImageBright(file,maxDim,quality,cb){
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const img=new Image();
+    img.onload=()=>{
+      let w=img.width,h=img.height;
+      if(w>h){if(w>maxDim){h=Math.round(h*maxDim/w);w=maxDim;}}
+      else{if(h>maxDim){w=Math.round(w*maxDim/h);h=maxDim;}}
+      const canvas=document.createElement("canvas");canvas.width=w;canvas.height=h;
+      const ctx=canvas.getContext("2d");ctx.drawImage(img,0,0,w,h);
+      let bright=128;
+      try{
+        // Sample brightness — weight the area where text sits (center/bottom) more
+        const data=ctx.getImageData(0,0,w,h).data;
+        let sum=0,count=0;
+        for(let i=0;i<data.length;i+=40){ // sample every ~10 pixels
+          const r=data[i],g=data[i+1],b=data[i+2];
+          sum+=(0.299*r+0.587*g+0.114*b);count++;
+        }
+        if(count>0)bright=Math.round(sum/count);
+      }catch(err){ /* tainted canvas or no data — keep default */ }
+      cb(canvas.toDataURL("image/jpeg",quality||0.8),bright);
+    };
+    img.onerror=()=>cb(e.target.result,128);
     img.src=e.target.result;
   };
   reader.readAsDataURL(file);
@@ -2893,7 +2934,7 @@ function screenSettings(){
   body.appendChild(parentCard);
 
   body.appendChild(div({className:"sec-title"},"الأطفال"));
-  children.forEach(c=>body.appendChild(div({className:"card",style:{display:"flex",alignItems:"center",gap:"12px"}},(c.photo?childAvatar(c,48,{borderRadius:"14px"}):div({style:{width:"48px",height:"48px",borderRadius:"14px",background:"linear-gradient(135deg,"+c.color+","+c.color+"88)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"24px",flexShrink:0}},c.emoji)),div({style:{flex:1}},div({style:{fontWeight:"800",fontSize:"15px"}},c.name),div({style:{fontSize:"12px",color:"var(--text3)",marginTop:"2px"}},c.grade)),div({style:{display:"flex",gap:"6px"}},btn({className:"btn-edit",onclick:()=>setState({editingChild:c,childF:{name:c.name,grade:c.grade,color:c.color,emoji:c.emoji,photo:c.photo||null,headerBg:c.headerBg||null,headerStats:c.headerStats||null,headerFit:c.headerFit||"cover",headerOverlay:c.headerOverlay||"strong"},screen:"editChild"})},"✏️"),btn({className:"btn-del",onclick:()=>deleteChild(c.id)},"🗑")))));
+  children.forEach(c=>body.appendChild(div({className:"card",style:{display:"flex",alignItems:"center",gap:"12px"}},(c.photo?childAvatar(c,48,{borderRadius:"14px"}):div({style:{width:"48px",height:"48px",borderRadius:"14px",background:"linear-gradient(135deg,"+c.color+","+c.color+"88)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"24px",flexShrink:0}},c.emoji)),div({style:{flex:1}},div({style:{fontWeight:"800",fontSize:"15px"}},c.name),div({style:{fontSize:"12px",color:"var(--text3)",marginTop:"2px"}},c.grade)),div({style:{display:"flex",gap:"6px"}},btn({className:"btn-edit",onclick:()=>setState({editingChild:c,childF:{name:c.name,grade:c.grade,color:c.color,emoji:c.emoji,photo:c.photo||null,headerBg:c.headerBg||null,headerStats:c.headerStats||null,headerFit:c.headerFit||"cover",headerOverlay:c.headerOverlay||"strong",headerBright:(typeof c.headerBright==="number"?c.headerBright:128)},screen:"editChild"})},"✏️"),btn({className:"btn-del",onclick:()=>deleteChild(c.id)},"🗑")))));
   body.appendChild(btn({className:"btn-primary",style:{marginBottom:"16px"},onclick:()=>setState({childF:{name:"",grade:"",color:PALETTE[0],emoji:EMOJIS[0],photo:null},screen:"addChild"})},"+ إضافة طفل جديد"));
 
   // ── Parents management ──
@@ -3435,7 +3476,7 @@ function screenChildForm(){
     const hbPrev=div({style:{width:"80px",height:"48px",borderRadius:"10px",overflow:"hidden",flexShrink:0,border:"2px solid "+childF.color,background:childF.headerBg?"url("+childF.headerBg+") center/cover":"linear-gradient(135deg,"+childF.color+","+childF.color+"bb)"}});
     hbRow.appendChild(hbPrev);
     const hbInp=el("input",{type:"file",accept:"image/*",style:{display:"none"}});
-    hbInp.onchange=(e)=>{const f=e.target.files&&e.target.files[0];if(!f)return;compressImage(f,1024,0.78,(d)=>{ST.childF={...ST.childF,headerBg:d,_hdrBgMod:Date.now()};render();showToast("✅ تم تعيين الخلفية","ok");});};
+    hbInp.onchange=(e)=>{const f=e.target.files&&e.target.files[0];if(!f)return;compressImageBright(f,1024,0.78,(d,bright)=>{ST.childF={...ST.childF,headerBg:d,headerBright:bright,_hdrBgMod:Date.now()};render();showToast("✅ تم تعيين الخلفية","ok");});};
     hbRow.appendChild(hbInp);
     hbRow.appendChild(btn({className:"btn-sm",onclick:()=>hbInp.click()},"رفع"));
     if(childF.headerBg)hbRow.appendChild(btn({className:"btn-del",style:{padding:"6px 10px"},onclick:()=>{ST.childF={...ST.childF,headerBg:null,_hdrBgMod:Date.now()};render();showToast("تم حذف الخلفية","warn");}},"حذف"));
