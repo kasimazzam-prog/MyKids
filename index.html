@@ -1052,14 +1052,16 @@ async function loadData(silent=false){
           }
         });
       }
-      // MERGE cloud with local cache (don't blindly overwrite — preserves recent local edits like photos)
+      // Source-of-truth rule:
+      // - If there are PENDING local changes not yet synced → merge (protect local edits).
+      // - If NO pending changes → cloud is the truth (take it). This ensures a second browser
+      //   on the same device always shows the latest photos/data, not its stale local cache.
       const localCache=loadLocal();
       let mergedData;
-      if(localCache){
-        // deepMerge: newest-wins per record (via _mod), photos preserved, union of lists
-        mergedData=deepMerge(localCache,d);
+      if(localCache&&hasPending()){
+        mergedData=deepMerge(localCache,d); // protect unsynced local edits, newest-wins per field
       }else{
-        mergedData=d;
+        mergedData=d; // no local pending → trust the cloud fully (fixes stale 2nd-browser view)
       }
       ST.data=migrateData(mergedData);
       saveLocal(ST.data);
