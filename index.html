@@ -896,12 +896,20 @@ function migrateData(d){
     });
     if(uniq.length<d.children.length)d.children=uniq;
   }
-  // Dedupe users by name+role + remove orphan child-users
+  // Re-link child-users to children by name (fix mismatched childId), then dedupe + remove orphans
   if(Array.isArray(d.users)){
-    const validChildIds=(d.children||[]).map(c=>c.id);
+    const childList=d.children||[];
+    const validChildIds=childList.map(c=>c.id);
+    // First: repair childId for child-users whose childId doesn't match but whose name does
+    d.users.forEach(u=>{
+      if(u.role==="child"&&(u.childId==null||!validChildIds.includes(u.childId))){
+        const match=childList.find(c=>(c.name||"").trim().toLowerCase()===(u.name||"").trim().toLowerCase());
+        if(match){u.childId=match.id;_migrated=true;}
+      }
+    });
     const seenU={};const uu=[];
     d.users.forEach(u=>{
-      // Drop orphan child-user (points to a child that no longer exists)
+      // Drop orphan child-user only if STILL unmatched after repair
       if(u.role==="child"&&u.childId!=null&&!validChildIds.includes(u.childId)){_migrated=true;return;}
       const key=(u.name||"").trim().toLowerCase()+"|"+(u.role||"")+"|"+(u.childId||"");
       if(seenU[key]){_migrated=true;}else{seenU[key]=true;uu.push(u);}
@@ -1713,7 +1721,8 @@ function screenLogin(){
   }
   // ── Organic family-tree user layout (concentric circles) ──
   const buildMemberNode=(u)=>{
-    const linkedChild=(data.children||[]).find(c=>c.id===u.childId)||(data.children||[]).find(c=>c.name===u.name);
+    const _un=(u.name||"").trim().toLowerCase();
+    const linkedChild=(data.children||[]).find(c=>c.id===u.childId)||(data.children||[]).find(c=>c.name===u.name)||(data.children||[]).find(c=>(c.name||"").trim().toLowerCase()===_un);
     const linkedParent=(data.parents||[]).find(p=>p.id===u.parentId)||(data.parents||[]).find(p=>p.name===u.name);
     const accent=linkedChild?.color||linkedParent?.color||"#6C63FF";
     const node=div({className:"login-member",style:{cursor:"pointer",position:"relative",zIndex:2},onclick:()=>{ST.selectedLoginUser=u;ST.pinInput="";ST.loginError="";render();}});
@@ -2084,7 +2093,7 @@ function screenChild(){
       const isToday=day===todayName;
       const card=div({className:"card",style:{borderRight:"4px solid "+(isToday?child.color:"var(--border)")}});
       const top=div({style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"8px"}});
-      top.appendChild(div({style:{display:"flex",alignItems:"center",gap:"6px"}},span({style:{fontWeight:"800",fontSize:"15px",color:isToday?child.color:"var(--text)"}},day),isToday?span({style:{background:child.color+"20",color:child.color,padding:"2px 8px",borderRadius:"10px",fontSize:"10px",fontWeight:"700"}},"اليوم"):null));
+      top.appendChild(div({style:{display:"flex",alignItems:"center",gap:"6px"}},span({style:{fontWeight:"800",fontSize:"15px",color:child.color}},day),isToday?span({style:{background:child.color+"20",color:child.color,padding:"2px 8px",borderRadius:"10px",fontSize:"10px",fontWeight:"700"}},"اليوم"):null));
       if(can("edit"))top.appendChild(btn({className:"btn-sm",onclick:()=>setState({editDay:editDay===day?null:day})},editDay===day?"✓ تم":"✏️ تعديل"));
       card.appendChild(top);
       const chips=div({style:{display:"flex",flexWrap:"wrap",gap:"6px"}});
