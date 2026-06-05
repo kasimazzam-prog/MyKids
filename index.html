@@ -27,6 +27,19 @@
   --text:#f2f2f8;--text2:#b8b8d0;--text3:#8585a8;
   --border:#34344f;--card-shadow:0 2px 18px rgba(0,0,0,.45);
 }
+/* ── Micro-interactions ── */
+/* Press/scale feedback on tappable elements */
+button:active,.pill:active,.chip:active,.card[onclick]:active{transform:scale(.96)}
+button,.chip{transition:transform .12s cubic-bezier(.4,0,.2,1),background .2s,box-shadow .2s}
+/* Screen fade+slide — only when screen actually changes (class added in render) */
+@keyframes screenIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.anim-in{animation:screenIn .28s ease}
+/* Card subtle elevation on press (mobile-friendly) */
+.card{transition:box-shadow .25s ease,transform .12s ease}
+.is-pressing{transform:scale(.97)!important;box-shadow:0 8px 20px rgba(0,0,0,.14)!important}
+/* List items stagger-in feel via fade */
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
 /* Dark mode contrast refinements */
 [data-theme="dark"] .field-input,[data-theme="dark"] .field-select,[data-theme="dark"] .field-textarea{background:var(--bg3);border-color:#3d3d5c}
 [data-theme="dark"] .card{border-color:#2e2e48}
@@ -83,9 +96,11 @@ input,select,textarea,button{font-family:'Segoe UI',Tahoma,Arial,'Apple Color Em
 .desk-bar .actions{display:flex;gap:8px;align-items:center}
 
 /* ── Bottom Nav ── */
-.bottom-nav{flex-shrink:0;display:flex;background:var(--bg2);border-top:1px solid var(--border);padding:5px 0 var(--safe-bottom);z-index:100;box-shadow:0 -4px 20px rgba(0,0,0,.08)}
-.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;background:none;border:none;cursor:pointer;padding:5px 1px;color:var(--text3);font-size:8.5px;font-weight:600;position:relative;transition:color .2s;min-width:0}
-.nav-item.active{color:var(--primary)}
+.bottom-nav{flex-shrink:0;display:flex;background:var(--bg2);border-top:1px solid var(--border);padding:6px 2px var(--safe-bottom);z-index:100;box-shadow:0 -6px 24px rgba(0,0,0,.10);width:100%;box-sizing:border-box}
+.nav-item{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;cursor:pointer;padding:4px 0;color:var(--text3);font-size:8px;font-weight:600;position:relative;transition:color .2s;overflow:hidden}
+.nav-item.active{color:var(--primary);font-weight:800}
+.nav-item .nav-icon{transition:all .25s cubic-bezier(.4,0,.2,1);padding:4px 8px;border-radius:14px}
+.nav-item.active .nav-icon{background:rgba(108,99,255,.15);transform:translateY(-1px);padding:4px 8px}
 .nav-item .nav-icon{font-size:18px;line-height:1}
 .nav-badge{position:absolute;top:0;right:calc(50% - 16px);
   background:var(--secondary);color:#fff;border-radius:10px;
@@ -222,10 +237,22 @@ input,select,textarea,button{font-family:'Segoe UI',Tahoma,Arial,'Apple Color Em
   max-width:300px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3)}
 
 /* ── Login ── */
-.login-screen{min-height:100%;height:auto;display:flex;flex-direction:column;background:linear-gradient(135deg,#1a1a2e 0%,var(--primary) 100%);align-items:center;justify-content:flex-start;padding:24px;padding-top:calc(24px + var(--safe-top));padding-bottom:calc(40px + var(--safe-bottom));overflow-y:auto}
-.login-box{background:rgba(255,255,255,.08);backdrop-filter:blur(20px);
-  border:1px solid rgba(255,255,255,.15);border-radius:var(--radius-lg);
-  padding:32px 24px;width:100%;max-width:360px}
+.login-screen{min-height:100%;height:auto;display:flex;flex-direction:column;background:linear-gradient(160deg,#2a2438 0%,#4a3f6b 35%,#6C63FF 75%,#8b7fc7 100%);align-items:center;justify-content:flex-start;padding:24px;padding-top:calc(24px + var(--safe-top));padding-bottom:calc(40px + var(--safe-bottom));overflow-y:auto;position:relative}
+.login-screen::before,.login-screen::after{content:"";position:fixed;border-radius:50%;filter:blur(60px);opacity:.35;pointer-events:none;z-index:0}
+.login-screen::before{width:280px;height:280px;background:#a855f7;top:-60px;right:-80px;animation:blob1 14s ease-in-out infinite}
+.login-screen::after{width:240px;height:240px;background:#FF6584;bottom:-40px;left:-70px;animation:blob2 18s ease-in-out infinite}
+@keyframes slideInRight{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}}
+@keyframes slideInLeft{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+.login-anim-users{animation:slideInRight .3s ease}
+.login-anim-pin{animation:slideInLeft .3s ease}
+@keyframes blob1{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-30px,40px) scale(1.15)}}
+@keyframes blob2{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(40px,-30px) scale(1.1)}}
+.login-box{position:relative;z-index:1}
+.login-box{background:transparent;
+  border:none;border-radius:var(--radius-lg);
+  padding:8px 16px 24px;width:100%;max-width:380px;position:relative;z-index:1}
+/* When showing PIN, give the box a subtle glass panel */
+.login-box.has-pin{background:rgba(255,255,255,.07);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.12);padding:24px 20px}
 
 /* ── Stats ── */
 .stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
@@ -533,6 +560,8 @@ const DEF={
   routines:{},
   routineLog:{},
   routineFinalized:{},
+  loginBg:null,
+  loginLogo:null,
   darkMode:false,
   customSubjects:null,
 };
@@ -894,6 +923,8 @@ function migrateData(d){
   if(!d.routines)d.routines={};
   if(!d.routineLog)d.routineLog={};
   if(!d.routineFinalized)d.routineFinalized={};
+  if(d.loginBg===undefined)d.loginBg=null;
+  if(d.loginLogo===undefined)d.loginLogo=null;
   if(!d.activityLog)d.activityLog=[];
   if(!d.cleanup)d.cleanup={days:90,enabled:true};
   // Ensure data slots exist for parents (so their tabs work)
@@ -1452,6 +1483,7 @@ function toggleRoutine(child,r){
 }
 // Finalize today's routine → award points by completion, deduct half-point per missed item, round to integer
 function finalizeRoutine(child){
+  if(!can("edit")){showToast("الوالدان فقط يمكنهم احتساب النقاط","error");return;}
   const data=S().data;
   const routines=(data.routines&&data.routines[child.id])||[];
   const total=routines.length;
@@ -1618,12 +1650,18 @@ function submitAddChild(){
   const {childF,data}=S();if(!childF.name||!childF.grade)return;
   const id=Date.now();
   const mk=o=>({...o,[id]:[]});
-  upd({children:[...data.children,{id,...childF}],homework:mk(data.homework),exams:mk(data.exams),grades:mk(data.grades),teacherNotes:mk(data.teacherNotes),supplies:mk(data.supplies),goals:mk(data.goals),points:{...data.points,[id]:{total:0,history:[]}},schedule:{...data.schedule,[id]:{}},studySchedule:{...data.studySchedule,[id]:{}},allowance:{...data.allowance,[id]:{daily:0,balance:0,history:[]}}},{type:"add",title:"تمت إضافة طفل",body:(childF.emoji||"🧒")+" "+childF.name,screen:"settings"});
+  // Auto-create a login user account for this child (appears on login screen + gets a PIN)
+  const existingUsers=data.users||[];
+  const newUser={id:"u"+id,name:childF.name,avatar:childF.emoji||"🧒",role:"child",childId:id,pin:"0000",active:true};
+  const usersWithChild=existingUsers.some(u=>u.childId===id)?existingUsers:[...existingUsers,newUser];
+  upd({children:[...data.children,{id,...childF}],users:usersWithChild,homework:mk(data.homework),exams:mk(data.exams),grades:mk(data.grades),teacherNotes:mk(data.teacherNotes),supplies:mk(data.supplies),goals:mk(data.goals),points:{...data.points,[id]:{total:0,history:[]}},schedule:{...data.schedule,[id]:{}},studySchedule:{...data.studySchedule,[id]:{}},allowance:{...data.allowance,[id]:{daily:0,balance:0,history:[]}}},{type:"add",title:"تمت إضافة طفل",body:(childF.emoji||"🧒")+" "+childF.name+" (رمز الدخول: 0000)",screen:"settings"});
   setState({screen:"settings"});
 }
 function submitEditChild(){
   const {childF,editingChild,data}=S();if(!childF.name)return;
-  upd({children:data.children.map(c=>c.id===editingChild.id?{...c,...childF}:c)},{type:"edit",title:"تم تعديل بيانات طفل",body:(childF.emoji||"🧒")+" "+childF.name,screen:"settings"});
+  // Sync linked login user (name + avatar) so login screen stays consistent
+  const syncedUsers=(data.users||[]).map(u=>u.childId===editingChild.id?{...u,name:childF.name,avatar:childF.emoji||u.avatar}:u);
+  upd({children:data.children.map(c=>c.id===editingChild.id?{...c,...childF}:c),users:syncedUsers},{type:"edit",title:"تم تعديل بيانات طفل",body:(childF.emoji||"🧒")+" "+childF.name,screen:"settings"});
   setState({screen:"settings"});
 }
 function submitEditParent(){
@@ -1635,7 +1673,7 @@ function deleteChild(cid){
   askDel("حذف هذا الطفل وجميع بياناته؟",()=>{
     const d=S().data;const rm=o=>{const n={...o};delete n[cid];return n};
     const delChild=d.children.find(c=>c.id===cid);
-    upd({children:d.children.filter(c=>c.id!==cid),homework:rm(d.homework),exams:rm(d.exams),grades:rm(d.grades),points:rm(d.points),teacherNotes:rm(d.teacherNotes),schedule:rm(d.schedule),studySchedule:rm(d.studySchedule),allowance:rm(d.allowance),goals:rm(d.goals),supplies:rm(d.supplies)},{type:"delete",title:"تم حذف طفل",body:(delChild?(delChild.emoji+" "+delChild.name):"")+" وكل بياناته",screen:"settings"});
+    upd({children:d.children.filter(c=>c.id!==cid),users:(d.users||[]).filter(u=>u.childId!==cid),homework:rm(d.homework),exams:rm(d.exams),grades:rm(d.grades),points:rm(d.points),teacherNotes:rm(d.teacherNotes),schedule:rm(d.schedule),studySchedule:rm(d.studySchedule),allowance:rm(d.allowance),goals:rm(d.goals),supplies:rm(d.supplies)},{type:"delete",title:"تم حذف طفل",body:(delChild?(delChild.emoji+" "+delChild.name):"")+" وكل بياناته",screen:"settings"});
     setState({screen:"settings"});
   });
 }
@@ -1645,32 +1683,73 @@ function deleteChild(cid){
 // ═══════════════════════════════════════════════════════
 function screenLogin(){
   const {data,pinInput,loginError}=S();
-  const page=div({className:"login-screen",style:{flex:"1",minHeight:"0"}});
+  const customBg=data&&data.loginBg;
+  const page=div({className:"login-screen"+(customBg?" has-custom-bg":""),style:Object.assign({flex:"1",minHeight:"0"},customBg?{backgroundImage:"linear-gradient(rgba(20,18,35,.55),rgba(40,35,80,.65)),url("+customBg+")",backgroundSize:"cover",backgroundPosition:"center"}:{})});
   if(!data){
     page.appendChild(div({style:{textAlign:"center",color:"#fff"}},div({style:{fontSize:"60px"}},"🏠"),div({style:{fontSize:"24px",fontWeight:"900",marginTop:"12px"}},"بيتنا"),div({style:{fontSize:"14px",opacity:".7",marginTop:"8px"}},"جاري التحميل...")));
     return page;
   }
   const users=(data.users||DEF.users).filter(u=>u.active!==false);
-  const box=div({className:"login-box"});
-  box.appendChild(div({style:{textAlign:"center",marginBottom:"24px"}},div({style:{fontSize:"48px"}},"🏠"),div({style:{fontSize:"24px",fontWeight:"900",color:"#fff",marginTop:"8px"}},"بيتنا"),div({style:{fontSize:"13px",color:"rgba(255,255,255,.7)",marginTop:"4px"}},"من أنت؟")));
-  const userGrid=div({style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px",marginBottom:"16px"}});
-  users.forEach(u=>{
-    const isSel=S().selectedLoginUser?.id===u.id;
-    userGrid.appendChild(btn({style:{background:isSel?"rgba(108,99,255,.6)":"rgba(255,255,255,.1)",border:isSel?"2px solid rgba(108,99,255,.8)":"2px solid rgba(255,255,255,.1)",borderRadius:"14px",padding:"12px 8px",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:"4px"},onclick:()=>{ST.selectedLoginUser=u;ST.pinInput="";ST.loginError="";render();}},
-      (function(){
-      const linkedChild=(data.children||[]).find(c=>c.name===u.name);
-      if(linkedChild&&linkedChild.photo){
-        return div({style:{width:"54px",height:"54px",borderRadius:"50%",overflow:"hidden",margin:"0 auto",border:"2px solid rgba(255,255,255,.4)"}},el("img",{src:linkedChild.photo,style:{width:"100%",height:"100%",objectFit:"cover"}}));
-      }
-      return div({style:{fontSize:"28px"}},u.avatar||"👤");
-    })(),
-      div({style:{fontSize:"13px",fontWeight:"700",color:"#fff"}},u.name),
-      div({style:{fontSize:"10px",color:"rgba(255,255,255,.6)"}},ROLES[u.role]?.l||u.role)
-    ));
+  const box=div({className:"login-box"+(S().selectedLoginUser?" has-pin":"")});
+  if(!S().selectedLoginUser){
+    const logoEl=data.loginLogo
+      ? div({style:{width:"72px",height:"72px",margin:"0 auto",borderRadius:"18px",overflow:"hidden",boxShadow:"0 6px 20px rgba(0,0,0,.3)"}},el("img",{src:data.loginLogo,style:{width:"100%",height:"100%",objectFit:"cover"}}))
+      : div({style:{fontSize:"48px"}},"🏠");
+    box.appendChild(div({style:{textAlign:"center",marginBottom:"24px"}},logoEl,div({style:{fontSize:"24px",fontWeight:"900",color:"#fff",marginTop:"8px",textShadow:"0 2px 8px rgba(0,0,0,.5)"}},"بيتنا"),div({style:{fontSize:"13px",color:"rgba(255,255,255,.8)",marginTop:"4px",textShadow:"0 1px 4px rgba(0,0,0,.5)"}},"من أنت؟")));
+  }
+  // ── Organic family-tree user layout (concentric circles) ──
+  const buildMemberNode=(u)=>{
+    const linkedChild=(data.children||[]).find(c=>c.id===u.childId)||(data.children||[]).find(c=>c.name===u.name);
+    const linkedParent=(data.parents||[]).find(p=>p.id===u.parentId)||(data.parents||[]).find(p=>p.name===u.name);
+    const accent=linkedChild?.color||linkedParent?.color||"#6C63FF";
+    const node=div({className:"login-member",style:{cursor:"pointer",position:"relative",zIndex:2},onclick:()=>{ST.selectedLoginUser=u;ST.pinInput="";ST.loginError="";render();}});
+    // Single glass circle: large photo fills it, name below inside — no inner ring
+    const ring=div({style:{width:"122px",height:"122px",borderRadius:"50%",background:"rgba(255,255,255,.08)",border:"2.5px solid "+accent,boxShadow:"0 0 20px "+accent+"77, inset 0 0 20px rgba(255,255,255,.05)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",position:"relative",overflow:"hidden",backdropFilter:"blur(2px)"}});
+    if(linkedChild&&linkedChild.photo){
+      // Photo fills the whole circle as background; name overlaid at bottom
+      ring.style.backgroundImage="linear-gradient(to bottom,rgba(0,0,0,0) 55%,rgba(0,0,0,.55) 100%),url("+linkedChild.photo+")";
+      ring.style.backgroundSize="cover";
+      ring.style.backgroundPosition="center";
+      ring.appendChild(div({style:{position:"absolute",bottom:"14px",left:"0",right:"0",textAlign:"center",fontSize:"15px",fontWeight:"800",color:"#fff",textShadow:"0 1px 6px rgba(0,0,0,.9)"}},u.name));
+    }else{
+      // No photo: large emoji + name stacked inside the glass circle
+      ring.appendChild(div({style:{fontSize:"52px",lineHeight:"1",marginBottom:"4px"}},u.avatar||"👤"));
+      ring.appendChild(div({style:{fontSize:"15px",fontWeight:"800",color:"#fff",textShadow:"0 1px 6px rgba(0,0,0,.7)",maxWidth:"104px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}},u.name));
+    }
+    node.appendChild(ring);
+    return node;
+  };
+  // Clean grid layout: parents first, then children — 2 per row, aligned
+  const parentsU=users.filter(u=>u.role!=="child");
+  const childrenU=users.filter(u=>u.role==="child");
+  const ordered=[...parentsU,...childrenU];
+  const userGrid=div({className:"login-anim-users",style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"16px 14px",marginBottom:"16px",marginTop:"8px",justifyItems:"center",placeItems:"center"}});
+  ordered.forEach((u,idx)=>{
+    // If last item is alone in its row, span both columns (centered)
+    const isLastAlone=(idx===ordered.length-1)&&(ordered.length%2===1);
+    const cell=div({style:isLastAlone?{gridColumn:"1 / -1"}:{}});
+    cell.appendChild(buildMemberNode(u));
+    userGrid.appendChild(cell);
   });
-  box.appendChild(userGrid);
+  if(!S().selectedLoginUser)box.appendChild(userGrid);
   if(S().selectedLoginUser){
-    box.appendChild(div({style:{marginBottom:"12px",textAlign:"center",color:"rgba(255,255,255,.8)",fontSize:"13px"}},"أدخل الرمز لـ "+S().selectedLoginUser.name));
+    const su=S().selectedLoginUser;
+    const sChild=(data.children||[]).find(c=>c.id===su.childId)||(data.children||[]).find(c=>c.name===su.name);
+    const sParent=(data.parents||[]).find(p=>p.id===su.parentId)||(data.parents||[]).find(p=>p.name===su.name);
+    const sAccent=sChild?.color||sParent?.color||"#6C63FF";
+    // Back button (top-left in RTL) — returns to user list, clears PIN
+    const backRow=div({className:"login-anim-pin",style:{display:"flex",justifyContent:"flex-end",marginBottom:"4px"}});
+    backRow.appendChild(btn({style:{width:"40px",height:"40px",borderRadius:"50%",background:"rgba(255,255,255,.12)",border:"1px solid rgba(255,255,255,.2)",color:"#fff",fontSize:"20px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"background .2s"},onclick:()=>{ST.selectedLoginUser=null;ST.pinInput="";ST.loginError="";render();}},"→"));
+    box.appendChild(backRow);
+    // Hero avatar (large) — glass circle, no colored fill
+    const hero=sChild&&sChild.photo
+      ? div({style:{width:"120px",height:"120px",borderRadius:"50%",overflow:"hidden",margin:"0 auto 14px",border:"3px solid "+sAccent,boxShadow:"0 0 28px "+sAccent+"88"}},el("img",{src:sChild.photo,style:{width:"100%",height:"100%",objectFit:"cover"}}))
+      : div({style:{width:"120px",height:"120px",borderRadius:"50%",margin:"0 auto 14px",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"64px",background:"rgba(255,255,255,.08)",border:"3px solid "+sAccent,boxShadow:"0 0 28px "+sAccent+"77, inset 0 0 20px rgba(255,255,255,.05)",backdropFilter:"blur(2px)"}},su.avatar||"👤");
+    box.appendChild(hero);
+    // Personalized welcome
+    const isChild=!!sChild;
+    box.appendChild(div({style:{textAlign:"center",color:"#fff",fontSize:"19px",fontWeight:"900",marginBottom:"2px"}},(isChild?"أهلاً بطلنا ":"أهلاً ")+su.name+" 👋"));
+    box.appendChild(div({style:{marginBottom:"16px",textAlign:"center",color:"rgba(255,255,255,.7)",fontSize:"13px"}},"أدخل الرمز للمتابعة"));
     const pinRow=div({style:{display:"flex",justifyContent:"center",gap:"8px",marginBottom:"12px"}});
     for(let i=0;i<4;i++)pinRow.appendChild(div({"data-pindot":String(i),style:{width:"44px",height:"48px",borderRadius:"12px",background:"rgba(255,255,255,.1)",border:"2px solid rgba(255,255,255,.2)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"24px",color:"#fff",fontWeight:"900"}},pinInput.length>i?"●":""));
     box.appendChild(pinRow);
@@ -1930,7 +2009,7 @@ function screenChild(){
   const cGoals=goals[child.id]||[];
   const cSup=supplies[child.id]||[];
   const msgs=(data.chatMessages||[]).filter(m=>m.childId===child.id||!m.childId);
-  const ALL_TABS=[{k:"schedule",i:"📅",l:"الجدول",feat:null},{k:"study",i:"📚",l:"مذاكرة",feat:"studySchedule"},{k:"academic",i:"📒",l:"المتابعة الدراسية",feat:null},{k:"goals",i:"🎯",l:"أهداف",feat:"goals"},{k:"tasks",i:"🧹",l:"مهام وروتين",feat:"chores"},{k:"motivation",i:"⭐",l:"نقاط وجوائز",feat:"points"},{k:"allowance",i:"💰",l:"مصروف",feat:"allowance"}];
+  const ALL_TABS=[{k:"schedule",i:"📅",l:"الجدول",feat:null},{k:"study",i:"📚",l:"مذاكرة",feat:"studySchedule"},{k:"academic",i:"📒",l:"المتابعة الدراسية",feat:null},{k:"goals",i:"🎯",l:"أهداف",feat:"goals"},{k:"tasks",i:"🧹",l:"مهام وروتين",feat:"chores"},{k:"motivation",i:"⭐",l:"نقاط وجوائز",feat:"points"},{k:"allowance",i:"💰",l:"مصروف",feat:"allowance"},{k:"supplies",i:"🛒",l:"مستلزمات",feat:"supplies"},{k:"chat",i:"🗨️",l:"شات",feat:"childChat"}];
   const TABS=ALL_TABS.filter(t=>!t.feat||feat(t.feat));
   // If current tab got disabled, fall back to schedule
   if(!TABS.find(t=>t.k===tab)){ST.tab="schedule";}
@@ -2311,7 +2390,41 @@ function screenHome(){
 
   const body=div({className:"scroll"});
   // Reusable member card builder (works for children AND parents)
-  function makeMemberCard(c){
+  // Avatar wrapped in a circular progress ring (SVG)
+function ringAvatar(c,pct,size){
+  size=size||58;
+  const stroke=4;
+  const r=(size-stroke)/2;
+  const circ=2*Math.PI*r;
+  const off=circ*(1-(pct||0)/100);
+  const wrap=div({style:{position:"relative",width:size+"px",height:size+"px",flexShrink:0}});
+  // SVG ring
+  const ns="http://www.w3.org/2000/svg";
+  const svg=document.createElementNS(ns,"svg");
+  svg.setAttribute("width",size);svg.setAttribute("height",size);
+  svg.style.position="absolute";svg.style.top="0";svg.style.left="0";svg.style.transform="rotate(-90deg)";
+  const bg=document.createElementNS(ns,"circle");
+  bg.setAttribute("cx",size/2);bg.setAttribute("cy",size/2);bg.setAttribute("r",r);
+  bg.setAttribute("fill","none");bg.setAttribute("stroke",c.color+"22");bg.setAttribute("stroke-width",stroke);
+  svg.appendChild(bg);
+  if(pct!=null){
+    const fg=document.createElementNS(ns,"circle");
+    fg.setAttribute("cx",size/2);fg.setAttribute("cy",size/2);fg.setAttribute("r",r);
+    fg.setAttribute("fill","none");fg.setAttribute("stroke",c.color);fg.setAttribute("stroke-width",stroke);
+    fg.setAttribute("stroke-linecap","round");
+    fg.setAttribute("stroke-dasharray",circ);fg.setAttribute("stroke-dashoffset",off);
+    svg.appendChild(fg);
+  }
+  wrap.appendChild(svg);
+  // Avatar inside
+  const inset=stroke+2;
+  const av=c.photo?childAvatar(c,size-inset*2,{borderRadius:"50%"}):div({style:{width:(size-inset*2)+"px",height:(size-inset*2)+"px",borderRadius:"50%",background:"linear-gradient(135deg,"+c.color+","+c.color+"77)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:Math.round((size-inset*2)*0.5)+"px"}},c.emoji);
+  const avWrap=div({style:{position:"absolute",top:inset+"px",left:inset+"px",borderRadius:"50%",overflow:"hidden"}},av);
+  wrap.appendChild(avWrap);
+  return wrap;
+}
+
+function makeMemberCard(c){
     if(!canViewChild(c.id))return;
     const pending=(homework[c.id]||[]).filter(h=>!h.done).length;
     const pts=points[c.id]?.total||0;
@@ -2323,34 +2436,25 @@ function screenHome(){
     const hwDone=(homework[c.id]||[]).filter(h=>h.done).length;
     const hwTot=(homework[c.id]||[]).length;
     const needSup=(supplies[c.id]||[]).filter(s=>!s.done).length;
-    // Compact card: avatar + name + key badges in one row; progress bar thin at bottom
-    const card=div({style:{background:"var(--bg2)",borderRadius:"var(--radius)",overflow:"hidden",boxShadow:"var(--card-shadow)",cursor:"pointer",border:"1px solid var(--border)",borderRight:"4px solid "+c.color},onclick:()=>setState({child:c,tab:"schedule",screen:"child"})});
-    const inner=div({style:{padding:"var(--sp3) var(--sp4)"}});
-    const topRow=div({style:{display:"flex",alignItems:"center",gap:"var(--sp3)"}});
-    topRow.appendChild(c.photo?childAvatar(c,46,{borderRadius:"13px",boxShadow:"0 3px 10px "+c.color+"40"}):div({style:{width:"46px",height:"46px",borderRadius:"13px",background:"linear-gradient(135deg,"+c.color+","+c.color+"77)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"23px",flexShrink:0,boxShadow:"0 3px 10px "+c.color+"40"}},c.emoji));
-    const info=div({style:{flex:1,minWidth:0}});
-    const nameRow=div({style:{display:"flex",alignItems:"baseline",gap:"6px"}},div({style:{fontSize:"16px",fontWeight:"900"}},c.name),div({style:{fontSize:"11px",color:"var(--text3)"}},c.grade));
-    info.appendChild(nameRow);
-    // Inline mini-badges
-    const badges=div({style:{display:"flex",gap:"5px",marginTop:"4px",flexWrap:"wrap"}});
-    if(avg)badges.appendChild(pill(avg+"%",sc(avg)));
-    badges.appendChild(pill(pts+" ⭐",c.color));
+    // Card matching design: progress ring around avatar, name+grade, badges below
+    const card=div({style:{background:"var(--bg2)",borderRadius:"var(--radius)",overflow:"hidden",boxShadow:"var(--card-shadow)",cursor:"pointer",border:"1px solid var(--border)",borderRight:"4px solid "+c.color,padding:"var(--sp3) var(--sp4)"},onclick:()=>setState({child:c,tab:"schedule",screen:"child"})});
+    const row=div({style:{display:"flex",alignItems:"center",gap:"var(--sp3)"}});
+    // Arrow (far left in RTL)
+    row.appendChild(div({style:{width:"32px",height:"32px",borderRadius:"50%",background:c.color+"15",display:"flex",alignItems:"center",justifyContent:"center",color:c.color,fontSize:"16px",fontWeight:"900",flexShrink:0}},"←"));
+    // Middle: name + grade + badges
+    const info=div({style:{flex:1,minWidth:0,textAlign:"right"}});
+    info.appendChild(div({style:{display:"flex",alignItems:"baseline",gap:"6px",justifyContent:"flex-end"}},div({style:{fontSize:"12px",color:"var(--text3)"}},c.grade),div({style:{fontSize:"17px",fontWeight:"900"}},c.name)));
+    const badges=div({style:{display:"flex",gap:"5px",marginTop:"6px",flexWrap:"wrap",justifyContent:"flex-end"}});
     badges.appendChild(pill(bal+" 💰","#00B894"));
+    badges.appendChild(pill(pts+" ⭐",c.color));
+    if(avg!=null)badges.appendChild(pill(avg+"%",sc(avg)));
     if(pending>0)badges.appendChild(pill(pending+" 📚","#FA8231"));
     info.appendChild(badges);
-    topRow.appendChild(info);
-    topRow.appendChild(div({style:{width:"28px",height:"28px",borderRadius:"50%",background:c.color+"18",display:"flex",alignItems:"center",justifyContent:"center",color:c.color,fontSize:"15px",fontWeight:"900",flexShrink:0}},"←"));
-    inner.appendChild(topRow);
-    // Today's schedule (compact, only if exists)
-    if(todaySubs.length||todaySt.length){
-      const todayLine=[];
-      if(todaySubs.length)todayLine.push("📅 "+todaySubs.slice(0,3).join(" • "));
-      if(todaySt.length)todayLine.push("📚 "+todaySt.map(s=>s.subject).slice(0,2).join(" • "));
-      inner.appendChild(div({style:{fontSize:"11px",color:"var(--text3)",marginTop:"8px",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}},todayLine.join("   ")));
-    }
-    // Thin progress bar
-    if(hwTot>0){const pbWrap=div({style:{marginTop:"8px"}});pbWrap.appendChild(pbar(hwDone,hwTot,c.color,4));inner.appendChild(pbWrap);}
-    card.appendChild(inner);
+    row.appendChild(info);
+    // Right: avatar with progress ring (progress = grade avg, fallback homework completion)
+    const ringPct = avg!=null ? avg : (hwTot>0?Math.round(hwDone/hwTot*100):null);
+    row.appendChild(ringAvatar(c,ringPct,60));
+    card.appendChild(row);
     return card;
   }
 
@@ -2500,6 +2604,24 @@ function screenReports(){
 // ═══════════════════════════════════════════════════════
 // SETTINGS
 // ═══════════════════════════════════════════════════════
+// Downscale + compress an image file to keep synced data small
+function compressImage(file,maxDim,quality,cb){
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const img=new Image();
+    img.onload=()=>{
+      let w=img.width,h=img.height;
+      if(w>h){if(w>maxDim){h=Math.round(h*maxDim/w);w=maxDim;}}
+      else{if(h>maxDim){w=Math.round(w*maxDim/h);h=maxDim;}}
+      const canvas=document.createElement("canvas");canvas.width=w;canvas.height=h;
+      canvas.getContext("2d").drawImage(img,0,0,w,h);
+      cb(canvas.toDataURL("image/jpeg",quality||0.8));
+    };
+    img.onerror=()=>cb(e.target.result);
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
 function screenSettings(){
   const {data}=S();
   const {children,users=[],parentSettings={}}=data;
@@ -2510,7 +2632,7 @@ function screenSettings(){
   // ── Settings sub-tabs ──
   const STABS=[["appearance","🎨","المظهر"],["members","👥","الأعضاء"],["sharing","🔗","المشاركة"],["data","🗂️","البيانات"]];
   const stab=S().settingsTab||"appearance";
-  const tabBar=div({style:{display:"flex",gap:"6px",marginBottom:"16px",position:"sticky",top:"0",zIndex:5,background:"var(--bg)",paddingBottom:"4px",flexWrap:"wrap"}});
+  const tabBar=div({style:{display:"flex",gap:"6px",marginBottom:"16px",position:"sticky",top:"-14px",zIndex:20,background:"var(--bg)",margin:"-14px -14px 16px",padding:"14px 14px 10px",flexWrap:"wrap",boxShadow:"0 4px 12px -6px rgba(0,0,0,.15)"}});
   STABS.forEach(([k,i,l])=>{
     const act=stab===k;
     tabBar.appendChild(btn({style:{flex:"1",minWidth:"70px",padding:"10px 6px",borderRadius:"12px",border:"none",cursor:"pointer",background:act?"var(--primary)":"var(--bg2)",color:act?"#fff":"var(--text2)",fontWeight:act?"800":"600",fontSize:"12.5px",boxShadow:act?"0 3px 10px var(--primary)40":"none",transition:"all .2s"},onclick:()=>setState({settingsTab:k})},i+" "+l));
@@ -2526,13 +2648,57 @@ function screenSettings(){
 
   setGrp("appearance");
   body.appendChild(div({className:"group-hdr"},"🎨 المظهر والميزات"));body.appendChild(div({className:"sec-title"},"الوضع الليلي"));
-  const dmCard=div({className:"card",style:{display:"flex",justifyContent:"space-between",alignItems:"center"}});
-  dmCard.appendChild(div(null,div({style:{fontWeight:"700",fontSize:"15px"}},"🌙 الوضع الليلي"),div({style:{fontSize:"12px",color:"var(--text3)",marginTop:"2px"}},"Dark Mode")));
-  const isDark=document.body.getAttribute("data-theme")==="dark";
-  const toggle=btn({style:{width:"52px",height:"28px",borderRadius:"14px",background:isDark?"var(--primary)":"var(--border)",border:"none",cursor:"pointer",position:"relative"},onclick:()=>{const d=document.body.getAttribute("data-theme");const nd=d==="dark"?"light":"dark";document.body.setAttribute("data-theme",nd);try{localStorage.setItem("theme",nd);}catch(e){}render();}});
-  toggle.appendChild(span({style:{position:"absolute",top:"3px",left:isDark?"26px":"3px",width:"22px",height:"22px",borderRadius:"50%",background:"#fff",boxShadow:"0 2px 6px rgba(0,0,0,.2)"}}));
-  dmCard.appendChild(toggle);
+  const dmCard=div({className:"card"});
+  dmCard.appendChild(div({style:{display:"flex",alignItems:"center",gap:"10px",marginBottom:"12px"}},div({style:{fontSize:"22px"}},"🌙"),div(null,div({style:{fontWeight:"700",fontSize:"15px"}},"المظهر"),div({style:{fontSize:"12px",color:"var(--text3)"}},"اختر وضع العرض"))));
+  const curTheme=(function(){try{return localStorage.getItem("theme")||"auto";}catch(e){return "auto";}})();
+  const applyTheme=(mode)=>{
+    try{localStorage.setItem("theme",mode);}catch(e){}
+    let eff=mode;
+    if(mode==="auto"){eff=(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches)?"dark":"light";}
+    document.body.setAttribute("data-theme",eff);
+    render();
+  };
+  const themeRow=div({style:{display:"flex",gap:"8px"}});
+  [["light","☀️ فاتح"],["dark","🌙 ليلي"],["auto","⚙️ تلقائي"]].forEach(([mode,label])=>{
+    const act=curTheme===mode;
+    themeRow.appendChild(btn({style:{flex:1,padding:"11px 4px",borderRadius:"12px",border:act?"2px solid var(--primary)":"2px solid var(--border)",background:act?"var(--primary)":"var(--bg2)",color:act?"#fff":"var(--text)",cursor:"pointer",fontSize:"13px",fontWeight:act?"800":"600",transition:"all .2s"},onclick:()=>applyTheme(mode)},label));
+  });
+  dmCard.appendChild(themeRow);
+  if(curTheme==="auto")dmCard.appendChild(div({style:{fontSize:"11px",color:"var(--text3)",marginTop:"8px",textAlign:"center"}},"يتبع إعداد جهازك تلقائياً"));
   body.appendChild(dmCard);
+
+  // ── Login screen customization (admin only) ──
+  if(can("edit")){
+    body.appendChild(div({className:"sec-title"},"تخصيص شاشة الدخول"));
+    const loginCard=div({className:"card"});
+    // Background image upload
+    const bgRow=div({style:{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"10px",marginBottom:"12px"}});
+    bgRow.appendChild(div({style:{flex:1}},div({style:{fontWeight:"700",fontSize:"14px"}},"🖼️ خلفية الشاشة"),div({style:{fontSize:"12px",color:"var(--text3)",marginTop:"2px"}},data.loginBg?"تم تعيين خلفية":"الخلفية الافتراضية")));
+    const bgBtns=div({style:{display:"flex",gap:"6px"}});
+    const bgInput=el("input",{type:"file",accept:"image/*",style:{display:"none"},onchange:e=>{
+      const f=e.target.files[0];if(!f)return;
+      compressImage(f,1280,0.78,(dataUrl)=>{save({...S().data,loginBg:dataUrl});showToast("✅ تم تعيين الخلفية","ok");});
+    }});
+    bgBtns.appendChild(bgInput);
+    bgBtns.appendChild(btn({className:"btn-sm",onclick:()=>bgInput.click()},"رفع"));
+    if(data.loginBg)bgBtns.appendChild(btn({className:"btn-del",style:{padding:"6px 10px"},onclick:()=>{save({...S().data,loginBg:null});showToast("تم حذف الخلفية","warn");}},"حذف"));
+    bgRow.appendChild(bgBtns);
+    loginCard.appendChild(bgRow);
+    // Logo upload
+    const logoRow=div({style:{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"10px"}});
+    logoRow.appendChild(div({style:{flex:1}},div({style:{fontWeight:"700",fontSize:"14px"}},"🏠 شعار فوق «بيتنا»"),div({style:{fontSize:"12px",color:"var(--text3)",marginTop:"2px"}},data.loginLogo?"تم تعيين شعار":"الإيموجي الافتراضي 🏠")));
+    const logoBtns=div({style:{display:"flex",gap:"6px"}});
+    const logoInput=el("input",{type:"file",accept:"image/*",style:{display:"none"},onchange:e=>{
+      const f=e.target.files[0];if(!f)return;
+      compressImage(f,256,0.85,(dataUrl)=>{save({...S().data,loginLogo:dataUrl});showToast("✅ تم تعيين الشعار","ok");});
+    }});
+    logoBtns.appendChild(logoInput);
+    logoBtns.appendChild(btn({className:"btn-sm",onclick:()=>logoInput.click()},"رفع"));
+    if(data.loginLogo)logoBtns.appendChild(btn({className:"btn-del",style:{padding:"6px 10px"},onclick:()=>{save({...S().data,loginLogo:null});showToast("تم حذف الشعار","warn");}},"حذف"));
+    logoRow.appendChild(logoBtns);
+    loginCard.appendChild(logoRow);
+    body.appendChild(loginCard);
+  }
 
   // ── Feature toggles (admin only) ──
   if(can("edit")){
@@ -2553,6 +2719,8 @@ function screenSettings(){
       {k:"chores",i:"🧹",l:"المهام والروتين اليومي"},
       {k:"allowance",i:"💰",l:"المصروف"},
       {k:"goals",i:"🎯",l:"الأهداف"},
+      {k:"supplies",i:"🛒",l:"المستلزمات"},
+      {k:"childChat",i:"🗨️",l:"شات الطفل الخاص"},
       {sec:"الشاشة الرئيسية"},
       {k:"search",i:"🔍",l:"شريط البحث"},
       {k:"quote",i:"💡",l:"اقتباس اليوم"},
@@ -3549,7 +3717,7 @@ function buildBottomNav(screen,data){
     iw.appendChild(div({className:"nav-icon"},icon));
     if(badge>0)iw.appendChild(span({className:"nav-badge"},String(badge)));
     b.appendChild(iw);
-    b.appendChild(div(null,lbl));
+    b.appendChild(div({style:{maxWidth:"100%",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}},lbl));
     return b;
   };
   nav.appendChild(mk("🏠","الرئيسية","home",0));
@@ -3569,9 +3737,11 @@ function buildBottomNav(screen,data){
 function render(){
   try{ _render(); }catch(e){ console.log("render error:",e&&e.message); }
 }
+let _lastScreen=null;
 function _render(){
   const {data,sync,toast,confirm,currentUser}=S();
   let screen=S().screen;
+  const _screenChanged=(screen!==_lastScreen);_lastScreen=screen;
   // Block access to disabled features → redirect home
   const featGuard={homeManage:"homeManage",generalChat:"generalChat",calendar:"calendar",reports:"reports",reminders:"reminders",compare:"compare",gradeTrend:"gradeTrend"};
   if(featGuard[screen]&&!feat(featGuard[screen])){screen="home";ST.screen="home";}
@@ -3645,6 +3815,11 @@ function _render(){
   };
   const fn=screens[screen]||screenHome;
   const screenEl=fn();
+  // Animate only when navigating to a new screen (not on in-screen updates like toggles)
+  if(_screenChanged&&screenEl&&screenEl.classList){
+    const sc=screenEl.querySelector?screenEl.querySelector(".scroll"):null;
+    (sc||screenEl).classList.add("anim-in");
+  }
 
   const isDesktop=window.innerWidth>=900;
   if(isDesktop){
@@ -3686,8 +3861,17 @@ window.addEventListener("beforeinstallprompt",(e)=>{
   },3000);
 });
 
-// Restore theme
-try{const t=localStorage.getItem("theme");if(t)document.body.setAttribute("data-theme",t);}catch(e){}
+// Restore theme (supports auto = follow system)
+try{
+  let t=localStorage.getItem("theme")||"auto";
+  let eff=t;
+  if(t==="auto"){eff=(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches)?"dark":"light";}
+  document.body.setAttribute("data-theme",eff);
+  // React to system change when in auto mode
+  if(window.matchMedia){window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change",e=>{
+    if((localStorage.getItem("theme")||"auto")==="auto"){document.body.setAttribute("data-theme",e.matches?"dark":"light");if(typeof render==="function")render();}
+  });}
+}catch(e){}
 
 // ── Auto Backup (daily to localStorage) ──
 function autoBackup(){
@@ -3727,6 +3911,15 @@ function restoreFromBackup(){
 
 // Start
 console.log("🏠 بيتنا v2.0 - Starting...");
+// ── Global press feedback (adds .is-pressing on touch/click of clickable cards) ──
+(function(){
+  function isClickable(el){return el&&el.style&&el.style.cursor==="pointer";}
+  function findClickable(t){let el=t;for(let i=0;i<4&&el;i++){if(isClickable(el))return el;el=el.parentElement;}return null;}
+  document.addEventListener("touchstart",function(e){const el=findClickable(e.target);if(el)el.classList.add("is-pressing");},{passive:true});
+  ["touchend","touchcancel"].forEach(ev=>document.addEventListener(ev,function(e){document.querySelectorAll(".is-pressing").forEach(el=>el.classList.remove("is-pressing"));},{passive:true}));
+  document.addEventListener("mousedown",function(e){const el=findClickable(e.target);if(el)el.classList.add("is-pressing");});
+  ["mouseup","mouseleave"].forEach(ev=>document.addEventListener(ev,function(){document.querySelectorAll(".is-pressing").forEach(el=>el.classList.remove("is-pressing"));}));
+})();
 loadData();
 // Auto-cleanup once shortly after load
 setTimeout(()=>{ try{ runCleanup(false); }catch(e){} },10000);
