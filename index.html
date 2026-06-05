@@ -2072,11 +2072,17 @@ function screenChild(){
 
   const page=div({className:"screen"});
   const hdrFit=child.headerFit||"cover"; // cover=يملأ، contain=الصورة كاملة
+  const hdrOverlay=child.headerOverlay||"strong"; // strong=قوي، light=خفيف، none=بلا لون
+  // Overlay opacity pairs per intensity (top-left, bottom-right of gradient)
+  const ovMap={strong:["cc","99"],light:["66","44"],none:["00","00"]};
+  const ov=ovMap[hdrOverlay]||ovMap.strong;
   const hdrBg=child.headerBg
-    ? "linear-gradient(135deg,"+child.color+"cc,"+child.color+"99),url("+child.headerBg+")"
+    ? "linear-gradient(135deg,"+child.color+ov[0]+","+child.color+ov[1]+"),url("+child.headerBg+")"
     : "linear-gradient(135deg,"+child.color+","+child.color+"bb)";
   const hdrStyle={flexShrink:0,gap:"10px",background:hdrBg,backgroundSize:child.headerBg?hdrFit:"cover",backgroundPosition:"center center",backgroundRepeat:"no-repeat"};
   if(child.headerBg&&hdrFit==="contain")hdrStyle.backgroundColor=child.color;
+  // When overlay is light/none on a photo, add text shadow so white text stays readable
+  if(child.headerBg&&(hdrOverlay==="light"||hdrOverlay==="none"))hdrStyle.textShadow="0 1px 4px rgba(0,0,0,.7), 0 0 2px rgba(0,0,0,.5)";
   const hdr=div({className:"child-hdr",style:hdrStyle});
   // Top row: back button + sync/print
   const topRow=div({style:{display:"flex",justifyContent:"space-between",width:"100%",alignItems:"center"}});
@@ -2858,7 +2864,7 @@ function screenSettings(){
   body.appendChild(parentCard);
 
   body.appendChild(div({className:"sec-title"},"الأطفال"));
-  children.forEach(c=>body.appendChild(div({className:"card",style:{display:"flex",alignItems:"center",gap:"12px"}},(c.photo?childAvatar(c,48,{borderRadius:"14px"}):div({style:{width:"48px",height:"48px",borderRadius:"14px",background:"linear-gradient(135deg,"+c.color+","+c.color+"88)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"24px",flexShrink:0}},c.emoji)),div({style:{flex:1}},div({style:{fontWeight:"800",fontSize:"15px"}},c.name),div({style:{fontSize:"12px",color:"var(--text3)",marginTop:"2px"}},c.grade)),div({style:{display:"flex",gap:"6px"}},btn({className:"btn-edit",onclick:()=>setState({editingChild:c,childF:{name:c.name,grade:c.grade,color:c.color,emoji:c.emoji,photo:c.photo||null,headerBg:c.headerBg||null,headerStats:c.headerStats||null,headerFit:c.headerFit||"cover"},screen:"editChild"})},"✏️"),btn({className:"btn-del",onclick:()=>deleteChild(c.id)},"🗑")))));
+  children.forEach(c=>body.appendChild(div({className:"card",style:{display:"flex",alignItems:"center",gap:"12px"}},(c.photo?childAvatar(c,48,{borderRadius:"14px"}):div({style:{width:"48px",height:"48px",borderRadius:"14px",background:"linear-gradient(135deg,"+c.color+","+c.color+"88)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"24px",flexShrink:0}},c.emoji)),div({style:{flex:1}},div({style:{fontWeight:"800",fontSize:"15px"}},c.name),div({style:{fontSize:"12px",color:"var(--text3)",marginTop:"2px"}},c.grade)),div({style:{display:"flex",gap:"6px"}},btn({className:"btn-edit",onclick:()=>setState({editingChild:c,childF:{name:c.name,grade:c.grade,color:c.color,emoji:c.emoji,photo:c.photo||null,headerBg:c.headerBg||null,headerStats:c.headerStats||null,headerFit:c.headerFit||"cover",headerOverlay:c.headerOverlay||"strong"},screen:"editChild"})},"✏️"),btn({className:"btn-del",onclick:()=>deleteChild(c.id)},"🗑")))));
   body.appendChild(btn({className:"btn-primary",style:{marginBottom:"16px"},onclick:()=>setState({childF:{name:"",grade:"",color:PALETTE[0],emoji:EMOJIS[0],photo:null},screen:"addChild"})},"+ إضافة طفل جديد"));
 
   // ── Parents management ──
@@ -3414,6 +3420,15 @@ function screenChildForm(){
         fitRow.appendChild(btn({style:{flex:1,padding:"9px 6px",borderRadius:"12px",border:on?"2px solid "+childF.color:"2px solid var(--border)",background:on?childF.color:"var(--bg2)",color:on?"#fff":"var(--text)",fontSize:"13px",fontWeight:on?"800":"600",cursor:"pointer"},onclick:()=>{ST.childF={...ST.childF,headerFit:mode};render();}},lbl));
       });
       body.appendChild(fitRow);
+      // Overlay intensity (how much the child color tints the photo)
+      body.appendChild(div({style:{fontSize:"12px",color:"var(--text3)",marginBottom:"6px",fontWeight:"700"}},"🎨 درجة تلوين الصورة"));
+      const curOv=childF.headerOverlay||"strong";
+      const ovRow=div({style:{display:"flex",gap:"8px",marginBottom:"14px"}});
+      [["strong","قوي"],["light","خفيف"],["none","بلا لون"]].forEach(([mode,lbl])=>{
+        const on=curOv===mode;
+        ovRow.appendChild(btn({style:{flex:1,padding:"9px 6px",borderRadius:"12px",border:on?"2px solid "+childF.color:"2px solid var(--border)",background:on?childF.color:"var(--bg2)",color:on?"#fff":"var(--text)",fontSize:"13px",fontWeight:on?"800":"600",cursor:"pointer"},onclick:()=>{ST.childF={...ST.childF,headerOverlay:mode};render();}},lbl));
+      });
+      body.appendChild(ovRow);
     }
     // ── Stat sections (choose which appear in the gold bar) ──
     body.appendChild(div({className:"field-label"},"📊 أقسام شريط المتابعة (اختر ما يظهر)"));
