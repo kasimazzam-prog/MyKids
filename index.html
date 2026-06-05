@@ -272,7 +272,7 @@ input,select,textarea,button{font-family:'Segoe UI',Tahoma,Arial,'Apple Color Em
 .group-hdr:first-child{margin-top:0}
 
 /* ── Child Header ── */
-.child-hdr{display:flex;flex-direction:column;align-items:center;gap:4px;padding-top:calc(12px + var(--safe-top));padding-left:14px;padding-right:14px;padding-bottom:14px;flex-shrink:0}
+.child-hdr{display:flex;flex-direction:column;align-items:stretch;gap:10px;padding-top:calc(12px + var(--safe-top));padding-left:14px;padding-right:14px;padding-bottom:16px;flex-shrink:0}
 .child-hdr-emoji{font-size:36px;margin-top:4px}
 .child-hdr-name{color:#fff;font-size:18px;font-weight:900}
 .child-hdr-grade{color:rgba(255,255,255,.75);font-size:12px}
@@ -561,7 +561,9 @@ const DEF={
   routineLog:{},
   routineFinalized:{},
   loginBg:null,
+  loginBgTs:0,
   loginLogo:null,
+  loginLogoTs:0,
   darkMode:false,
   customSubjects:null,
 };
@@ -635,7 +637,14 @@ function deepMerge(local,cloud){
   if(Array.isArray(local))return mergeArraysById(local,cloud);
   if(local&&typeof local==="object"&&cloud&&typeof cloud==="object"){
     const out={...cloud};
+    // Timestamped fields: newest wins (logo/bg). Compare *Ts pairs.
+    [["loginLogo","loginLogoTs"],["loginBg","loginBgTs"]].forEach(([field,tsKey])=>{
+      const lt=local[tsKey]||0, ct=cloud[tsKey]||0;
+      if(lt>=ct){out[field]=local[field];out[tsKey]=lt;}
+      else{out[field]=cloud[field];out[tsKey]=ct;}
+    });
     Object.keys(local).forEach(k=>{
+      if(k==="loginLogo"||k==="loginLogoTs"||k==="loginBg"||k==="loginBgTs")return; // handled above
       if(Array.isArray(local[k])&&Array.isArray(cloud[k])){
         out[k]=mergeArraysById(local[k],cloud[k]);
       }else if(local[k]&&typeof local[k]==="object"&&cloud[k]&&typeof cloud[k]==="object"){
@@ -927,7 +936,9 @@ function migrateData(d){
   if(!d.routineLog)d.routineLog={};
   if(!d.routineFinalized)d.routineFinalized={};
   if(d.loginBg===undefined)d.loginBg=null;
+  if(d.loginBgTs===undefined)d.loginBgTs=0;
   if(d.loginLogo===undefined)d.loginLogo=null;
+  if(d.loginLogoTs===undefined)d.loginLogoTs=0;
   if(!d.activityLog)d.activityLog=[];
   if(!d.cleanup)d.cleanup={days:90,enabled:true};
   // Ensure data slots exist for parents (so their tabs work)
@@ -1687,7 +1698,7 @@ function deleteChild(cid){
 function screenLogin(){
   const {data,pinInput,loginError}=S();
   const customBg=data&&data.loginBg;
-  const page=div({className:"login-screen"+(customBg?" has-custom-bg":""),style:Object.assign({flex:"1",minHeight:"0"},customBg?{backgroundImage:"linear-gradient(rgba(20,18,35,.55),rgba(40,35,80,.65)),url("+customBg+")",backgroundSize:"cover",backgroundPosition:"center"}:{})});
+  const page=div({className:"login-screen"+(customBg?" has-custom-bg":""),style:Object.assign({flex:"1",minHeight:"0"},customBg?{backgroundImage:"linear-gradient(rgba(20,18,35,.55),rgba(40,35,80,.65)),url("+customBg+")",backgroundSize:(data.loginBgFit||"cover"),backgroundPosition:"center center",backgroundRepeat:"no-repeat",backgroundColor:"#2a2438"}:{})});
   if(!data){
     page.appendChild(div({style:{textAlign:"center",color:"#fff"}},div({style:{fontSize:"60px"}},"🏠"),div({style:{fontSize:"24px",fontWeight:"900",marginTop:"12px"}},"بيتنا"),div({style:{fontSize:"14px",opacity:".7",marginTop:"8px"}},"جاري التحميل...")));
     return page;
@@ -2018,15 +2029,48 @@ function screenChild(){
   if(!TABS.find(t=>t.k===tab)){ST.tab="schedule";}
 
   const page=div({className:"screen"});
-  const hdr=div({className:"child-hdr",style:{background:"linear-gradient(135deg,"+child.color+","+child.color+"bb)",flexShrink:0}});
+  const hdrFit=child.headerFit||"cover"; // cover=يملأ، contain=الصورة كاملة
+  const hdrBg=child.headerBg
+    ? "linear-gradient(135deg,"+child.color+"cc,"+child.color+"99),url("+child.headerBg+")"
+    : "linear-gradient(135deg,"+child.color+","+child.color+"bb)";
+  const hdrStyle={flexShrink:0,gap:"10px",background:hdrBg,backgroundSize:child.headerBg?hdrFit:"cover",backgroundPosition:"center center",backgroundRepeat:"no-repeat"};
+  if(child.headerBg&&hdrFit==="contain")hdrStyle.backgroundColor=child.color;
+  const hdr=div({className:"child-hdr",style:hdrStyle});
+  // Top row: back button + sync/print
   const topRow=div({style:{display:"flex",justifyContent:"space-between",width:"100%",alignItems:"center"}});
   topRow.appendChild(backBtn(()=>setState({screen:"home"})));
   topRow.appendChild(div({style:{display:"flex",gap:"6px",alignItems:"center"}},syncDot(),printBtn()));
   hdr.appendChild(topRow);
-  hdr.appendChild(child.photo?childAvatar(child,72,{margin:"0 auto",border:"3px solid rgba(255,255,255,.5)"}):div({className:"child-hdr-emoji"},child.emoji));
-  hdr.appendChild(div({className:"child-hdr-name"},child.name));
-  hdr.appendChild(div({className:"child-hdr-grade"},child.grade));
-  hdr.appendChild(div({className:"child-hdr-pills"},pill(cHw.filter(h=>!h.done).length+" واجب 📚","#fff"),pill(cPt.total+" نقطة ⭐","#fff"),pill(cAl.balance+" ج.م 💰","#fff")));
+  // Framed bar 1: photo + name + grade (horizontal, with colored frame)
+  const idBar=div({style:{display:"flex",alignItems:"center",gap:"14px",width:"100%",padding:"10px 16px",borderRadius:"18px",background:"linear-gradient(135deg,rgba(255,215,0,.12),rgba(255,193,7,.06))",border:"2px solid #FFD70099",boxShadow:"0 6px 18px rgba(255,215,0,.18)"}});
+  idBar.appendChild(child.photo?childAvatar(child,58,{flexShrink:0,border:"3px solid "+child.color}):div({style:{width:"58px",height:"58px",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"30px",background:child.color+"55",border:"3px solid "+child.color,flexShrink:0}},child.emoji));
+  idBar.appendChild(div({style:{display:"flex",alignItems:"baseline",gap:"8px",flexWrap:"wrap"}},span({style:{color:"#fff",fontSize:"20px",fontWeight:"900",textShadow:"0 1px 4px rgba(0,0,0,.4)"}},child.name),span({style:{color:"rgba(255,255,255,.6)",fontSize:"15px",fontWeight:"700"}},"| "+child.grade)));
+  hdr.appendChild(idBar);
+  // Framed bar 2: configurable stats with GOLD frame
+  // All available stats — parent chooses which show via child.headerStats
+  const hsExams=(data.exams&&data.exams[child.id])||[];
+  const hsGoals=(data.goals&&data.goals[child.id])||[];
+  const hsChores=(data.chores&&data.chores[child.id])||[];
+  const hsSup=(data.supplies&&data.supplies[child.id])||[];
+  const ALL_STATS={
+    homework:{val:cHw.filter(h=>!h.done).length,lbl:"واجب",emoji:"📚"},
+    points:{val:cPt.total,lbl:"نقطة",emoji:"⭐"},
+    allowance:{val:cAl.balance,lbl:"ج.م",emoji:"💰"},
+    exams:{val:hsExams.filter(e=>!e.done).length,lbl:"اختبار",emoji:"📝"},
+    goals:{val:hsGoals.filter(g=>!g.done).length,lbl:"هدف",emoji:"🎯"},
+    chores:{val:hsChores.filter(c=>!c.done).length,lbl:"مهمة",emoji:"🧹"},
+    supplies:{val:hsSup.filter(s=>!s.bought).length,lbl:"مستلزم",emoji:"🛒"}
+  };
+  // Default selection if not set
+  const selectedStats=(child.headerStats&&child.headerStats.length)?child.headerStats:["homework","points","allowance"];
+  const statBar=div({style:{display:"flex",alignItems:"center",justifyContent:"space-around",width:"100%",padding:"10px 14px",borderRadius:"16px",background:"linear-gradient(135deg,rgba(255,215,0,.12),rgba(255,193,7,.06))",border:"2px solid #FFD70099",boxShadow:"0 4px 14px rgba(255,215,0,.18)",gap:"8px"}});
+  const statItem=(val,lbl,emoji)=>div({style:{display:"flex",flexDirection:"column",alignItems:"center",gap:"2px",flex:"1"}},span({style:{fontSize:"18px"}},emoji),span({style:{color:"#fff",fontSize:"16px",fontWeight:"900"}},String(val)),span({style:{color:"rgba(255,255,255,.7)",fontSize:"10px",fontWeight:"600"}},lbl));
+  selectedStats.forEach((sk,i)=>{
+    const st=ALL_STATS[sk];if(!st)return;
+    if(i>0)statBar.appendChild(div({style:{width:"1px",alignSelf:"stretch",background:"rgba(255,215,0,.3)"}}));
+    statBar.appendChild(statItem(st.val,st.lbl,st.emoji));
+  });
+  hdr.appendChild(statBar);
   page.appendChild(hdr);
 
   const tabsEl=div({className:"tabs no-print"});
@@ -2676,28 +2720,38 @@ function screenSettings(){
     const loginCard=div({className:"card"});
     // Background image upload
     const bgRow=div({style:{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"10px",marginBottom:"12px"}});
-    bgRow.appendChild(div({style:{flex:1}},div({style:{fontWeight:"700",fontSize:"14px"}},"🖼️ خلفية الشاشة"),div({style:{fontSize:"12px",color:"var(--text3)",marginTop:"2px"}},data.loginBg?"تم تعيين خلفية":"الخلفية الافتراضية")));
+    bgRow.appendChild(div({style:{flex:1}},div({style:{fontWeight:"700",fontSize:"14px"}},"🖼️ خلفية الشاشة"),div({style:{fontSize:"12px",color:"var(--text3)",marginTop:"2px"}},data.loginBg?"تم تعيين خلفية":"الخلفية الافتراضية"),div({style:{fontSize:"10px",color:"var(--text3)",marginTop:"3px",opacity:".8"}},"💡 يُفضّل صورة عمودية (مثل 1080×1920) لتناسب الجوال والكمبيوتر")));
     const bgBtns=div({style:{display:"flex",gap:"6px"}});
     const bgInput=el("input",{type:"file",accept:"image/*",style:{display:"none"},onchange:e=>{
       const f=e.target.files[0];if(!f)return;
-      compressImage(f,1280,0.78,(dataUrl)=>{save({...S().data,loginBg:dataUrl});showToast("✅ تم تعيين الخلفية","ok");});
+      compressImage(f,1280,0.78,(dataUrl)=>{save({...S().data,loginBg:dataUrl,loginBgTs:Date.now()});showToast("✅ تم تعيين الخلفية","ok");});
     }});
     bgBtns.appendChild(bgInput);
     bgBtns.appendChild(btn({className:"btn-sm",onclick:()=>bgInput.click()},"رفع"));
-    if(data.loginBg)bgBtns.appendChild(btn({className:"btn-del",style:{padding:"6px 10px"},onclick:()=>{save({...S().data,loginBg:null});showToast("تم حذف الخلفية","warn");}},"حذف"));
+    if(data.loginBg)bgBtns.appendChild(btn({className:"btn-del",style:{padding:"6px 10px"},onclick:()=>{save({...S().data,loginBg:null,loginBgTs:Date.now()});showToast("تم حذف الخلفية","warn");}},"حذف"));
     bgRow.appendChild(bgBtns);
     loginCard.appendChild(bgRow);
+    // Fit mode for login bg
+    if(data.loginBg){
+      const curLFit=data.loginBgFit||"cover";
+      const lFitRow=div({style:{display:"flex",gap:"8px",marginBottom:"12px"}});
+      [["cover","🔳 ملء الشاشة"],["contain","🖼️ الصورة كاملة"]].forEach(([mode,lbl])=>{
+        const on=curLFit===mode;
+        lFitRow.appendChild(btn({style:{flex:1,padding:"9px 6px",borderRadius:"12px",border:on?"2px solid var(--primary)":"2px solid var(--border)",background:on?"var(--primary)":"var(--bg2)",color:on?"#fff":"var(--text)",fontSize:"13px",fontWeight:on?"800":"600",cursor:"pointer"},onclick:()=>{save({...S().data,loginBgFit:mode,loginBgTs:Date.now()});}},lbl));
+      });
+      loginCard.appendChild(lFitRow);
+    }
     // Logo upload
     const logoRow=div({style:{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"10px"}});
     logoRow.appendChild(div({style:{flex:1}},div({style:{fontWeight:"700",fontSize:"14px"}},"🏠 شعار فوق «بيتنا»"),div({style:{fontSize:"12px",color:"var(--text3)",marginTop:"2px"}},data.loginLogo?"تم تعيين شعار":"الإيموجي الافتراضي 🏠")));
     const logoBtns=div({style:{display:"flex",gap:"6px"}});
     const logoInput=el("input",{type:"file",accept:"image/*",style:{display:"none"},onchange:e=>{
       const f=e.target.files[0];if(!f)return;
-      compressImage(f,256,0.85,(dataUrl)=>{save({...S().data,loginLogo:dataUrl});showToast("✅ تم تعيين الشعار","ok");});
+      compressImage(f,256,0.85,(dataUrl)=>{save({...S().data,loginLogo:dataUrl,loginLogoTs:Date.now()});showToast("✅ تم تعيين الشعار","ok");});
     }});
     logoBtns.appendChild(logoInput);
     logoBtns.appendChild(btn({className:"btn-sm",onclick:()=>logoInput.click()},"رفع"));
-    if(data.loginLogo)logoBtns.appendChild(btn({className:"btn-del",style:{padding:"6px 10px"},onclick:()=>{save({...S().data,loginLogo:null});showToast("تم حذف الشعار","warn");}},"حذف"));
+    if(data.loginLogo)logoBtns.appendChild(btn({className:"btn-del",style:{padding:"6px 10px"},onclick:()=>{save({...S().data,loginLogo:null,loginLogoTs:Date.now()});showToast("تم حذف الشعار","warn");}},"حذف"));
     logoRow.appendChild(logoBtns);
     loginCard.appendChild(logoRow);
     body.appendChild(loginCard);
@@ -2762,7 +2816,7 @@ function screenSettings(){
   body.appendChild(parentCard);
 
   body.appendChild(div({className:"sec-title"},"الأطفال"));
-  children.forEach(c=>body.appendChild(div({className:"card",style:{display:"flex",alignItems:"center",gap:"12px"}},(c.photo?childAvatar(c,48,{borderRadius:"14px"}):div({style:{width:"48px",height:"48px",borderRadius:"14px",background:"linear-gradient(135deg,"+c.color+","+c.color+"88)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"24px",flexShrink:0}},c.emoji)),div({style:{flex:1}},div({style:{fontWeight:"800",fontSize:"15px"}},c.name),div({style:{fontSize:"12px",color:"var(--text3)",marginTop:"2px"}},c.grade)),div({style:{display:"flex",gap:"6px"}},btn({className:"btn-edit",onclick:()=>setState({editingChild:c,childF:{name:c.name,grade:c.grade,color:c.color,emoji:c.emoji,photo:c.photo||null},screen:"editChild"})},"✏️"),btn({className:"btn-del",onclick:()=>deleteChild(c.id)},"🗑")))));
+  children.forEach(c=>body.appendChild(div({className:"card",style:{display:"flex",alignItems:"center",gap:"12px"}},(c.photo?childAvatar(c,48,{borderRadius:"14px"}):div({style:{width:"48px",height:"48px",borderRadius:"14px",background:"linear-gradient(135deg,"+c.color+","+c.color+"88)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"24px",flexShrink:0}},c.emoji)),div({style:{flex:1}},div({style:{fontWeight:"800",fontSize:"15px"}},c.name),div({style:{fontSize:"12px",color:"var(--text3)",marginTop:"2px"}},c.grade)),div({style:{display:"flex",gap:"6px"}},btn({className:"btn-edit",onclick:()=>setState({editingChild:c,childF:{name:c.name,grade:c.grade,color:c.color,emoji:c.emoji,photo:c.photo||null,headerBg:c.headerBg||null,headerStats:c.headerStats||null,headerFit:c.headerFit||"cover"},screen:"editChild"})},"✏️"),btn({className:"btn-del",onclick:()=>deleteChild(c.id)},"🗑")))));
   body.appendChild(btn({className:"btn-primary",style:{marginBottom:"16px"},onclick:()=>setState({childF:{name:"",grade:"",color:PALETTE[0],emoji:EMOJIS[0],photo:null},screen:"addChild"})},"+ إضافة طفل جديد"));
 
   // ── Parents management ──
@@ -3296,6 +3350,44 @@ function screenChildForm(){
   body.appendChild(cRow);
   const cardPic=childF.photo?el("img",{src:childF.photo,style:{width:"72px",height:"72px",borderRadius:"50%",objectFit:"cover",border:"3px solid rgba(255,255,255,.6)"}}):div({style:{fontSize:"48px"}},childF.emoji);
   body.appendChild(div({style:{background:"linear-gradient(135deg,"+childF.color+","+childF.color+"88)",borderRadius:"20px",padding:"20px",textAlign:"center",color:"#fff",marginBottom:"16px",display:"flex",flexDirection:"column",alignItems:"center"}},cardPic,div({style:{fontSize:"20px",fontWeight:"900",marginTop:"8px"}},childF.name||"الاسم"),div({style:{fontSize:"13px",opacity:".8",marginTop:"4px"}},childF.grade||"الصف")));
+  // ── Header background (optional) — only for children, not parents ──
+  if(!isParentEdit){
+    body.appendChild(div({className:"field-label"},"🖼️ خلفية رأس الصفحة (اختياري)"));
+    body.appendChild(div({style:{fontSize:"11px",color:"var(--text3)",marginBottom:"8px",marginTop:"-6px"}},"💡 يُفضّل صورة أفقية عريضة (مثل 1200×400) — يظهر وسطها على كل الأجهزة"));
+    const hbRow=div({style:{display:"flex",alignItems:"center",gap:"12px",marginBottom:"14px"}});
+    const hbPrev=div({style:{width:"80px",height:"48px",borderRadius:"10px",overflow:"hidden",flexShrink:0,border:"2px solid "+childF.color,background:childF.headerBg?"url("+childF.headerBg+") center/cover":"linear-gradient(135deg,"+childF.color+","+childF.color+"bb)"}});
+    hbRow.appendChild(hbPrev);
+    const hbInp=el("input",{type:"file",accept:"image/*",style:{display:"none"}});
+    hbInp.onchange=(e)=>{const f=e.target.files&&e.target.files[0];if(!f)return;compressImage(f,1024,0.78,(d)=>{ST.childF={...ST.childF,headerBg:d};render();showToast("✅ تم تعيين الخلفية","ok");});};
+    hbRow.appendChild(hbInp);
+    hbRow.appendChild(btn({className:"btn-sm",onclick:()=>hbInp.click()},"رفع"));
+    if(childF.headerBg)hbRow.appendChild(btn({className:"btn-del",style:{padding:"6px 10px"},onclick:()=>{ST.childF={...ST.childF,headerBg:null};render();showToast("تم حذف الخلفية","warn");}},"حذف"));
+    body.appendChild(hbRow);
+    // Fit mode toggle (only if a bg is set)
+    if(childF.headerBg){
+      const curFit=childF.headerFit||"cover";
+      const fitRow=div({style:{display:"flex",gap:"8px",marginBottom:"14px"}});
+      [["cover","🔳 ملء المكان"],["contain","🖼️ الصورة كاملة"]].forEach(([mode,lbl])=>{
+        const on=curFit===mode;
+        fitRow.appendChild(btn({style:{flex:1,padding:"9px 6px",borderRadius:"12px",border:on?"2px solid "+childF.color:"2px solid var(--border)",background:on?childF.color:"var(--bg2)",color:on?"#fff":"var(--text)",fontSize:"13px",fontWeight:on?"800":"600",cursor:"pointer"},onclick:()=>{ST.childF={...ST.childF,headerFit:mode};render();}},lbl));
+      });
+      body.appendChild(fitRow);
+    }
+    // ── Stat sections (choose which appear in the gold bar) ──
+    body.appendChild(div({className:"field-label"},"📊 أقسام شريط المتابعة (اختر ما يظهر)"));
+    const STAT_OPTS=[["homework","📚 الواجبات"],["points","⭐ النقاط"],["allowance","💰 المصروف"],["exams","📝 الاختبارات"],["goals","🎯 الأهداف"],["chores","🧹 المهام"],["supplies","🛒 المستلزمات"]];
+    const curStats=(childF.headerStats&&childF.headerStats.length)?childF.headerStats:["homework","points","allowance"];
+    const statGrid=div({style:{display:"flex",flexWrap:"wrap",gap:"8px",marginBottom:"14px"}});
+    STAT_OPTS.forEach(([k,lbl])=>{
+      const on=curStats.includes(k);
+      statGrid.appendChild(btn({style:{padding:"8px 12px",borderRadius:"20px",border:on?"2px solid "+childF.color:"2px solid var(--border)",background:on?childF.color:"var(--bg2)",color:on?"#fff":"var(--text)",fontSize:"13px",fontWeight:on?"800":"600",cursor:"pointer"},onclick:()=>{
+        let s=[...curStats];
+        if(on){s=s.filter(x=>x!==k);}else{s.push(k);}
+        ST.childF={...ST.childF,headerStats:s};render();
+      }},lbl));
+    });
+    body.appendChild(statGrid);
+  }
   body.appendChild(btn({className:"btn-primary",style:{boxShadow:"0 6px 20px "+childF.color+"40"},onclick:isAdd?submitAddChild:isParentEdit?submitEditParent:submitEditChild},"✓ حفظ"));
   page.appendChild(body);
   return page;
@@ -3652,10 +3744,16 @@ function buildSidebar(data){
   // Nav
   const nav=div({className:"sb-nav"});
   const isHome=["home","fEvent"].includes(screen);
-  const isChild=["child","fHw","fExam","fGrade","fNote","fStudy","fGoal","fSupply","fAllowance","fPoints"].includes(screen);
+  const isChild=["child","fHw","fExam","fGrade","fNote","fStudy","fGoal","fSupply","fAllowance","fPoints","fChore","fRoutine","fReward"].includes(screen);
   const isBeytna=["homeManage","fHomeRequest","fHomePlan"].includes(screen);
 
-  [["🏠","الرئيسية","home",isHome,0],["🏡","بيتنا","homeManage",isBeytna,pr],["💬","شات الأسرة","generalChat",screen==="generalChat",0],["📅","التقويم","calendar",screen==="calendar",0],["📄","التقارير","reports",screen==="reports",0],["📊","مقارنة","compare",screen==="compare",0],["⏰","التذكيرات","reminders",screen==="reminders",0],["🔔","الإشعارات","notifications",screen==="notifications",uc],["⚙️","الإعدادات","settings",["settings","parentSetup","addChild","editChild"].includes(screen),0]].forEach(([icon,lbl,sc2,active,badge])=>{
+  const sbFeatMap={homeManage:"homeManage",generalChat:"generalChat",calendar:"calendar",reports:"reports",compare:"compare",reminders:"reminders"};
+  [["🏠","الرئيسية","home",isHome,0],["🏡","بيتنا","homeManage",isBeytna,pr],["💬","شات الأسرة","generalChat",screen==="generalChat",0],["📅","التقويم","calendar",screen==="calendar",0],["📄","التقارير","reports",screen==="reports",0],["📊","مقارنة","compare",screen==="compare",0],["⏰","التذكيرات","reminders",screen==="reminders",0],["🔔","الإشعارات","notifications",screen==="notifications",uc],["⚙️","الإعدادات","settings",["settings","parentSetup","addChild","editChild"].includes(screen),0]].filter(([icon,lbl,sc2])=>{
+    // Respect feature flags (hide disabled features) + per-user access
+    if(sbFeatMap[sc2]&&!feat(sbFeatMap[sc2]))return false;
+    if(typeof userCanAccess==="function"&&!userCanAccess(sc2))return false;
+    return true;
+  }).forEach(([icon,lbl,sc2,active,badge])=>{
     const b=btn({className:"sb-nav-btn"+(active?" active":""),onclick:()=>setState({screen:sc2})},
       span({className:"sb-icon"},icon),
       span(null,lbl),
@@ -3766,6 +3864,10 @@ function _render(){
   if(accessGuard[screen]&&!userCanAccess(accessGuard[screen])){screen="home";ST.screen="home";showToast&&showToast("ليس لديك صلاحية الوصول","error");}
   const app=document.getElementById("app");
   if(!app){if(window.__showErr)window.__showErr("FATAL","#app not found","");return;}
+  // Preserve scroll position of the scrollable area across re-renders (so toggles/inputs don't jump to top)
+  let _savedScroll=0;
+  const _prevScroll=app.querySelector(".scroll");
+  if(_prevScroll&&!_screenChanged)_savedScroll=_prevScroll.scrollTop;
   app.innerHTML="";
   app.style.cssText="height:100%;height:100dvh;display:flex;flex-direction:column;overflow:hidden";
 
@@ -3856,6 +3958,15 @@ function _render(){
     app.appendChild(wrap);
   }
   updateAppBadge();
+  // Restore scroll position (only when staying on same screen) so the view doesn't jump up
+  if(_savedScroll>0&&!_screenChanged){
+    const newScroll=app.querySelector(".scroll");
+    if(newScroll){
+      newScroll.scrollTop=_savedScroll;
+      // rAF fallback in case layout isn't ready synchronously
+      if(typeof requestAnimationFrame!=="undefined")requestAnimationFrame(()=>{if(newScroll)newScroll.scrollTop=_savedScroll;});
+    }
+  }
 }
 
 // ═══════════════════════════════════════════════════════
