@@ -468,7 +468,7 @@ function setLang(l){_lang=l;try{localStorage.setItem("lang",l);}catch(e){}docume
 // ═══════════════════════════════════════════════════════
 // CONSTANTS
 // ═══════════════════════════════════════════════════════
-const DAYS=["السبت","الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس"];
+const DAYS=["السبت","الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة"];
 const EMOJIS=["👦","👧","🧒","👶","🧑","🎓"];
 const PALETTE=["#6C63FF","#FF6584","#43E97B","#FA8231","#A29BFE","#00CEC9","#FD79A8"];
 const NOTE_T={positive:{l:"إيجابية",c:"#00B894",i:"🌟"},academic:{l:"أكاديمية",c:"#0984E3",i:"📖"},behavioral:{l:"سلوكية",c:"#FDCB6E",i:"📋"}};
@@ -497,7 +497,7 @@ const sc=p=>p>=90?"#00B894":p>=75?"#0984E3":p>=60?"#FDCB6E":"#FF6584";
 const fmt=d=>{try{return new Date(d).toLocaleDateString("ar",{month:"short",day:"numeric"})}catch{return d}};
 const fmtMonth=m=>MNAMES[m]||m;
 const getDU=d=>{const n=Math.ceil((new Date(d)-new Date())/86400000);return n<0?"انتهى":n===0?"اليوم!":n===1?"غداً":`${n} أيام`};
-const todayName=(()=>{const m={6:"السبت",0:"الأحد",1:"الاثنين",2:"الثلاثاء",3:"الأربعاء",4:"الخميس"};return m[new Date().getDay()]||"السبت"})();
+const todayName=(()=>{const m={6:"السبت",0:"الأحد",1:"الاثنين",2:"الثلاثاء",3:"الأربعاء",4:"الخميس",5:"الجمعة"};return m[new Date().getDay()]||""})();
 const weekQuote=()=>{const w=Math.floor(Date.now()/(7*24*3600000));return QUOTES[w%QUOTES.length]};
 
 // ═══════════════════════════════════════════════════════
@@ -2091,9 +2091,9 @@ function screenChild(){
   if(tab==="schedule"){
     DAYS.forEach(day=>{
       const isToday=day===todayName;
-      const card=div({className:"card",style:{borderRight:"4px solid "+(isToday?child.color:"var(--border)")}});
+      const card=div({className:"card",style:isToday?{border:"3px solid #FF3B30",boxShadow:"0 0 0 3px rgba(255,59,48,.15), 0 6px 20px rgba(255,59,48,.25)",borderRadius:"16px",transform:"scale(1.02)"}:{borderRight:"4px solid var(--border)"}});
       const top=div({style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"8px"}});
-      top.appendChild(div({style:{display:"flex",alignItems:"center",gap:"6px"}},span({style:{fontWeight:"800",fontSize:"15px",color:child.color}},day),isToday?span({style:{background:child.color+"20",color:child.color,padding:"2px 8px",borderRadius:"10px",fontSize:"10px",fontWeight:"700"}},"اليوم"):null));
+      top.appendChild(div({style:{display:"flex",alignItems:"center",gap:"6px"}},span({style:{fontWeight:"800",fontSize:"15px",color:isToday?"#FF3B30":child.color}},day),isToday?span({style:{background:"#FF3B30",color:"#fff",padding:"3px 10px",borderRadius:"10px",fontSize:"10px",fontWeight:"800",boxShadow:"0 2px 6px rgba(255,59,48,.4)"}},"📍 اليوم"):null));
       if(can("edit"))top.appendChild(btn({className:"btn-sm",onclick:()=>setState({editDay:editDay===day?null:day})},editDay===day?"✓ تم":"✏️ تعديل"));
       card.appendChild(top);
       const chips=div({style:{display:"flex",flexWrap:"wrap",gap:"6px"}});
