@@ -887,11 +887,14 @@ function migrateData(d){
     });
     if(uniq.length<d.children.length)d.children=uniq;
   }
-  // Dedupe users by name+role
+  // Dedupe users by name+role + remove orphan child-users
   if(Array.isArray(d.users)){
+    const validChildIds=(d.children||[]).map(c=>c.id);
     const seenU={};const uu=[];
     d.users.forEach(u=>{
-      const key=(u.name||"").trim().toLowerCase()+"|"+(u.role||"");
+      // Drop orphan child-user (points to a child that no longer exists)
+      if(u.role==="child"&&u.childId!=null&&!validChildIds.includes(u.childId)){_migrated=true;return;}
+      const key=(u.name||"").trim().toLowerCase()+"|"+(u.role||"")+"|"+(u.childId||"");
       if(seenU[key]){_migrated=true;}else{seenU[key]=true;uu.push(u);}
     });
     if(uu.length<d.users.length)d.users=uu;
@@ -2877,12 +2880,25 @@ function screenSettings(){
   // Manual fix duplicates button
   if(can("edit")){
     const dupCard=div({className:"card",style:{cursor:"pointer",display:"flex",alignItems:"center",gap:"12px"},onclick:()=>{
-      const dd=S().data;const seen={};const uniq=[];let removed=0;
-      (dd.children||[]).forEach(c=>{const k=(c.name||"").trim().toLowerCase();if(k&&seen[k]){removed++;const ex=uniq.find(x=>(x.name||"").trim().toLowerCase()===k);if(ex&&!ex.photo&&c.photo)ex.photo=c.photo;}else{seen[k]=true;uniq.push(c);}});
-      if(removed>0){save({...dd,children:uniq});showToast("🧹 تم حذف "+removed+" تكرار","ok");}else showToast("لا يوجد تكرار","ok");
+      const dd=S().data;let removed=0;
+      // 1) Dedupe children by name
+      const seen={};const uniqChildren=[];
+      (dd.children||[]).forEach(c=>{const k=(c.name||"").trim().toLowerCase();if(k&&seen[k]){removed++;const ex=uniqChildren.find(x=>(x.name||"").trim().toLowerCase()===k);if(ex&&!ex.photo&&c.photo)ex.photo=c.photo;}else{seen[k]=true;uniqChildren.push(c);}});
+      const validChildIds=uniqChildren.map(c=>c.id);
+      // 2) Remove orphan child-users (role=child whose childId no longer exists) + duplicate users
+      const seenU={};const uniqUsers=[];
+      (dd.users||[]).forEach(u=>{
+        // Orphan: a child-user pointing to a non-existent child
+        if(u.role==="child"&&u.childId!=null&&!validChildIds.includes(u.childId)){removed++;return;}
+        // Duplicate: same name+role+childId already kept
+        const uk=(u.name||"").trim().toLowerCase()+"|"+(u.role||"")+"|"+(u.childId||"");
+        if(seenU[uk]){removed++;return;}
+        seenU[uk]=true;uniqUsers.push(u);
+      });
+      if(removed>0){save({...dd,children:uniqChildren,users:uniqUsers});showToast("🧹 تم حذف "+removed+" تكرار/يتيم","ok");}else showToast("لا يوجد تكرار","ok");
     }});
     dupCard.appendChild(div({style:{fontSize:"24px"}},"🧹"));
-    dupCard.appendChild(div({style:{flex:1}},div({style:{fontWeight:"700",fontSize:"15px"}},"إصلاح الأطفال المكررين"),div({style:{fontSize:"12px",color:"var(--text3)",marginTop:"2px"}},"حذف أي طفل مكرر بنفس الاسم")));
+    dupCard.appendChild(div({style:{flex:1}},div({style:{fontWeight:"700",fontSize:"15px"}},"إصلاح الأطفال المكررين"),div({style:{fontSize:"12px",color:"var(--text3)",marginTop:"2px"}},"حذف الأطفال المكررين والمستخدمين اليتامى")));
     dupCard.appendChild(span({style:{color:"var(--primary)",fontSize:"18px"}},"🔧"));
     body.appendChild(dupCard);
   }
