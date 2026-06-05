@@ -1035,7 +1035,16 @@ async function loadData(silent=false){
           }
         });
       }
-      ST.data=migrateData(d);
+      // MERGE cloud with local cache (don't blindly overwrite — preserves recent local edits like photos)
+      const localCache=loadLocal();
+      let mergedData;
+      if(localCache){
+        // deepMerge: newest-wins per record (via _mod), photos preserved, union of lists
+        mergedData=deepMerge(localCache,d);
+      }else{
+        mergedData=d;
+      }
+      ST.data=migrateData(mergedData);
       saveLocal(ST.data);
       ST.lastPull=new Date();
     }
